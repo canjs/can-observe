@@ -1,0 +1,28 @@
+{
+  "name": "can-observe",
+  "version": "0.0.1",
+  "description": "Like can.Map, but without the .attr method.",
+  "main": "can-observe.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/canjs/can-observe"
+  },
+  "keywords": [
+    "CanJS"
+  ],
+  "author": "Bitovi",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/canjs/can-observe/issues"
+  },
+  "homepage": "https://github.com/canjs/can-observe",
+  "dependencies": {
+    "can": "^2.3.0-pre.11",
+    "jquery": "^2.1.4",
+    "steal": "^0.11.0-pre.8",
+    "steal-qunit": "^0.1.1"
+  }
+}
