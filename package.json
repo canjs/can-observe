@@ -4,7 +4,7 @@
   "description": "Like can.Map, but without the .attr method.",
   "main": "can-observe.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "testee test.html --browsers firefox"
   },
   "repository": {
     "type": "git",
@@ -20,9 +20,15 @@
   },
   "homepage": "https://github.com/canjs/can-observe",
   "dependencies": {
-    "can": "^2.3.0-pre.11",
-    "jquery": "^2.1.4",
-    "steal": "^0.11.0-pre.8",
-    "steal-qunit": "^0.1.1"
+    "can-cid": "^1.0.1",
+    "can-event": "^3.0.2",
+    "can-observation": "^3.0.7"
+  },
+  "devDependencies": {
+    "can-compute": "^3.0.5",
+    "can-stache": "^3.0.19",
+    "steal": "^1.0.0",
+    "steal-qunit": "^1.0.0",
+    "testee": "^0.3.1"
   }
 }
