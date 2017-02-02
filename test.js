@@ -4,6 +4,8 @@ var observe = require("can-observe");
 var stache = require("can-stache");
 var canBatch = require("can-event/batch/batch");
 
+QUnit.module("basics");
+
 QUnit.test("basics with object", function(){
 	var person = observe({});
 	person.first = "Justin";
@@ -46,7 +48,6 @@ QUnit.test("basics with array", function(){
 	hobbies.pop();
 });
 
-
 QUnit.test("compose to stache", function(){
 	var person = observe({first: "Marshall", last: "Thompson"});
 	var hobbies = observe(["music","programming"]);
@@ -72,6 +73,22 @@ QUnit.test("compose to stache", function(){
 	person.last = "Meyer";
 
 	QUnit.equal(frag.firstChild.innerHTML, "Justin Meyer likes: music");
+});
 
+QUnit.test("events aren't fired if the value doesn't change", function(){
+	var dog = observe({name: "Wilbur"});
 
-})
+	var events = 0;
+	dog.addEventListener("name", function(){
+		events++;
+	});
+
+	dog.name = "Fido";
+	QUnit.equal(events, 1, "there has been one event");
+
+	dog.name = "Fido";
+	QUnit.equal(events, 1, "still just one");
+
+	dog.name = "Wilbur";
+	QUnit.equal(events, 2, "now there is two");
+});
