@@ -20,11 +20,13 @@ module.exports = function(obj){
 		set: function(target, key, value){
 			var old = target[key];
 			var change = old !== value;
-			target[key] = value;
-      canBatch.dispatch.call(target, {
-        type: key,
-        target: target
-      }, [value, old]);
+			if(change) {
+				target[key] = value;
+				canBatch.dispatch.call(target, {
+					type: key,
+					target: target
+				}, [value, old]);
+			}
 			return true;
 		}
 	});
