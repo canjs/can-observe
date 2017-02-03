@@ -4,7 +4,18 @@
   "description": "Like can.Map, but without the .attr method.",
   "main": "can-observe.js",
   "scripts": {
-    "test": "testee test.html --browsers firefox"
+    "preversion": "npm test && npm run build",
+    "version": "git commit -am \"Update dist for release\" && git checkout -b release && git add -f dist/",
+    "postversion": "git push --tags && git checkout master && git branch -D release && git push",
+    "testee": "testee test.html --browsers firefox",
+    "test": "npm run jshint && npm run testee",
+    "jshint": "jshint *.js --config",
+    "release:patch": "npm version patch && npm publish",
+    "release:minor": "npm version minor && npm publish",
+    "release:major": "npm version major && npm publish",
+    "release:pre": "npm version prerelease && npm publish",
+    "build": "node build.js",
+    "document": "bit-docs"
   },
   "repository": {
     "type": "git",
@@ -25,8 +36,11 @@
     "can-observation": "^3.0.7"
   },
   "devDependencies": {
+    "bit-docs": "0.0.6",
     "can-compute": "^3.0.5",
     "can-stache": "^3.0.19",
+    "can-util": "^3.2.2",
+    "jshint": "^2.9.1",
     "steal": "^1.0.0",
     "steal-qunit": "^1.0.0",
     "testee": "^0.3.1"
