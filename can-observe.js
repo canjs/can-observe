@@ -13,8 +13,8 @@ module.exports = function(obj){
 	var p = new Proxy(obj, {
 		get: function(target, name){
 			if(name !== "_cid" && has.call(target, name)) {
-        Observation.add(target, name);
-      }
+        		Observation.add(target, name);
+			}
 			return target[name];
 		},
 		set: function(target, key, value){
@@ -30,7 +30,6 @@ module.exports = function(obj){
 			return true;
 		}
 	});
-
 
 	return p;
 };
