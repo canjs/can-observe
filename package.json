@@ -36,14 +36,14 @@
     "can-observation": "^3.0.7"
   },
   "devDependencies": {
-    "bit-docs": "0.0.6",
+    "bit-docs": "0.0.7",
     "can-compute": "^3.0.5",
     "can-stache": "^3.0.19",
     "can-util": "^3.2.2",
     "jshint": "^2.9.1",
     "steal": "^1.0.0",
     "steal-qunit": "^1.0.0",
-    "testee": "^0.3.1"
+    "testee": "^0.5.0"
   },
   "bit-docs": {
     "dependencies": {
