@@ -1,5 +1,7 @@
 # can-observe
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/canjs/can-observe.svg)](https://greenkeeper.io/)
+
 Create plain observable objects. These objects can be observed by computes, or other map types like can-define.
 
 ## Example
