@@ -1,6 +1,7 @@
 @module {function} can-observe
 @parent can-ecosystem
 @description Create an observable object.
+@package ../package.json
 
 @signature `observe(target)`
 
