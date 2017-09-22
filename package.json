@@ -35,7 +35,7 @@
     "can-observation": "^3.0.7"
   },
   "devDependencies": {
-    "bit-docs": "0.0.7",
+    "bit-docs": "0.0.8-0",
     "can-compute": "^3.0.5",
     "can-stache": "^3.0.19",
     "can-util": "^3.2.2",
