@@ -7,12 +7,13 @@ var canBatch = require("can-event/batch/batch");
 QUnit.module("basics");
 
 QUnit.test("basics with object", function(){
+
 	var person = observe({});
 	person.first = "Justin";
 	person.last = "Meyer";
 
 	var fullName = compute(function(){
-	  return person.first+" "+person.last;
+	    return person.first+" "+person.last;
 	});
 
 	QUnit.stop();
@@ -21,6 +22,7 @@ QUnit.test("basics with object", function(){
 		QUnit.start();
 		QUnit.equal(newVal, "Vyacheslav Egorov");
 		QUnit.equal(oldVal, "Justin Meyer");
+		console.log('hi')
 	});
 
 	// causes change event above
@@ -35,7 +37,7 @@ QUnit.test("basics with array", function(){
 	var hobbies = observe(["basketball","programming"]);
 
 	var hobbiesList = compute(function(){
-	  return hobbies.join(",");
+	    return hobbies.join(",");
 	});
 
 
@@ -91,4 +93,72 @@ QUnit.test("events aren't fired if the value doesn't change", function(){
 
 	dog.name = "Wilbur";
 	QUnit.equal(events, 2, "now there is two");
+});
+
+QUnit.module("without proxies #19");
+
+QUnit.test("Object should be mutated when true flag is passed", function(){
+	var dogObj = {name: "Wilbur"};
+	var dog = observe(dog, true);
+
+	QUnit.equal(dog, dogObj, "the object should be decorated and not use a proxy")
+
+});
+
+QUnit.test("Change event should trigger when properties change on an object", function(){
+	var personObj = {first: "Justin", last: "Meyer"}
+	var person = observe(person, true);
+
+	QUnit.equal(personObj, person, "the object should be decorated and not use a proxy");
+	var fullName = compute(function(){
+		return person.first +" "+ person.last;
+	});
+
+	QUnit.stop();
+	canReflect.onKeyValue(fullName, "change", function(newVal, oldVal){
+		QUnit.start();
+		QUnit.equal(newVal, "Vyacheslav Egorov");
+		QUnit.equal(oldVal, "Justin Meyer");
+	});
+
+	// causes change event above
+	canBatch.start();
+	person.first = "Vyacheslav";
+	person.last = "Egorov";
+	canBatch.stop();
+});
+
+QUnit.test("Change event should trigger when properties change on an array", function(){
+	var hobbiesArr = ["basketball","programming"];
+	var hobbies = observe(hobbiesArr, true);
+
+	QUnit.equal(hobbiesArr, hobbies, "the array should be decorated and not use a proxy");
+
+	var hobbiesList = compute(function(){
+	    return hobbies.join(",");
+	});
+
+	canReflect.onKeyValue(hobbiesList, "change", function(newValue, oldValue){
+		QUnit.equal(newVal, "basketball");
+		QUnit.equal(oldVal, "basketball,programming");
+	})
+
+	// causes change event above
+	hobbies.pop();
+});
+
+QUnit.test("Warning occurs when adding properties after a non-proxy observable is decorated", function(){
+	// We have two options to deal with this situation:
+
+	// Object.seal() these objects so users get warnings when adding new properties that were not already defined. Users will need to define their properties, or use the proxy version. Or,
+	// Tell users to use canReflect.get(obj, "last") if the property might not be already defined.
+	var person = observe({}, true);
+
+	var oldWarn = console.warn;
+
+	console.warn = function(msg) {
+		QUnit.equal(msg, "This object is sealed. Use canReflect.get() instead."); //or something like this
+	};
+
+	person.first = 'Dolly';
 });
