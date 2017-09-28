@@ -1,13 +1,16 @@
-
 var cid = require("can-cid");
 var canEvent = require("can-event");
 var canBatch = require("can-event/batch/batch");
 var Observation = require("can-observation");
+var canObserveNoProxy = require("./can-observe-mutate");
 
 var has = Object.prototype.hasOwnProperty;
 
-module.exports = function(obj){
-  cid(obj);
+module.exports = function(obj, noProxy){
+	if (obj && noProxy) {
+		return canObserveNoProxy(obj);
+	}
+	cid(obj);
 	obj.addEventListener = canEvent.addEventListener;
 	obj.removeEventListener = canEvent.removeEventListener;
 	var p = new Proxy(obj, {
