@@ -1,15 +1,23 @@
-
 var cid = require("can-cid");
-var canEvent = require("can-event");
 var canBatch = require("can-event/batch/batch");
 var Observation = require("can-observation");
+var canSymbol = require("can-symbol");
+var canReflect = require("can-reflect");
 
 var has = Object.prototype.hasOwnProperty;
+var observableSymbol = canSymbol.for("can.observeData");
 
 module.exports = function(obj){
-  cid(obj);
-	obj.addEventListener = canEvent.addEventListener;
-	obj.removeEventListener = canEvent.removeEventListener;
+
+	if (obj[observableSymbol]) {
+        return obj;
+    } else {
+        Object.defineProperty(obj, "_cid", {
+            value: cid({}),
+            enumerable: false
+        });
+	}
+
 	var p = new Proxy(obj, {
 		get: function(target, name){
 			if(name !== "_cid" && has.call(target, name)) {
@@ -22,14 +30,35 @@ module.exports = function(obj){
 			var change = old !== value;
 			if(change) {
 				target[key] = value;
-				canBatch.dispatch.call(target, {
-					type: key,
-					target: target
-				}, [value, old]);
+				(target[observableSymbol].handlers[key] || []).forEach(function(handler){
+					canBatch.queue([handler, this, [value, old]]);
+				}, this);
 			}
 			return true;
 		}
 	});
+
+	var meta = p[observableSymbol] = {handlers: {}, data:{}};
+	var handlers = meta.handlers;
+	var data = meta.data;
+	canReflect.assignSymbols(p, {
+        "can.onKeyValue": function(key, handler) {
+            var keyHandlers = handlers[key];
+            if (!keyHandlers) {
+                keyHandlers = handlers[key] = [];
+            }
+            keyHandlers.push(handler);
+        },
+        "can.offKeyValue": function(key, handler) {
+            var keyHandlers = handlers[key];
+            if(keyHandlers) {
+                var index = keyHandlers.indexOf(handler);
+                if(index >= 0 ) {
+                    keyHandlers.splice(index, 1);
+                }
+            }
+        }
+    });
 
 	return p;
 };

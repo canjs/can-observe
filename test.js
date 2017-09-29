@@ -1,33 +1,35 @@
 var QUnit =  require("steal-qunit");
+var assert = QUnit.assert;
 var compute = require("can-compute");
 var observe = require("can-observe");
 var stache = require("can-stache");
 var canBatch = require("can-event/batch/batch");
+var canReflect = require("can-reflect");
 
 QUnit.module("basics");
 
 QUnit.test("basics with object", function(){
+
 	var person = observe({});
 	person.first = "Justin";
 	person.last = "Meyer";
 
 	var fullName = compute(function(){
-	  return person.first+" "+person.last;
+	    return person.first+" "+person.last;
 	});
 
 	QUnit.stop();
 
-	fullName.bind("change", function(ev, newVal, oldVal){
+	canReflect.onValue(fullName, function(newVal) {
 		QUnit.start();
-		QUnit.equal(newVal, "Vyacheslav Egorov");
-		QUnit.equal(oldVal, "Justin Meyer");
+		QUnit.equal(newVal, "Vyacheslav Meyer");
 	});
 
 	// causes change event above
-	canBatch.start();
+	// canBatch.start();
 	person.first = "Vyacheslav";
-	person.last = "Egorov";
-	canBatch.stop();
+	// person.last = "Egorov";
+	// canBatch.stop();
 });
 
 // nested properties?
@@ -35,13 +37,11 @@ QUnit.test("basics with array", function(){
 	var hobbies = observe(["basketball","programming"]);
 
 	var hobbiesList = compute(function(){
-	  return hobbies.join(",");
+	    return hobbies.join(",");
 	});
 
-
-	hobbiesList.bind("change", function(ev, newVal, oldVal){
+	canReflect.onValue(hobbiesList, function(newVal) {
 		QUnit.equal(newVal, "basketball");
-		QUnit.equal(oldVal, "basketball,programming");
 	});
 
 	// causes change event above
@@ -79,7 +79,7 @@ QUnit.test("events aren't fired if the value doesn't change", function(){
 	var dog = observe({name: "Wilbur"});
 
 	var events = 0;
-	dog.addEventListener("name", function(){
+	canReflect.onKeyValue(dog, "name", function(){
 		events++;
 	});
 

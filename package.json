@@ -32,7 +32,9 @@
   "dependencies": {
     "can-cid": "^1.0.1",
     "can-event": "^3.0.2",
-    "can-observation": "^3.0.7"
+    "can-observation": "^3.0.7",
+    "can-reflect": "^1.4.2",
+    "can-symbol": "^1.2.0"
   },
   "devDependencies": {
     "bit-docs": "0.0.7",
