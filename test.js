@@ -1,4 +1,5 @@
 var QUnit =  require("steal-qunit");
+var assert = QUnit.assert;
 var compute = require("can-compute");
 var observe = require("can-observe");
 var stache = require("can-stache");
@@ -147,10 +148,62 @@ QUnit.test("Change event should trigger when properties change on an array", fun
 	hobbies.pop();
 });
 
+QUnit.test("Should call handers when an array mutation occurs", function() {
+	expect(2)
+	var arr = [1,2,3];
+	observe(arr, true);
+	canReflect.onValue(arr, function(newVal, oldVal) {
+		assert.ok( newVal === 4, "push calls the first handler" );
+	})
+
+	canReflect.onValue(arr, function(newVal, oldVal) {
+		assert.ok( newVal === 4, "push calls the second handler" );
+	})
+
+	arr.push(4)
+});
+
+QUnit.test("Methods that mutate the array should trigger a compute", function() {
+	expect(2)
+	var arr = [1,2,3];
+	observe(arr, true);
+
+	var arrList = compute(function() {
+		assert.ok(true, "compute should be fired twice");
+	    return arr.join(",");
+	});
+
+	canReflect.onKeyValue(arrList, "change", function(event, newValue, oldValue) {
+		console.log(newValue);
+	});
+
+	//push should trigger the compute
+	arr.push(4);
+});
+
+QUnit.test("Reading the array should trigger a compute", function() {
+	expect(2);
+	var arr = [1,2,3];
+	observe(arr, true);
+
+	var arrList = compute(function() {
+		assert.ok(true, "compute should be triggered twice");
+		return arr.join(",");
+	});
+
+	canReflect.onKeyValue(arrList, "change", function(event, newValue, oldValue) {
+		QUnit.equal(newValue, "1,2,3", "the compute should be triggered when the array is read");
+	})
+
+	//forEach should trigger the compute
+	arr.forEach(function(item){
+	});
+});
+
 QUnit.skip("Should work with plain nested objects", function(){
 	var oldPOJO = {hello: "world"};
 	var newPOJO = {hello: "goodbye"};
-	var personObj = {first: "Justin", last: "Meyer", nested: oldPOJO}
+	var personObj = {first: "Justin", last: "Meyer", nested: oldPOJO};
 
 	var person = observe(personObj, true);
 	QUnit.equal(personObj, person, "the object should be decorated and not use a proxy");

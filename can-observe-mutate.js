@@ -1,23 +1,12 @@
 var cid = require("can-cid");
-var canEvent = require("can-event");
 var canBatch = require("can-event/batch/batch");
 var Observation = require("can-observation");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 
-var has = Object.prototype.hasOwnProperty;
-var observableDataSymbol = canSymbol.for("can.observeData")
+var observableDataSymbol = canSymbol.for("can.observeData");
 
 var observeMutate = function(obj) {
-    if(Array.isArray(obj)) {
-        return observeArray(obj);
-    } else if (canReflect.isPlainObject(obj)) {
-        return observeObject(obj);
-    }
-};
-
-var observeObject = function(obj) {
-
     if(obj[observableDataSymbol]) {
         return obj;
     } else {
@@ -26,21 +15,27 @@ var observeObject = function(obj) {
             enumerable: false
         })
     }
+    if(Array.isArray(obj)) {
+        return observeArray(obj);
+    } else if (canReflect.isPlainObject(obj)) {
+        return observeObject(obj);
+    }
+};
+
+var observeObject = function(obj) {
     var meta = obj[observableDataSymbol] = {handlers: {}, data:{}};
     var data = meta.data;
-    var handlers = meta.handlers; // new KeyTree(Object,Array)
+    var handlers = meta.handlers;
 
     canReflect.assignSymbols(obj, {
         "can.onKeyValue": function(key, handler){
-            // handlers.add([key, handler]);
             var keyHandlers = handlers[key];
             if (!keyHandlers) {
                 keyHandlers = handlers[key] = [];
             }
-            keyHandlers.push(handler)
+            keyHandlers.push(handler);
         },
         "can.offKeyValue": function(key, handler){
-            // handlers.delete([key, handler])
             var keyHandlers = handlers[key];
             if(keyHandlers) {
                 var index = keyHandlers.indexOf(handler);
@@ -49,7 +44,7 @@ var observeObject = function(obj) {
                 }
             }
         }
-    })
+    });
 
     Object.keys(obj).forEach(function(prop){
 
@@ -80,11 +75,51 @@ var observeObject = function(obj) {
     return obj;
 }
 
+var initializeMutableArrPrototype = function() {
+    var arrProto = Array.prototype;
+    var mutableArrayPrototype = Object.create(Array.prototype);
+    var mutateMethods = {"push": true, "pop": true, "shift": true, "unshift": true, "splice": true, "sort": true, "reverse": true};
+
+    Object.getOwnPropertyNames(Array.prototype).forEach(function(prop) {
+        if (mutateMethods[prop]) {
+            mutableArrayPrototype[prop] = function() {
+                var handlers = this[Symbol.for("can.observeData")].handlers;
+                var args = arguments;
+                arrProto[prop].apply(this, arguments);
+                handlers.forEach(function(handler){
+                    canBatch.queue([handler, this, args]);
+                }, this);
+            }
+        } else {
+            mutableArrayPrototype[prop] = function() {
+                Observation.add(this);
+                arrProto[prop].apply(this, arguments);
+            }
+        }
+    });
+    return mutableArrayPrototype;
+}
+
+
 var observeArray = function(arr) {
-    console.log(arr, 'decorating array')
+    var mutableArrayPrototype = initializeMutableArrPrototype();
+    Object.setPrototypeOf(arr, mutableArrayPrototype);
+
+    var meta = arr[observableDataSymbol] = {handlers: []};
+    var handlers = meta.handlers;
+
+    canReflect.assignSymbols(arr, {
+        "can.onValue": function(handler) {
+            handlers.push(handler);
+        },
+        "can.offValue": function(handler) {
+            var index = handlers.indexOf(handler);
+            if (index >= 0 ) {
+                handlers.splice(index, 1);
+            }
+        }
+    })
     return arr;
 }
 
 module.exports = observeMutate;
-
-
