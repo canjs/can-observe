@@ -92,3 +92,18 @@ QUnit.test("events aren't fired if the value doesn't change", function(){
 	dog.name = "Wilbur";
 	QUnit.equal(events, 2, "now there is two");
 });
+
+
+QUnit.test("Should not duplicate proxies", function(){
+	var a = {},
+    b = {},
+    c = {}
+
+	aproxy = observe(a)
+	cproxy = observe(c)
+
+	aproxy.b = b;
+	cproxy.b = b;
+
+	QUnit.equal(aproxy.b, cproxy.b, "proxies should not be duplicated")
+});
