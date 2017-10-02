@@ -123,14 +123,16 @@ QUnit.test("Should not duplicate proxies in a cycle #21", function(){
 
 QUnit.test("Nested objects should be observables #21", function(){
 	var obj = {nested: {}, primitive: 2};
+	observe(obj)
 
 	canReflect.getKeyValue( obj.nested, "prop", function(newVal){
+		console.log('hi', newVal)
 	    QUnit.equal(newVal, "abc");
 	})
 
-	obj.nested.prop = "abc"
+	obj.nested.prop = "abc";
 
-	QUnit.equal(false, true, "nested objects should also be observable");
+	QUnit.equal(canReflect.isObservableLike(obj.nested), true, "nested objects should also be observable");
 });
 
 
@@ -138,8 +140,9 @@ QUnit.test("Should convert nested objects to observables in a lazy way", functio
 	var nested = {};
 	var obj = {nested: nested};
 	var obs = observe(obj);
-	QUnit.equal(canReflect.isObservable(nested), false) //-> nested is not converted yet
-	QUnit.equal(canReflect.isObservable(nested), true) //-> nested is converted to a proxy and the proxy returned
+	debugger;
+	QUnit.equal(canReflect.isObservableLike(nested), false) //-> nested is not converted yet
+	QUnit.equal(canReflect.isObservableLike(nested), true) //-> nested is converted to a proxy and the proxy returned
 });
 
 QUnit.test("Should convert properties if bound", function() {
@@ -147,7 +150,7 @@ QUnit.test("Should convert properties if bound", function() {
 	var obj = {};
 	var obs = observe(obj);
 	canReflect.getKeyValue(obj, "nested", function(newVal){
-	    QUnit.equal(canReflect.isObservable(newVal), true) //-> is a proxied nested
+	    QUnit.equal(canReflect.isObservableLike(newVal), true) //-> is a proxied nested
 	})
 
 	obs.nested = nested;

@@ -9,60 +9,76 @@ var observableSymbol = canSymbol.for("can.observeData");
 
 var observe = function(obj){
 
-	if (obj[observableSymbol]) {
-        return obj;
-    } else {
-        Object.defineProperty(obj, "_cid", {
-            value: cid({}),
-            enumerable: false
-        });
+	var proxyObj = function(obj){
+		if (obj[observableSymbol]) {
+			return obj;
+		} else {
+			Object.defineProperty(obj, "_cid", {
+				value: cid({}),
+				enumerable: false
+			});
+		}
+
+		var p = new Proxy(obj, {
+			get: function(target, name){
+				if(name !== "_cid" && has.call(target, name)) {
+					Observation.add(target, name);
+				}
+				return target[name];
+			},
+			set: function(target, key, value){
+				var old = target[key];
+				var change = old !== value;
+				if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
+					console.log(key)
+					// observe(target[key]);
+				}
+				if (change) {
+					target[key] = value;
+					(target[observableSymbol].handlers[key] || []).forEach(function(handler){
+						canBatch.queue([handler, this, [value, old]]);
+					}, this);
+				}
+				return true;
+			}
+		});
+		var meta = p[observableSymbol] = {handlers: {}, data:{}};
+		var handlers = meta.handlers;
+		var data = meta.data;
+		canReflect.assignSymbols(p, {
+			"can.onKeyValue": function(key, handler) {
+				var keyHandlers = handlers[key];
+				if (!keyHandlers) {
+					keyHandlers = handlers[key] = [];
+				}
+				keyHandlers.push(handler);
+			},
+			"can.offKeyValue": function(key, handler) {
+				var keyHandlers = handlers[key];
+				if(keyHandlers) {
+					var index = keyHandlers.indexOf(handler);
+					if(index >= 0 ) {
+						keyHandlers.splice(index, 1);
+					}
+				}
+			}
+		});
+
+		return p;
+	}
+	var walkObj = function(obj){
+		var p = proxyObj(obj);
+		for (var key in obj) {
+			var value = obj[key];
+			if(canReflect.isPlainObject(value) && !canReflect.isObservableLike(value)&& !canReflect.isSymbolLike(key)) {
+				return walkObj(value);
+			}
+		}
+		return p;
 	}
 
-	var p = new Proxy(obj, {
-		get: function(target, name){
-			if(name !== "_cid" && has.call(target, name)) {
-        		Observation.add(target, name);
-			}
-			return target[name];
-		},
-		set: function(target, key, value){
-			var old = target[key];
-			var change = old !== value;
-			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
-				console.log(key)
-				// observe(target[key]);
-			}
-			if (change) {
-				target[key] = value;
-				(target[observableSymbol].handlers[key] || []).forEach(function(handler){
-					canBatch.queue([handler, this, [value, old]]);
-				}, this);
-			}
-			return true;
-		}
-	});
-
-	var meta = p[observableSymbol] = {handlers: {}, data:{}};
-	var handlers = meta.handlers;
-	var data = meta.data;
-	canReflect.assignSymbols(p, {
-        "can.onKeyValue": function(key, handler) {
-            var keyHandlers = handlers[key];
-            if (!keyHandlers) {
-                keyHandlers = handlers[key] = [];
-            }
-            keyHandlers.push(handler);
-        },
-        "can.offKeyValue": function(key, handler) {
-            var keyHandlers = handlers[key];
-            if(keyHandlers) {
-                var index = keyHandlers.indexOf(handler);
-                if(index >= 0 ) {
-                    keyHandlers.splice(index, 1);
-                }
-            }
-        }
-    });
+	var p = walkObj(obj);
+	console.log(p)
 
 	return p;
 };
