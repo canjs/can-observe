@@ -7,7 +7,7 @@ var canReflect = require("can-reflect");
 var has = Object.prototype.hasOwnProperty;
 var observableSymbol = canSymbol.for("can.observeData");
 
-module.exports = function(obj){
+var observe = function(obj){
 
 	if (obj[observableSymbol]) {
         return obj;
@@ -28,7 +28,11 @@ module.exports = function(obj){
 		set: function(target, key, value){
 			var old = target[key];
 			var change = old !== value;
-			if(change) {
+			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
+				console.log(key)
+				// observe(target[key]);
+			}
+			if (change) {
 				target[key] = value;
 				(target[observableSymbol].handlers[key] || []).forEach(function(handler){
 					canBatch.queue([handler, this, [value, old]]);
@@ -62,3 +66,5 @@ module.exports = function(obj){
 
 	return p;
 };
+
+module.exports = observe;

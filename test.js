@@ -22,14 +22,14 @@ QUnit.test("basics with object", function(){
 
 	canReflect.onValue(fullName, function(newVal) {
 		QUnit.start();
-		QUnit.equal(newVal, "Vyacheslav Meyer");
+		QUnit.equal(newVal, "Vyacheslav Egorov");
 	});
 
 	// causes change event above
-	// canBatch.start();
+	canBatch.start();
 	person.first = "Vyacheslav";
-	// person.last = "Egorov";
-	// canBatch.stop();
+	person.last = "Egorov";
+	canBatch.stop();
 });
 
 // nested properties?
@@ -94,7 +94,7 @@ QUnit.test("events aren't fired if the value doesn't change", function(){
 });
 
 
-QUnit.test("Should not duplicate proxies", function(){
+QUnit.test("Should not duplicate proxies #21", function(){
 	var a = {},
     b = {},
     c = {}
@@ -105,5 +105,50 @@ QUnit.test("Should not duplicate proxies", function(){
 	aproxy.b = b;
 	cproxy.b = b;
 
-	QUnit.equal(aproxy.b, cproxy.b, "proxies should not be duplicated")
+	QUnit.equal(aproxy.b, cproxy.b, "proxied objects should not be duplicated")
 });
+
+QUnit.test("Should not duplicate proxies in a cycle #21", function(){
+	var a = {};
+	var b = {};
+	var c = {};
+	a.b = b;
+	b.c = c;
+	c.a = a;
+
+	observe(a);
+
+	QUnit.equal(c.a, a, "proxied objects should not be duplicated")
+});
+
+QUnit.test("Nested objects should be observables #21", function(){
+	var obj = {nested: {}, primitive: 2};
+
+	canReflect.getKeyValue( obj.nested, "prop", function(newVal){
+	    QUnit.equal(newVal, "abc");
+	})
+
+	obj.nested.prop = "abc"
+
+	QUnit.equal(false, true, "nested objects should also be observable");
+});
+
+
+QUnit.test("Should convert nested objects to observables in a lazy way", function(){
+	var nested = {};
+	var obj = {nested: nested};
+	var obs = observe(obj);
+	QUnit.equal(canReflect.isObservable(nested), false) //-> nested is not converted yet
+	QUnit.equal(canReflect.isObservable(nested), true) //-> nested is converted to a proxy and the proxy returned
+});
+
+QUnit.test("Should convert properties if bound", function() {
+	var nested = {};
+	var obj = {};
+	var obs = observe(obj);
+	canReflect.getKeyValue(obj, "nested", function(newVal){
+	    QUnit.equal(canReflect.isObservable(newVal), true) //-> is a proxied nested
+	})
+
+	obs.nested = nested;
+})
