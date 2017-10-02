@@ -8,13 +8,14 @@
     "version": "git commit -am \"Update dist for release\" && git checkout -b release && git add -f dist/",
     "postversion": "git push --tags && git checkout master && git branch -D release && git push",
     "testee": "testee test.html --browsers firefox",
-    "test": "npm run jshint && npm run testee",
+    "test": "npm run detect-cycle && npm run jshint && npm run testee",
     "jshint": "jshint *.js --config",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish",
     "release:pre": "npm version prerelease && npm publish",
-    "build": "node build.js"
+    "build": "node build.js",
+    "detect-cycle": "detect-cyclic-packages"
   },
   "repository": {
     "type": "git",
@@ -39,6 +40,7 @@
     "can-compute": "^3.0.5",
     "can-stache": "^3.0.19",
     "can-util": "^3.2.2",
+    "detect-cyclic-packages": "^1.0.0",
     "jshint": "^2.9.1",
     "steal": "^1.0.0",
     "steal-qunit": "^1.0.0",
