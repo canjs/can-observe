@@ -9,13 +9,25 @@ var canReflect = require("can-reflect");
 QUnit.module("basics");
 
 QUnit.test("basics with object", function(){
+	var person = observe({});
+	person.first = "Justin";
+	person.last = "Meyer";
 
+
+	canReflect.onKeyValue(person, "first", function(newVal) {
+		QUnit.equal(newVal, "Vyacheslav");
+	});
+
+	person.first = "Vyacheslav";
+});
+
+QUnit.test("basics with object and compute", function(){
 	var person = observe({});
 	person.first = "Justin";
 	person.last = "Meyer";
 
 	var fullName = compute(function(){
-	    return person.first+" "+person.last;
+		return person.first+" "+person.last;
 	});
 
 	QUnit.stop();
@@ -32,12 +44,11 @@ QUnit.test("basics with object", function(){
 	canBatch.stop();
 });
 
-// nested properties?
 QUnit.test("basics with array", function(){
 	var hobbies = observe(["basketball","programming"]);
 
 	var hobbiesList = compute(function(){
-	    return hobbies.join(",");
+		return hobbies.join(",");
 	});
 
 	canReflect.onValue(hobbiesList, function(newVal) {
@@ -93,65 +104,67 @@ QUnit.test("events aren't fired if the value doesn't change", function(){
 	QUnit.equal(events, 2, "now there is two");
 });
 
-
 QUnit.test("Should not duplicate proxies #21", function(){
-	var a = {},
-    b = {},
-    c = {}
+	var a = {who: 'a'},
+	b = {who: 'b'},
+	c = {who: 'c'},
+	d = {who: 'd'};
 
-	aproxy = observe(a)
-	cproxy = observe(c)
+	var aproxy = observe(a);
+	var cproxy = observe(c);
 
 	aproxy.b = b;
 	cproxy.b = b;
+	var dproxy = observe(d);
+	var dproxy2 = observe(d);
 
-	QUnit.equal(aproxy.b, cproxy.b, "proxied objects should not be duplicated")
+	QUnit.equal(dproxy, dproxy2, "proxied objects should not be duplicated");
+	QUnit.equal(aproxy.b, cproxy.b, "nested proxied objects should not be duplicated");
 });
 
 QUnit.test("Should not duplicate proxies in a cycle #21", function(){
-	var a = {};
-	var b = {};
-	var c = {};
+	var a = {who: 'a'},
+	b = {who: 'b'},
+	c = {who: 'c'};
+
 	a.b = b;
 	b.c = c;
 	c.a = a;
 
 	observe(a);
 
-	QUnit.equal(c.a, a, "proxied objects should not be duplicated")
+	QUnit.equal(c.a, a, "proxied objects should not be duplicated");
 });
 
-QUnit.test("Nested objects should be observables #21", function(){
-	var obj = {nested: {}, primitive: 2};
-	observe(obj)
-
-	canReflect.getKeyValue( obj.nested, "prop", function(newVal){
-		console.log('hi', newVal)
-	    QUnit.equal(newVal, "abc");
-	})
-
-	obj.nested.prop = "abc";
-
-	QUnit.equal(canReflect.isObservableLike(obj.nested), true, "nested objects should also be observable");
-});
-
-
-QUnit.test("Should convert nested objects to observables in a lazy way", function(){
+QUnit.test("Should convert nested objects to observables in a lazy way #21", function(){
 	var nested = {};
 	var obj = {nested: nested};
 	var obs = observe(obj);
-	debugger;
-	QUnit.equal(canReflect.isObservableLike(nested), false) //-> nested is not converted yet
-	QUnit.equal(canReflect.isObservableLike(nested), true) //-> nested is converted to a proxy and the proxy returned
+
+	QUnit.equal(!!canReflect.isObservableLike(nested), false); //-> nested is not converted yet
+	QUnit.equal(canReflect.isObservableLike(obs.nested), true); //-> nested is converted to a proxy and the proxy returned
+	QUnit.equal(!!canReflect.isObservableLike(nested), true); //-> nested is now observableLike
 });
 
-QUnit.test("Should convert properties if bound", function() {
-	var nested = {};
-	var obj = {};
+QUnit.test("Should convert properties if bound #21", function() {
+	var nested = {nested: 'obj'};
+	var obj = {top: 'obj'};
 	var obs = observe(obj);
-	canReflect.getKeyValue(obj, "nested", function(newVal){
-	    QUnit.equal(canReflect.isObservableLike(newVal), true) //-> is a proxied nested
-	})
+	canReflect.onKeyValue(obs, "nested", function(newVal) {
+		QUnit.equal(canReflect.isObservableLike(newVal), true); //-> is a proxied nested
+	});
 
 	obs.nested = nested;
-})
+});
+
+QUnit.test("Nested objects should be observables #21", function() {
+	expect(1);
+	var obj = {nested: {}, primitive: 2};
+	var obs = observe(obj);
+	obs.nested.prop = 1;
+	canReflect.onKeyValue(obs.nested, "prop", function(newVal) {
+		assert.ok(newVal === "abc", "change is triggered on a nested property");
+	});
+	var x = obs.nested;
+	x.prop = "abc";
+});
