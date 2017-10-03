@@ -168,3 +168,40 @@ QUnit.test("Nested objects should be observables #21", function() {
 	var x = obs.nested;
 	x.prop = "abc";
 });
+
+QUnit.test("Should remove event handlers #21", function() {
+	var result = '';
+	var obj = {nested: {prop:''}};
+	var obs = observe(obj);
+
+	var handler1 = function(newVal) {
+		result += '1';
+	};
+
+	var handler2 = function(newVal) {
+		result += '2';
+	};
+
+	var handler3 = function(newVal) {
+		result += '3';
+	};
+
+	var handler4 = function(newVal) {
+		result += '4';
+	};
+
+	canReflect.onKeyValue(obs.nested, "prop", handler1);
+	canReflect.onKeyValue(obs.nested, "prop", handler2);
+	canReflect.onKeyValue(obs.nested, "prop", handler3);
+	var x = obs.nested;
+	x.prop = "abc"; //should add '123' to result
+
+	canReflect.offKeyValue(obs.nested, "prop", handler2);
+	x.prop = "xyz"; //should add '13' to result
+
+	canReflect.onKeyValue(obs.nested, "prop", handler4);
+	canReflect.offKeyValue(obs.nested, "prop", handler1);
+	x.prop = "cba"; //should add '34' to result
+
+	QUnit.equal(result, '1231334', 'Should be able to add and remove handlers');
+});
