@@ -24,7 +24,7 @@ var observe = function(obj){
 				target[key] = observe(value);
 			}
 			if (key !== "_cid" && has.call(target, key)) {
-				Observation.add(target, key);
+				Observation.add(target, key.toString());
 			}
 			return target[key];
 		},
