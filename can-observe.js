@@ -6,10 +6,12 @@ var canReflect = require("can-reflect");
 
 var has = Object.prototype.hasOwnProperty;
 var observableSymbol = canSymbol.for("can.observeData");
+var onKeyValueSymbol = canSymbol.for("can.onKeyValue");
+var offKeyValueSymbol = canSymbol.for("can.offKeyValue");
 
 var observe = function(obj){
 	if (obj[observableSymbol]) {
-		return obj[observableSymbol].proxy;
+		return obj[proxySymbol].handlers.proxy
 	} else {
 		Object.defineProperty(obj, "_cid", {
 			value: cid({}),
@@ -20,6 +22,9 @@ var observe = function(obj){
 	var p = new Proxy(obj, {
 		get: function(target, key){
 			var value = target[key];
+			if(canReflect.isSymbolLike(key) && key === onKeyValueSymbol || key === offKeyValueSymbol) {
+				key = canSymbol.for(canSymbol.keyFor(key) + cid.domExpando);
+			}
 			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
 				target[key] = observe(value);
 			}
@@ -28,15 +33,17 @@ var observe = function(obj){
 			}
 			return target[key];
 		},
-		set: function(target, key, value){
+		set: function(target, key, value, receiver){
+
+			if (canReflect.isSymbolLike(key) && key === onKeyValueSymbol || key === offKeyValueSymbol) {
+				key = canSymbol.for(canSymbol.keyFor(key) + cid.domExpando);
+			}
+
 			var old = target[key];
 			var change = old !== value;
-
 			if (change) {
 				if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
 					target[key] = observe(value);
-				} else if (value[observableSymbol]){
-					target[key] = value[observableSymbol].proxy;
 				} else {
 					target[key] = value;
 				}
@@ -45,9 +52,18 @@ var observe = function(obj){
 				}, this);
 			}
 			return true;
+		},
+		ownKeys: function(target) {
+			var syms = Object.getOwnPropertySymbols(target);
+			return syms.map(function(sym) {
+				if(canSymbol.keyFor(sym).endsWith(cid.domExpando)) {
+					return canSymbol.for(canSymbol.keyFor(sym).replace(cid.domExpando, ""));
+				} else {
+					return sym;
+				}
+			}).concat(Object.getOwnPropertyNames(target));
 		}
 	});
-
 	var meta = p[observableSymbol] = {handlers: {}, proxy: p};
 	var handlers = meta.handlers;
 

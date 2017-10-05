@@ -48,6 +48,7 @@ QUnit.test("basics with array", function(){
 	var hobbies = observe(["basketball","programming"]);
 
 	var hobbiesList = compute(function(){
+		console.log('computing', hobbies)
 		return hobbies.join(",");
 	});
 
@@ -143,7 +144,7 @@ QUnit.test("Should convert nested objects to observables in a lazy way #21", fun
 
 	QUnit.equal(!!canReflect.isObservableLike(nested), false); //-> nested is not converted yet
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true); //-> nested is converted to a proxy and the proxy returned
-	QUnit.equal(!!canReflect.isObservableLike(nested), true); //-> nested is now observableLike
+	QUnit.equal(!!canReflect.isObservableLike(nested), false); //-> nested is now observableLike
 });
 
 QUnit.test("Should convert properties if bound #21", function() {
