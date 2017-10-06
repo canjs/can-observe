@@ -35,6 +35,7 @@ QUnit.test("basics with object", function(){
 
 // nested properties?
 QUnit.test("basics with array", function(){
+	expect(2);
 	var hobbies = observe(["basketball","programming"]);
 
 	var hobbiesList = compute(function(){
@@ -102,12 +103,13 @@ QUnit.test("Object should be mutated when true flag is passed", function(){
 	var dogObj = {name: "Wilbur", tail: true};
 	var dog = observe(dogObj, true);
 
-	QUnit.equal(dog, dogObj, "the object should be decorated and not use a proxy")
+	QUnit.equal(dog, dogObj, "the object should be decorated and not use a proxy");
 
 });
 
 QUnit.test("Change event should trigger when properties change on an object", function(){
-	var personObj = {first: "Justin", last: "Meyer"}
+	expect(3);
+	var personObj = {first: "Justin", last: "Meyer"};
 
 	var person = observe(personObj, true);
 	QUnit.equal(personObj, person, "the object should be decorated and not use a proxy");
@@ -130,6 +132,7 @@ QUnit.test("Change event should trigger when properties change on an object", fu
 });
 
 QUnit.test("Change event should trigger when properties change on an array", function(){
+	expect(3);
 	var hobbiesArr = ["basketball","programming"];
 	var hobbies = observe(hobbiesArr, true);
 
@@ -140,31 +143,31 @@ QUnit.test("Change event should trigger when properties change on an array", fun
 	});
 
 	canReflect.onKeyValue(hobbiesList, "change", function(event, newValue, oldValue){
-		QUnit.equal(newVal, "basketball");
-		QUnit.equal(oldVal, "basketball,programming");
-	})
+		QUnit.equal(newValue, "basketball");
+		QUnit.equal(oldValue, "basketball,programming");
+	});
 
 	// causes change event above
 	hobbies.pop();
 });
 
 QUnit.test("Should call handers when an array mutation occurs", function() {
-	expect(2)
+	expect(2);
 	var arr = [1,2,3];
 	observe(arr, true);
-	canReflect.onValue(arr, function(newVal, oldVal) {
+	canReflect.onKeyValue(arr, "length", function(newVal, oldVal) {
 		assert.ok( newVal === 4, "push calls the first handler" );
-	})
+	});
 
-	canReflect.onValue(arr, function(newVal, oldVal) {
+	canReflect.onKeyValue(arr, "length", function(newVal, oldVal) {
 		assert.ok( newVal === 4, "push calls the second handler" );
-	})
+	});
 
-	arr.push(4)
+	arr.push(4);
 });
 
 QUnit.test("Methods that mutate the array should trigger a compute", function() {
-	expect(2)
+	expect(2);
 	var arr = [1,2,3];
 	observe(arr, true);
 
@@ -173,7 +176,7 @@ QUnit.test("Methods that mutate the array should trigger a compute", function() 
 	    return arr.join(",");
 	});
 
-	canReflect.onKeyValue(arrList, "change", function(event, newValue, oldValue) {
+	canReflect.onValue(arrList, function(newValue, oldValue) {
 		console.log(newValue);
 	});
 
@@ -181,26 +184,26 @@ QUnit.test("Methods that mutate the array should trigger a compute", function() 
 	arr.push(4);
 });
 
-QUnit.test("Reading the array should trigger a compute", function() {
-	expect(2);
+QUnit.test("Reading the array should not trigger a compute", function() {
+	expect(1);
 	var arr = [1,2,3];
 	observe(arr, true);
 
 	var arrList = compute(function() {
-		assert.ok(true, "compute should be triggered twice");
+		assert.ok(true, "compute should be triggered once");
 		return arr.join(",");
 	});
 
-	canReflect.onKeyValue(arrList, "change", function(event, newValue, oldValue) {
-		QUnit.equal(newValue, "1,2,3", "the compute should be triggered when the array is read");
-	})
+	canReflect.onValue(arrList, function(newValue) {
+		QUnit.ok(false, "the compute should not be triggered when the array is read");
+	});
 
-	//forEach should trigger the compute
-	arr.forEach(function(item){
+	//forEach should not trigger the compute
+	arr.forEach(function(item, i){
 	});
 });
 
-QUnit.skip("Should work with plain nested objects", function(){
+QUnit.test("Should work with plain nested objects", function(){
 	var oldPOJO = {hello: "world"};
 	var newPOJO = {hello: "goodbye"};
 	var personObj = {first: "Justin", last: "Meyer", nested: oldPOJO};

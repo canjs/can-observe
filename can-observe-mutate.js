@@ -13,7 +13,7 @@ var observeMutate = function(obj) {
         Object.defineProperty(obj, "_cid", {
             value: cid({}),
             enumerable: false
-        })
+        });
     }
     if(Array.isArray(obj)) {
         return observeArray(obj);
@@ -70,10 +70,10 @@ var observeObject = function(obj) {
                 }
                 return true;
             }
-        })
-    })
+        });
+    });
     return obj;
-}
+};
 
 var initializeMutableArrPrototype = function() {
     var arrProto = Array.prototype;
@@ -81,45 +81,53 @@ var initializeMutableArrPrototype = function() {
     var mutateMethods = {"push": true, "pop": true, "shift": true, "unshift": true, "splice": true, "sort": true, "reverse": true};
 
     Object.getOwnPropertyNames(Array.prototype).forEach(function(prop) {
+    	if (typeof Array.prototype[prop] !== "function") {
+    		return;
+    	}
         if (mutateMethods[prop]) {
             mutableArrayPrototype[prop] = function() {
-                var handlers = this[Symbol.for("can.observeData")].handlers;
+                var handlers = this[observableDataSymbol].handlers;
+                handlers.length = handlers.length || [];
                 var args = arguments;
                 arrProto[prop].apply(this, arguments);
-                handlers.forEach(function(handler){
+                handlers.length.forEach(function(handler){
                     canBatch.queue([handler, this, args]);
                 }, this);
-            }
+            };
         } else {
             mutableArrayPrototype[prop] = function() {
-                Observation.add(this);
-                arrProto[prop].apply(this, arguments);
-            }
+                Observation.add(this, "length");
+                arrProto.forEach.call(this, function(v, key) {
+                	Observation.add(this, key);
+                }.bind(this));
+                return arrProto[prop].apply(this, arguments);
+            };
         }
     });
+    mutableArrayPrototype[Symbol.species] = mutableArrayPrototype.constructor;
     return mutableArrayPrototype;
-}
+};
 
 
 var observeArray = function(arr) {
     var mutableArrayPrototype = initializeMutableArrPrototype();
     Object.setPrototypeOf(arr, mutableArrayPrototype);
 
-    var meta = arr[observableDataSymbol] = {handlers: []};
-    var handlers = meta.handlers;
+    // var meta = arr[observableDataSymbol] = {handlers: []};
+    // var handlers = meta.handlers;
 
-    canReflect.assignSymbols(arr, {
-        "can.onValue": function(handler) {
-            handlers.push(handler);
-        },
-        "can.offValue": function(handler) {
-            var index = handlers.indexOf(handler);
-            if (index >= 0 ) {
-                handlers.splice(index, 1);
-            }
-        }
-    })
-    return arr;
-}
+    // canReflect.assignSymbols(arr, {
+    //     "can.onValue": function(handler) {
+    //         handlers.push(handler);
+    //     },
+    //     "can.offValue": function(handler) {
+    //         var index = handlers.indexOf(handler);
+    //         if (index >= 0 ) {
+    //             handlers.splice(index, 1);
+    //         }
+    //     }
+    // });
+    return observeObject(arr);
+};
 
 module.exports = observeMutate;
