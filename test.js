@@ -349,3 +349,29 @@ QUnit.test("getter/setters within observes", function() {
 	// This won't trigger b's getter or the updater now.
 	o.b = "f"; // set #2
 });
+
+QUnit.test("deleting a property", function() {
+	expect(4);
+	var o = observe({
+		get b() {
+			QUnit.ok(true, "hit the getter");
+			return this.c;
+		},
+		set b(val) {
+			QUnit.ok(true, "Setter was called");
+			this.c = val;
+		},
+		c: "d"
+	});
+
+	canReflect.onKeyValue(o, "b", function(newVal){
+		QUnit.equal(newVal, undefined, "Hit the updater for getter/setter");
+	}); // Also reads b's getter, #1
+
+	canReflect.onKeyValue(o, "c", function(newVal){
+		QUnit.equal(newVal, undefined, "Hit the updater for value");
+	}); // Also reads b's getter, #1
+
+	delete o.b;
+	delete o.c;
+});

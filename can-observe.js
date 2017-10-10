@@ -7,6 +7,12 @@ var canReflect = require("can-reflect");
 var observableSymbol = canSymbol.for("can.observeData");
 var hasOwn = Object.prototype.hasOwnProperty;
 
+function isIntegerIndex(prop) {
+	return prop && // empty string typecasts to 0
+		(+prop === +prop) && // NaN check for strings that don't represent numbers
+		(+prop % 1 === 0);  // floats should be treated as strings
+}
+
 var proxyOnly = {};
 canReflect.assignSymbols(proxyOnly, {
 	"can.onKeyValue": function(key, handler) {
@@ -100,6 +106,25 @@ var observe = function(obj){
 			return Object.getOwnPropertyNames(target)
 				.concat(Object.getOwnPropertySymbols(target))
 				.concat(Object.getOwnPropertySymbols(proxyOnly));
+		},
+		deleteProperty: function(target, key) {
+			var old = target[key];
+			var ret = delete target[key];
+			var receiver = target[observableSymbol].proxy;
+			// Don't trigger handlers on array indexes, as they will change with length.
+			if(ret && (!Array.isArray(target) || !isIntegerIndex(key))) {
+				(target[observableSymbol].handlers[key] || []).forEach(function(handler, i){
+					if(handler.get) {
+						// This is an observe bound to the deleted getter;  Change it to a value handler.
+						handler.stop();
+						handler = target[observableSymbol].handlers[key][i] = handler.compute.updater;
+					}
+					if(old !== undefined) {
+						canBatch.queue([handler, receiver, [undefined, old]]);
+					}
+				});
+			}
+			return ret;
 		}
 	});
 
