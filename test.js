@@ -5,6 +5,10 @@ var observe = require("can-observe");
 var stache = require("can-stache");
 var canBatch = require("can-event/batch/batch");
 var canReflect = require("can-reflect");
+var canSymbol = require("can-symbol");
+var Observation = require("can-observation");
+
+var observableSymbol = canSymbol.for("can.observeData");
 
 QUnit.module("basics");
 
@@ -141,9 +145,11 @@ QUnit.test("Should convert nested objects to observables in a lazy way #21", fun
 	var obj = {nested: nested};
 	var obs = observe(obj);
 
-	QUnit.equal(!!canReflect.isObservableLike(nested), false); //-> nested is not converted yet
-	QUnit.equal(canReflect.isObservableLike(obs.nested), true); //-> nested is converted to a proxy and the proxy returned
-	QUnit.equal(!!canReflect.isObservableLike(nested), true); //-> nested is now observableLike
+	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted before read");
+	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is now observed");
+	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
+	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after read");
+	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
 });
 
 QUnit.test("Should convert properties if bound #21", function() {
@@ -151,7 +157,7 @@ QUnit.test("Should convert properties if bound #21", function() {
 	var obj = {top: 'obj'};
 	var obs = observe(obj);
 	canReflect.onKeyValue(obs, "nested", function(newVal) {
-		QUnit.equal(canReflect.isObservableLike(newVal), true); //-> is a proxied nested
+		QUnit.ok(Object.getOwnPropertySymbols(newVal).indexOf(observableSymbol) > -1, "nested is now observed");
 	});
 
 	obs.nested = nested;
@@ -167,6 +173,44 @@ QUnit.test("Nested objects should be observables #21", function() {
 	});
 	var x = obs.nested;
 	x.prop = "abc";
+});
+
+QUnit.test("not yet defined properties can be observed on read", function() {
+	var a = observe({});
+	var o = new Observation(function() {
+		QUnit.ok(!("foo" in a), "property is not on the object");
+		return a.foo;
+	});
+	o.start();
+	QUnit.equal(canReflect.getValue(o), undefined, "initial value is undefined");
+	QUnit.equal(o.newObserved[a._cid + "|foo"].obj, a, "observation listened on property");
+	o.stop();
+});
+
+QUnit.test("not yet defined properties cannot be observed on sealed object", function() {
+	var b = {};
+	var a = observe(b);
+	var o = new Observation(function() {
+		QUnit.ok(!("foo" in a), "property is not on the object");
+		return a.foo;
+	});
+	Object.seal(b);
+	o.start();
+	QUnit.equal(canReflect.getValue(o), undefined, "initial value is undefined");
+	QUnit.deepEqual(o.newObserved, {}, "observation is empty");
+	o.stop();
+});
+
+QUnit.test("_cid cannot be observed", function() {
+	var a = observe({});
+	var o = new Observation(function() {
+		QUnit.ok("_cid" in a, "property is on the object");
+		return a._cid;
+	});
+	o.start();
+	QUnit.equal(canReflect.getValue(o), a._cid, "initial value is cid");
+	QUnit.deepEqual(o.newObserved, {}, "observation is empty");
+	o.stop();
 });
 
 QUnit.test("Should remove event handlers #21", function() {
@@ -204,4 +248,22 @@ QUnit.test("Should remove event handlers #21", function() {
 	x.prop = "cba"; //should add '34' to result
 
 	QUnit.equal(result, '1231334', 'Should be able to add and remove handlers');
+});
+
+QUnit.test("Other can.* symbols should not appear on object", function() {
+	var a = {};
+	var o = observe(a);
+
+	var objectSymbols = Object.getOwnPropertySymbols(a);
+	QUnit.ok(objectSymbols.indexOf(observableSymbol) > -1, "Observable symbol in object");
+	QUnit.deepEqual(objectSymbols.filter(function(sym) {
+		return sym !== observableSymbol && canSymbol.keyFor(sym).indexOf("can.") === 0;
+	}), [], "No other can.* symbols on object");
+
+	var observeSymbols = Object.getOwnPropertySymbols(o);
+	QUnit.ok(observeSymbols.indexOf(observableSymbol) > -1, "Observable symbol in observe");
+	QUnit.ok(observeSymbols.filter(function(sym) {
+		return sym !== observableSymbol && canSymbol.keyFor(sym).indexOf("can.") === 0;
+	}).length > 0, "Some other can.* symbols on observe");
+
 });

@@ -4,8 +4,29 @@ var Observation = require("can-observation");
 var canSymbol = require("can-symbol");
 var canReflect = require("can-reflect");
 
-var has = Object.prototype.hasOwnProperty;
 var observableSymbol = canSymbol.for("can.observeData");
+
+var proxyOnly = {};
+canReflect.assignSymbols(proxyOnly, {
+	"can.onKeyValue": function(key, handler) {
+		var handlers = this[observableSymbol].handlers;
+		var keyHandlers = handlers[key];
+		if (!keyHandlers) {
+			keyHandlers = handlers[key] = [];
+		}
+		keyHandlers.push(handler);
+	},
+	"can.offKeyValue": function(key, handler) {
+		var handlers = this[observableSymbol].handlers;
+		var keyHandlers = handlers[key];
+		if(keyHandlers) {
+			var index = keyHandlers.indexOf(handler);
+			if(index >= 0 ) {
+				keyHandlers.splice(index, 1);
+			}
+		}
+	}
+});
 
 var observe = function(obj){
 	if (obj[observableSymbol]) {
@@ -18,13 +39,17 @@ var observe = function(obj){
 	}
 
 	var p = new Proxy(obj, {
-		get: function(target, key){
+		get: function(target, key, receiver){
+			if(proxyOnly[key]) {
+				return proxyOnly[key];
+			}
+
 			var value = target[key];
 			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
 				target[key] = observe(value);
 			}
-			if (key !== "_cid" && has.call(target, key)) {
-				Observation.add(target, key.toString());
+			if (key !== "_cid" && (key in target || !Object.isSealed(target))) {
+				Observation.add(receiver, key.toString());
 			}
 			return target[key];
 		},
@@ -45,31 +70,15 @@ var observe = function(obj){
 				}, this);
 			}
 			return true;
-		}
-	});
-
-	var meta = p[observableSymbol] = {handlers: {}, proxy: p};
-	var handlers = meta.handlers;
-
-	canReflect.assignSymbols(p, {
-		"can.onKeyValue": function(key, handler) {
-			var keyHandlers = handlers[key];
-			if (!keyHandlers) {
-				keyHandlers = handlers[key] = [];
-			}
-			keyHandlers.push(handler);
 		},
-		"can.offKeyValue": function(key, handler) {
-			var keyHandlers = handlers[key];
-			if(keyHandlers) {
-				var index = keyHandlers.indexOf(handler);
-				if(index >= 0 ) {
-					keyHandlers.splice(index, 1);
-				}
-			}
+		ownKeys: function(target) {
+			return Object.getOwnPropertyNames(target)
+				.concat(Object.getOwnPropertySymbols(target))
+				.concat(Object.getOwnPropertySymbols(proxyOnly));
 		}
 	});
 
+	p[observableSymbol] = {handlers: {}, proxy: p};
 	return p;
 };
 
