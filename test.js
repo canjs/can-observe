@@ -3,7 +3,6 @@ var assert = QUnit.assert;
 var compute = require("can-compute");
 var observe = require("can-observe");
 var stache = require("can-stache");
-var canEvent = require("can-event");
 var canBatch = require("can-event/batch/batch");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
@@ -409,11 +408,11 @@ QUnit.test("array events are automatically triggered (push/pop)", function() {
 	function addHandler(ev, items, index) {
 		QUnit.deepEqual(items, [newThing], "new thing added");
 		QUnit.equal(index, list.length - 1, "new thing added at end");
-	};
+	}
 	function removeHandler(ev, items, index) {
 		QUnit.deepEqual(items, [newThing], "new thing removed");
 		QUnit.equal(index, list.length, "new thing removed from end");
-	};
+	}
 
 	list.addEventListener("add", addHandler);
 	list.addEventListener("remove", removeHandler);
@@ -430,11 +429,11 @@ QUnit.test("array events are automatically triggered (shift/unshift)", function(
 	function addHandler(ev, items, index) {
 		QUnit.deepEqual(items, [newThing], "new thing added");
 		QUnit.equal(index, 0, "new thing added at beginning");
-	};
+	}
 	function removeHandler(ev, items, index) {
 		QUnit.deepEqual(items, [newThing], "new thing removed");
 		QUnit.equal(index, 0, "new thing removed from beginning");
-	};
+	}
 
 	list.addEventListener("add", addHandler);
 	list.addEventListener("remove", removeHandler);
@@ -452,11 +451,11 @@ QUnit.test("array events are automatically triggered (splice)", function() {
 	function addHandler(ev, items, index) {
 		QUnit.deepEqual(items, [newThing], "new thing added");
 		QUnit.equal(index, 1, "new thing added at index 1");
-	};
+	}
 	function removeHandler(ev, items, index) {
 		QUnit.deepEqual(items, [oldThing], "new thing removed");
 		QUnit.equal(index, 1, "old thing removed from index 1");
-	};
+	}
 
 	list.addEventListener("add", addHandler);
 	list.addEventListener("remove", removeHandler);
@@ -481,7 +480,7 @@ QUnit.test("array events are automatically triggered (sort)", function() {
 			QUnit.equal(index, 2, "c at index 2");
 			QUnit.equal(oldIndex, 1, "c was at index 1");
 		}
-	};
+	}
 
 	list.addEventListener("move", moveHandler);
 
@@ -505,7 +504,7 @@ QUnit.test("array events are automatically triggered (reverse)", function() {
 			QUnit.equal(index, 2, "a at index 2");
 			QUnit.equal(oldIndex, 0, "a was at index 0");
 		}
-	};
+	}
 
 	list.addEventListener("move", moveHandler);
 
