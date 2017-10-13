@@ -3,6 +3,7 @@ var assert = QUnit.assert;
 var compute = require("can-compute");
 var observe = require("can-observe");
 var stache = require("can-stache");
+var canEvent = require("can-event");
 var canBatch = require("can-event/batch/batch");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
@@ -268,7 +269,7 @@ QUnit.test("Other can.* symbols should not appear on object", function() {
 
 });
 
-QUnit.test("getters can be bound within observes", function() {
+QUnit.skip("getters can be bound within observes", function() {
 	expect(5);
 	var count = 0;
 	var o = observe({
@@ -294,7 +295,7 @@ QUnit.test("getters can be bound within observes", function() {
 	o.c = "f";
 });
 
-QUnit.test("getters can be bound across observes", function() {
+QUnit.skip("getters can be bound across observes", function() {
 	expect(5);
 	var count = 0;
 	var b = observe({ c: "d" });
@@ -320,7 +321,7 @@ QUnit.test("getters can be bound across observes", function() {
 	b.c = "f";
 });
 
-QUnit.test("getter/setters within observes", function() {
+QUnit.skip("getter/setters within observes", function() {
 	expect(7);
 	var getCount = 0, setCount = 0;
 	var o = observe({
@@ -351,14 +352,14 @@ QUnit.test("getter/setters within observes", function() {
 });
 
 QUnit.test("deleting a property", function() {
-	expect(4);
+	expect(3);
 	var o = observe({
 		get b() {
 			QUnit.ok(true, "hit the getter");
 			return this.c;
 		},
 		set b(val) {
-			QUnit.ok(true, "Setter was called");
+			QUnit.ok(false, "Setter was called");
 			this.c = val;
 		},
 		c: "d"
@@ -370,8 +371,143 @@ QUnit.test("deleting a property", function() {
 
 	canReflect.onKeyValue(o, "c", function(newVal){
 		QUnit.equal(newVal, undefined, "Hit the updater for value");
-	}); // Also reads b's getter, #1
+	}); // Does not read b's getter so long as getters aren't treated specially.
 
 	delete o.b;
 	delete o.c;
+});
+
+QUnit.test("add events with addEventListener", function() {
+	var o = observe({});
+
+	o.addEventListener("foo", function(ev, newVal) {
+		QUnit.ok(true, "event handler fired");
+		QUnit.equal(newVal, 1, "correct positions");
+	});
+	o.dispatch( "foo", 1);
+	o.foo = 2; // onKeyValue and addEventListener do not overlap;
+});
+
+QUnit.test("remove events with removeEventListener", function() {
+	var o = observe({});
+	var fn;
+
+	o.addEventListener("foo", fn = function(ev, newVal) {
+		QUnit.ok(false, "event handler fired");
+	});
+
+	o.removeEventListener("foo", fn);
+	o.dispatch( "foo", 1);
+	QUnit.ok(true, "finished");
+});
+
+QUnit.test("array events are automatically triggered (push/pop)", function() {
+	expect(4);
+	var list = observe([1, 2]);
+	var newThing = 3;
+
+	function addHandler(ev, items, index) {
+		QUnit.deepEqual(items, [newThing], "new thing added");
+		QUnit.equal(index, list.length - 1, "new thing added at end");
+	};
+	function removeHandler(ev, items, index) {
+		QUnit.deepEqual(items, [newThing], "new thing removed");
+		QUnit.equal(index, list.length, "new thing removed from end");
+	};
+
+	list.addEventListener("add", addHandler);
+	list.addEventListener("remove", removeHandler);
+
+	list.push(newThing);
+	list.pop();
+});
+
+QUnit.test("array events are automatically triggered (shift/unshift)", function() {
+	expect(4);
+	var list = observe([1, 2]);
+	var newThing = 3;
+
+	function addHandler(ev, items, index) {
+		QUnit.deepEqual(items, [newThing], "new thing added");
+		QUnit.equal(index, 0, "new thing added at beginning");
+	};
+	function removeHandler(ev, items, index) {
+		QUnit.deepEqual(items, [newThing], "new thing removed");
+		QUnit.equal(index, 0, "new thing removed from beginning");
+	};
+
+	list.addEventListener("add", addHandler);
+	list.addEventListener("remove", removeHandler);
+
+	list.unshift(newThing);
+	list.shift();
+});
+
+QUnit.test("array events are automatically triggered (splice)", function() {
+	expect(4);
+	var list = observe([1, 2, 3]);
+	var newThing = 4;
+	var oldThing = list[1];
+
+	function addHandler(ev, items, index) {
+		QUnit.deepEqual(items, [newThing], "new thing added");
+		QUnit.equal(index, 1, "new thing added at index 1");
+	};
+	function removeHandler(ev, items, index) {
+		QUnit.deepEqual(items, [oldThing], "new thing removed");
+		QUnit.equal(index, 1, "old thing removed from index 1");
+	};
+
+	list.addEventListener("add", addHandler);
+	list.addEventListener("remove", removeHandler);
+
+	list.splice(1, 1, newThing);
+});
+
+QUnit.test("array events are automatically triggered (sort)", function() {
+	expect(6);
+	var list = observe(["a", "c", "b"]);
+	var firstRun = true;
+
+	function moveHandler(ev, el, index, oldIndex) {
+		if(firstRun) {
+			// "a" doesn't move, so it doesn't get a move handler call
+			QUnit.equal(el, "b", "b was moved");
+			QUnit.equal(index, 1, "b at index 1");
+			QUnit.equal(oldIndex, 2, "b was at index 2");
+			firstRun = false;
+		} else {
+			QUnit.equal(el, "c", "c was moved");
+			QUnit.equal(index, 2, "c at index 2");
+			QUnit.equal(oldIndex, 1, "c was at index 1");
+		}
+	};
+
+	list.addEventListener("move", moveHandler);
+
+	list.sort();
+});
+
+QUnit.test("array events are automatically triggered (reverse)", function() {
+	expect(6);
+	var list = observe(["a", "b", "c"]);
+	var firstRun = true;
+
+	function moveHandler(ev, el, index, oldIndex) {
+		// "b" doesn't move so it doesn't get a move handler call.
+		if(firstRun) {
+			QUnit.equal(el, "c", "c was moved");
+			QUnit.equal(index, 0, "c at index 0");
+			QUnit.equal(oldIndex, 2, "c was at index 2");
+			firstRun = false;
+		} else {
+			QUnit.equal(el, "a", "a was moved");
+			QUnit.equal(index, 2, "a at index 2");
+			QUnit.equal(oldIndex, 0, "a was at index 0");
+		}
+	};
+
+	list.addEventListener("move", moveHandler);
+
+	list.reverse();
 });

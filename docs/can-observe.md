@@ -65,6 +65,41 @@ person.first = "Chasen";
 person.last = "Le Hara";
 ```
 
+## ES6 Classes
+
+`can-observe` is specifically designed to work with ES6 classes.  To make view models for your [can-component can-components] from ES6 classes, only a few lines of constructor code are necessary:
+
+```js
+import observe from ("can-observe");
+import canReflect from ("can-reflect");
+import canComponent from ("can-component");
+import stache from ("can-stache")
+
+class WidgetViewModel {
+	constructor(obj) {
+		// view model instances receive properties as an object on instantiation
+		canReflect.assign(this, obj);
+		return observe(this);
+	}
+	get fixedMessage() {
+		return "Hello"
+	}
+	// ... more static and prototype functions.
+}
+
+canComponent.extend({
+	tag: "my-widget",
+	view: stache("<p>{{fixedMessage}}, {{messageFromParent}}</p>"),
+	ViewModel: WidgetViewModel
+});
+```
+
+```html
+<my-widget messageFromParent="world" />
+
+<!-- above tag will contain "<p>Hello, world!</p>" on render --> 
+```
+
 ## Browser support
 
 can-observe uses the Proxy feature of JavaScript to observe arbitrary properties. Proxies are available in [all modern browsers](http://caniuse.com/#feat=proxy).

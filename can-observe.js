@@ -20,88 +20,61 @@ canReflect.assignSymbols(proxyOnly, {
 	"can.onKeyValue": function(key, handler) {
 		var handlers = this[observableSymbol].handlers;
 		var keyHandlers = handlers[key];
-		var descriptor = Object.getOwnPropertyDescriptor(this, key);
 		if (!keyHandlers) {
 			keyHandlers = handlers[key] = [];
 		}
-		if(descriptor && descriptor.get) {
-			var obs = new Observation(descriptor.get, this[observableSymbol].proxy, handler);
-			keyHandlers.push(obs);
-			obs.start();
-		} else {
-			keyHandlers.push(handler);
-		}
+		// TODO: Binding directly on getters (currently does not work)
+		//   need to add an observation instead of just firing handlers.
+		keyHandlers.push(handler);
 	},
 	"can.offKeyValue": function(key, handler) {
 		var handlers = this[observableSymbol].handlers;
 		var keyHandlers = handlers[key];
 		if(keyHandlers) {
-			var index = keyHandlers.map(function(h) {
-				return h.compute && h.compute.updater || h;
-			}).indexOf(handler);
-			if(index >= 0 ) {
-				var obs = keyHandlers.splice(index, 1);
-				if(typeof obs[0].stop === "function") {
-					obs[0].stop();
-				}
+			var index = keyHandlers.indexOf(handler);
+			if(index >= 0) {
+				keyHandlers.splice(index, 1);
 			}
 		}
 	}
 });
 canReflect.assign(proxyOnly, canEvent);
-proxyOnly.addEventListener = function(ev, handler) {
-	var handlers = this[observableSymbol].handlers;
-	var keyHandlers = handlers[ev];
-	if (!keyHandlers) {
-		keyHandlers = handlers[ev] = [];
-	}
-	keyHandlers.push(handler);
-};
-proxyOnly.removeEventListener = function(ev, handler) {
-	var handlers = this[observableSymbol].handlers;
-	var keyHandlers = handlers[ev];
-	if(keyHandlers) {
-		var index = keyHandlers.indexOf(handler);
-		keyHandlers.splice(index, 1);
-	}
-};
-
 
 var arrayMethodInterceptors = Object.create(null);
 var mutateMethods = {
 	"push": {
 		add: function(arr, args, retVal) {
-			return [[{}, args, arr.length - args.length]];
+			return [[args, arr.length - args.length]];
 		}
 	},
 	"pop": {
 		remove: function(arr, args, retVal) {
-			return [[{}, [retVal], arr.length]];
+			return [[[retVal], arr.length]];
 		}
 	},
 	"shift": {
 		remove: function(arr, args, retVal) {
-			return [[{}, args, 0]];
+			return [[[retVal], 0]];
 		}
 	},
 	"unshift": {
 		add: function(arr, args, retVal) {
-			return [[{}, args, 0]];
+			return [[args, 0]];
 		}
 	},
 	"splice": {
 		remove: function(arr, args, retVal) {
-			return [[{}, retVal, args[0]]];
+			return [[retVal, args[0]]];
 		},
 		add: function(arr, args, retVal) {
-			return [[{}, args.slice(2), args[0]]];
+			return [[args.slice(2), args[0]]];
 		}
 	},
 	"sort": {
 		move: function(arr, args, retVal, old) {
 			return arr.map(function(element, index) {
 				if(old[index] !== element) {
-					return [{}, element, index, old.indexOf(element)];
+					return [element, index, old.indexOf(element)];
 				}
 			}).filter(function(el) {
 				return !!el;
@@ -112,7 +85,7 @@ var mutateMethods = {
 		move: function(arr, args) {
 			return arr.map(function(element, index) {
 				if(arr.length - index - 1 !== index) {
-					return [{}, element, index, arr.length - index - 1];
+					return [element, index, arr.length - index - 1];
 				}
 			}).filter(function(el) {
 				return !!el;
@@ -132,9 +105,7 @@ canReflect.eachKey(mutateMethods, function(changeEvents, prop) {
 		canReflect.eachKey(changeEvents, function(makeArgs, event) {
 			var allArgs = makeArgs(this, args, ret, old);
 			allArgs.forEach(function(handlerArgs) {
-				(handlers[event] || []).forEach(function(handler) {
-					canBatch.queue([handler, this, handlerArgs]);
-				}, this);
+				canEvent.dispatch.call(this, event, handlerArgs);
 			}, this);
 		}.bind(this));
 		handlers.length.forEach(function(handler){
@@ -165,7 +136,11 @@ var observe = function(obj){
 			if(descriptor && descriptor.get) {
 				value = descriptor.get.call(receiver);
 			} else {
-				value = target[key];
+				if(key === "__bindEvents") {
+					value = target[observableSymbol].__bindEvents;
+				} else {
+					value = target[key];				
+				}
 			}
 			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
 				value = target[key] = observe(value);
@@ -173,7 +148,7 @@ var observe = function(obj){
 			if (isArray && typeof value === "function" && arrayMethodInterceptors[key]) {
 				value = arrayMethodInterceptors[key];
 			}
-			if (key !== "_cid" &&
+			if (key !== "_cid" && key !== "__bindEvents" &&
 				typeof value !== "function" &&
 				!canReflect.isSymbolLike(key) && 
 				(hasOwn.call(target, key) || !Object.isSealed(target))
@@ -219,11 +194,6 @@ var observe = function(obj){
 			// Don't trigger handlers on array indexes, as they will change with length.
 			if(ret && (!Array.isArray(target) || !isIntegerIndex(key))) {
 				(target[observableSymbol].handlers[key] || []).forEach(function(handler, i){
-					if(handler.get) {
-						// This is an observe bound to the deleted getter;  Change it to a value handler.
-						handler.stop();
-						handler = target[observableSymbol].handlers[key][i] = handler.compute.updater;
-					}
 					if(old !== undefined) {
 						canBatch.queue([handler, receiver, [undefined, old]]);
 					}
@@ -233,11 +203,9 @@ var observe = function(obj){
 		}
 	});
 
-	p[observableSymbol] = {handlers: {}, proxy: p};
+	p[observableSymbol] = {handlers: {}, __bindEvents: {}, proxy: p};
 	return p;
 };
-
-
 
 namespace.observe = observe;
 module.exports = observe;
