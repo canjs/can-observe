@@ -3,6 +3,8 @@ var canBatch = require("can-event/batch/batch");
 var Observation = require("can-observation");
 var canSymbol = require("can-symbol");
 var canReflect = require("can-reflect");
+var namespace = require("can-namespace");
+var canEvent = require("can-event");
 
 var observableSymbol = canSymbol.for("can.observeData");
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -13,7 +15,7 @@ function isIntegerIndex(prop) {
 		(+prop % 1 === 0);  // floats should be treated as strings
 }
 
-var proxyOnly = {};
+var proxyOnly = Object.create(null);
 canReflect.assignSymbols(proxyOnly, {
 	"can.onKeyValue": function(key, handler) {
 		var handlers = this[observableSymbol].handlers;
@@ -46,6 +48,101 @@ canReflect.assignSymbols(proxyOnly, {
 		}
 	}
 });
+canReflect.assign(proxyOnly, canEvent);
+proxyOnly.addEventListener = function(ev, handler) {
+	var handlers = this[observableSymbol].handlers;
+	var keyHandlers = handlers[ev];
+	if (!keyHandlers) {
+		keyHandlers = handlers[ev] = [];
+	}
+	keyHandlers.push(handler);
+};
+proxyOnly.removeEventListener = function(ev, handler) {
+	var handlers = this[observableSymbol].handlers;
+	var keyHandlers = handlers[ev];
+	if(keyHandlers) {
+		var index = keyHandlers.indexOf(handler);
+		keyHandlers.splice(index, 1);
+	}
+};
+
+
+var arrayMethodInterceptors = Object.create(null);
+var mutateMethods = {
+	"push": {
+		add: function(arr, args, retVal) {
+			return [[{}, args, arr.length - args.length]];
+		}
+	},
+	"pop": {
+		remove: function(arr, args, retVal) {
+			return [[{}, [retVal], arr.length]];
+		}
+	},
+	"shift": {
+		remove: function(arr, args, retVal) {
+			return [[{}, args, 0]];
+		}
+	},
+	"unshift": {
+		add: function(arr, args, retVal) {
+			return [[{}, args, 0]];
+		}
+	},
+	"splice": {
+		remove: function(arr, args, retVal) {
+			return [[{}, retVal, args[0]]];
+		},
+		add: function(arr, args, retVal) {
+			return [[{}, args.slice(2), args[0]]];
+		}
+	},
+	"sort": {
+		move: function(arr, args, retVal, old) {
+			return arr.map(function(element, index) {
+				if(old[index] !== element) {
+					return [{}, element, index, old.indexOf(element)];
+				}
+			}).filter(function(el) {
+				return !!el;
+			});
+		}
+	},
+	"reverse": {
+		move: function(arr, args) {
+			return arr.map(function(element, index) {
+				if(arr.length - index - 1 !== index) {
+					return [{}, element, index, arr.length - index - 1];
+				}
+			}).filter(function(el) {
+				return !!el;
+			});
+		}
+	}
+};
+
+canReflect.eachKey(mutateMethods, function(changeEvents, prop) {
+	var protoFn = Array.prototype[prop];
+	arrayMethodInterceptors[prop] = function() {
+		var handlers = this[observableSymbol].handlers;
+		handlers.length = handlers.length || [];
+		var old = [].slice.call(this, 0);
+		var args = Array.from(arguments);
+		var ret = protoFn.apply(this, arguments);
+		canReflect.eachKey(changeEvents, function(makeArgs, event) {
+			var allArgs = makeArgs(this, args, ret, old);
+			allArgs.forEach(function(handlerArgs) {
+				(handlers[event] || []).forEach(function(handler) {
+					canBatch.queue([handler, this, handlerArgs]);
+				}, this);
+			}, this);
+		}.bind(this));
+		handlers.length.forEach(function(handler){
+			canBatch.queue([handler, this, [this.length, old.length]]);
+		}, this);
+		return ret;
+	};
+});
 
 var observe = function(obj){
 	if (obj[observableSymbol]) {
@@ -56,6 +153,7 @@ var observe = function(obj){
 			enumerable: false
 		});
 	}
+	var isArray = obj instanceof Array;
 
 	var p = new Proxy(obj, {
 		get: function(target, key, receiver){
@@ -72,7 +170,14 @@ var observe = function(obj){
 			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
 				value = target[key] = observe(value);
 			}
-			if (key !== "_cid" && (hasOwn.call(target, key) || !Object.isSealed(target))) {
+			if (isArray && typeof value === "function" && arrayMethodInterceptors[key]) {
+				value = arrayMethodInterceptors[key];
+			}
+			if (key !== "_cid" &&
+				typeof value !== "function" &&
+				!canReflect.isSymbolLike(key) && 
+				(hasOwn.call(target, key) || !Object.isSealed(target))
+			) {
 				Observation.add(receiver, key.toString());
 			}
 			return value;
@@ -82,7 +187,7 @@ var observe = function(obj){
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
 				value = observe(value);
-			} else if (value[observableSymbol]){
+			} else if (value && value[observableSymbol]){
 				value = value[observableSymbol].proxy;
 			}
 
@@ -132,4 +237,7 @@ var observe = function(obj){
 	return p;
 };
 
+
+
+namespace.observe = observe;
 module.exports = observe;
