@@ -140,15 +140,53 @@ QUnit.test("Should not duplicate proxies in a cycle #21", function(){
 	QUnit.equal(c.a, a, "proxied objects should not be duplicated");
 });
 
-QUnit.test("Should convert nested objects to observables in a lazy way #21", function(){
+QUnit.test("Should convert nested objects to observables in a lazy way (get case) #21", function(){
 	var nested = {};
 	var obj = {nested: nested};
 	var obs = observe(obj);
 
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted before read");
-	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is now observed");
+	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is not observed");
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after read");
+	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
+});
+
+QUnit.test("Should convert nested arrays to observables in a lazy way (get case) #21", function(){
+	var nested = [];
+	var obj = {nested: nested};
+	var obs = observe(obj);
+
+	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted before read");
+	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is not observed");
+	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
+	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after read");
+	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
+});
+
+QUnit.test("Should convert nested objects to observables (set case) #21", function(){
+	var nested = {};
+	var obj = {};
+	var obs = observe(obj);
+
+	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted before set");
+	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is not observed");
+	obj.nested = nested;
+	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
+	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after set");
+	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
+});
+
+QUnit.test("Should convert nested arrays to observables (set case) #21", function(){
+	var nested = [];
+	var obj = {};
+	var obs = observe(obj);
+
+	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted before set");
+	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is not observed");
+	obj.nested = nested;
+	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
+	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after set");
 	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
 });
 
