@@ -8,14 +8,13 @@
 Create an observable object that acts as a [proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy) for a target object.
 
 ```js
-var canReflect = require("can-reflect");
+var stache = require("can-stache");
 var dog = observe({});
 
-canReflect.onKeyValue(dog, 'name', function(newVal){
-	// Name changed!
-});
+var frag = stache("<p>dog's name is {{name}}</p>")(dog);
+document.body.appendChild(frag);
 
-dog.name = 'Wilbur';
+dog.name = 'Wilbur'; // -> "<p>dog's name is Wilbur</p>" on the document body
 ```
 
 @param {Object} target The object from which an observable instance is created.
@@ -26,7 +25,7 @@ dog.name = 'Wilbur';
 
 ## Use
 
-Using `can-observe` allows you to create observable objects with any property added can be observed, including nested objects. It is like [can-map] but without the required [can-map.prototype.attr attr] method. This makes `can-observe` ideal for use-cases where the data may be dynamic, or where the more rigid approach of [can-define] is unneeded.
+Using `can-observe` allows you to create observable objects where any property added is immediately observable, including nested objects. This makes `can-observe` ideal for use-cases where the data may be dynamic, or where the more rigid approach of [can-define] is unneeded.
 
 To use `can-observe` call the `observe()` method with an object. This will return a [Proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy) object where any changes will reflect back on the target object. Nested objects will be observed lazily when they are accessed or set dynamically after initialization on a `can-observe` proxy object.
 
@@ -50,14 +49,14 @@ var compute = require("can-compute");
 var observe = require("can-observe");
 var canReflect = require("can-reflect");
 
-var person = observe({})
+var person = observe({});
 
 var fullName = compute(function(){
 	return person.first + " " + person.last;
 });
 
-canReflect.onValue(fullName, "change", function(){
-	console.log(fullName()); // -> Chasen Le Hara
+fullName.on("change", function(ev, newVal){
+	console.log(newVal); // -> Chasen Le Hara
 });
 
 
@@ -71,14 +70,13 @@ person.last = "Le Hara";
 
 ```js
 import observe from ("can-observe");
-import canReflect from ("can-reflect");
 import canComponent from ("can-component");
 import stache from ("can-stache")
 
 class WidgetViewModel {
 	constructor(obj) {
 		// view model instances receive properties as an object on instantiation
-		canReflect.assign(this, obj);
+		Object.assign(this, obj);
 		return observe(this);
 	}
 	get fixedMessage() {

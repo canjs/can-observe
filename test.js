@@ -8,7 +8,7 @@ var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 var Observation = require("can-observation");
 
-var observableSymbol = canSymbol.for("can.observeData");
+var observableSymbol = canSymbol.for("can.meta");
 
 QUnit.module("basics");
 
@@ -464,49 +464,41 @@ QUnit.test("array events are automatically triggered (splice)", function() {
 });
 
 QUnit.test("array events are automatically triggered (sort)", function() {
-	expect(6);
+	expect(4);
 	var list = observe(["a", "c", "b"]);
-	var firstRun = true;
+	var oldList = list.slice(0);
 
-	function moveHandler(ev, el, index, oldIndex) {
-		if(firstRun) {
-			// "a" doesn't move, so it doesn't get a move handler call
-			QUnit.equal(el, "b", "b was moved");
-			QUnit.equal(index, 1, "b at index 1");
-			QUnit.equal(oldIndex, 2, "b was at index 2");
-			firstRun = false;
-		} else {
-			QUnit.equal(el, "c", "c was moved");
-			QUnit.equal(index, 2, "c at index 2");
-			QUnit.equal(oldIndex, 1, "c was at index 1");
-		}
+	function addHandler(ev, items, index) {
+		QUnit.deepEqual(items, list, "new list added");
+		QUnit.equal(index, 0, "new list added at index 0");
+	}
+	function removeHandler(ev, items, index) {
+		QUnit.deepEqual(items, oldList, "all old things removed");
+		QUnit.equal(index, 0, "all old things removed from the beginning");
 	}
 
-	list.addEventListener("move", moveHandler);
+	list.addEventListener("add", addHandler);
+	list.addEventListener("remove", removeHandler);
 
 	list.sort();
 });
 
 QUnit.test("array events are automatically triggered (reverse)", function() {
-	expect(6);
+	expect(4);
 	var list = observe(["a", "b", "c"]);
-	var firstRun = true;
+	var oldList = list.slice(0);
 
-	function moveHandler(ev, el, index, oldIndex) {
-		// "b" doesn't move so it doesn't get a move handler call.
-		if(firstRun) {
-			QUnit.equal(el, "c", "c was moved");
-			QUnit.equal(index, 0, "c at index 0");
-			QUnit.equal(oldIndex, 2, "c was at index 2");
-			firstRun = false;
-		} else {
-			QUnit.equal(el, "a", "a was moved");
-			QUnit.equal(index, 2, "a at index 2");
-			QUnit.equal(oldIndex, 0, "a was at index 0");
-		}
+	function addHandler(ev, items, index) {
+		QUnit.deepEqual(items, list, "new list added");
+		QUnit.equal(index, 0, "new list added at index 0");
+	}
+	function removeHandler(ev, items, index) {
+		QUnit.deepEqual(items, oldList, "all old things removed");
+		QUnit.equal(index, 0, "all old things removed from the beginning");
 	}
 
-	list.addEventListener("move", moveHandler);
+	list.addEventListener("add", addHandler);
+	list.addEventListener("remove", removeHandler);
 
 	list.reverse();
 });

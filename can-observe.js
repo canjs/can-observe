@@ -6,7 +6,7 @@ var canReflect = require("can-reflect");
 var namespace = require("can-namespace");
 var canEvent = require("can-event");
 
-var observableSymbol = canSymbol.for("can.observeData");
+var observableSymbol = canSymbol.for("can.meta");
 var hasOwn = Object.prototype.hasOwnProperty;
 
 function isIntegerIndex(prop) {
@@ -38,63 +38,58 @@ canReflect.assignSymbols(proxyOnly, {
 		}
 	}
 });
-canReflect.assign(proxyOnly, canEvent);
+Object.assign(proxyOnly, canEvent);
 
 var arrayMethodInterceptors = Object.create(null);
 var mutateMethods = {
 	"push": {
 		add: function(arr, args, retVal) {
-			return [[args, arr.length - args.length]];
+			return [args, arr.length - args.length];
 		}
 	},
 	"pop": {
 		remove: function(arr, args, retVal) {
-			return [[[retVal], arr.length]];
+			return [[retVal], arr.length];
 		}
 	},
 	"shift": {
 		remove: function(arr, args, retVal) {
-			return [[[retVal], 0]];
+			return [[retVal], 0];
 		}
 	},
 	"unshift": {
 		add: function(arr, args, retVal) {
-			return [[args, 0]];
+			return [args, 0];
 		}
 	},
 	"splice": {
 		remove: function(arr, args, retVal) {
-			return [[retVal, args[0]]];
+			return [retVal, args[0]];
 		},
 		add: function(arr, args, retVal) {
-			return [[args.slice(2), args[0]]];
+			return [args.slice(2), args[0]];
 		}
 	},
 	"sort": {
-		move: function(arr, args, retVal, old) {
-			return arr.map(function(element, index) {
-				if(old[index] !== element) {
-					return [element, index, old.indexOf(element)];
-				}
-			}).filter(function(el) {
-				return !!el;
-			});
+		remove: function(arr, args, retVal, old) {
+			return [old, 0];
+		},
+		add: function(arr, args, retVal) {
+			return [arr, 0];
 		}
 	},
 	"reverse": {
-		move: function(arr, args) {
-			return arr.map(function(element, index) {
-				if(arr.length - index - 1 !== index) {
-					return [element, index, arr.length - index - 1];
-				}
-			}).filter(function(el) {
-				return !!el;
-			});
+		remove: function(arr, args, retVal, old) {
+			return [old, 0];
+		},
+		add: function(arr, args, retVal) {
+			return [arr, 0];
 		}
 	}
 };
 
-canReflect.eachKey(mutateMethods, function(changeEvents, prop) {
+Object.keys(mutateMethods).forEach(function(prop) {
+	var changeEvents = mutateMethods[prop];
 	var protoFn = Array.prototype[prop];
 	arrayMethodInterceptors[prop] = function() {
 		var handlers = this[observableSymbol].handlers;
@@ -102,15 +97,16 @@ canReflect.eachKey(mutateMethods, function(changeEvents, prop) {
 		var old = [].slice.call(this, 0);
 		var args = Array.from(arguments);
 		var ret = protoFn.apply(this, arguments);
-		canReflect.eachKey(changeEvents, function(makeArgs, event) {
-			var allArgs = makeArgs(this, args, ret, old);
-			allArgs.forEach(function(handlerArgs) {
-				canEvent.dispatch.call(this, event, handlerArgs);
-			}, this);
+		canBatch.start();
+		Object.keys(changeEvents).forEach(function(event) {
+			var makeArgs = changeEvents[event];
+			var handlerArgs = makeArgs(this, args, ret, old);
+			canEvent.dispatch.call(this, event, handlerArgs);
 		}.bind(this));
 		handlers.length.forEach(function(handler){
 			canBatch.queue([handler, this, [this.length, old.length]]);
 		}, this);
+		canBatch.stop();
 		return ret;
 	};
 });
@@ -131,6 +127,7 @@ var observe = function(obj){
 			if(proxyOnly[key]) {
 				return proxyOnly[key];
 			}
+			var symbolLike = canReflect.isSymbolLike(key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			var value;
 			if(descriptor && descriptor.get) {
@@ -142,7 +139,7 @@ var observe = function(obj){
 					value = target[key];				
 				}
 			}
-			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
+			if (!symbolLike && !canReflect.isObservableLike(value) && canReflect.isPlainObject(value)) {
 				value = target[key] = observe(value);
 			}
 			if (isArray && typeof value === "function" && arrayMethodInterceptors[key]) {
@@ -150,7 +147,7 @@ var observe = function(obj){
 			}
 			if (key !== "_cid" && key !== "__bindEvents" &&
 				typeof value !== "function" &&
-				!canReflect.isSymbolLike(key) && 
+				!symbolLike && 
 				(hasOwn.call(target, key) || !Object.isSealed(target))
 			) {
 				Observation.add(receiver, key.toString());
@@ -175,10 +172,12 @@ var observe = function(obj){
 					target[key] = value;
 				}
 			}
-			if(descriptor && descriptor.set || change) {
+			if(change) {
+				canBatch.start();
 				(target[observableSymbol].handlers[key] || []).forEach(function(handler){
-					canBatch.queue([handler.get ? handler.get.bind(handler) : handler, receiver, [value, old]]);
+					canBatch.queue([handler, receiver, [value, old]]);
 				});
+				canBatch.stop();
 			}
 			return true;
 		},
@@ -193,11 +192,13 @@ var observe = function(obj){
 			var receiver = target[observableSymbol].proxy;
 			// Don't trigger handlers on array indexes, as they will change with length.
 			if(ret && (!Array.isArray(target) || !isIntegerIndex(key))) {
+				canBatch.start();
 				(target[observableSymbol].handlers[key] || []).forEach(function(handler, i){
 					if(old !== undefined) {
 						canBatch.queue([handler, receiver, [undefined, old]]);
 					}
 				});
+				canBatch.stop();
 			}
 			return ret;
 		}
