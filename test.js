@@ -1,9 +1,7 @@
 var QUnit =  require("steal-qunit");
 var assert = QUnit.assert;
-var compute = require("can-compute");
 var observe = require("can-observe");
-var stache = require("can-stache");
-var canBatch = require("can-event/batch/batch");
+var queues = require("can-queues");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 var Observation = require("can-observation");
@@ -25,12 +23,12 @@ QUnit.test("basics with object", function(){
 	person.first = "Vyacheslav";
 });
 
-QUnit.test("basics with object and compute", function(){
+QUnit.test("basics with object and new Observation", function(){
 	var person = observe({});
 	person.first = "Justin";
 	person.last = "Meyer";
 
-	var fullName = compute(function(){
+	var fullName = new Observation(function(){
 		return person.first+" "+person.last;
 	});
 
@@ -42,16 +40,16 @@ QUnit.test("basics with object and compute", function(){
 	});
 
 	// causes change event above
-	canBatch.start();
+	queues.batch.start();
 	person.first = "Vyacheslav";
 	person.last = "Egorov";
-	canBatch.stop();
+	queues.batch.stop();
 });
 
 QUnit.test("basics with array", function(){
 	var hobbies = observe(["basketball","programming"]);
 
-	var hobbiesList = compute(function(){
+	var hobbiesList = new Observation(function(){
 		return hobbies.join(",");
 	});
 
@@ -61,33 +59,6 @@ QUnit.test("basics with array", function(){
 
 	// causes change event above
 	hobbies.pop();
-});
-
-QUnit.test("compose to stache", function(){
-	var person = observe({first: "Marshall", last: "Thompson"});
-	var hobbies = observe(["music","programming"]);
-
-
-	var fullName = function(){
-		return person.first + " " + person.last;
-	};
-	var hobbiesList = function(){
-		return hobbies.join(",");
-	};
-
-	var info = function(){
-		return fullName() + " likes: "+hobbiesList();
-	};
-
-	var frag = stache("<span>{{info}}</span>")({info: info});
-
-	QUnit.equal(frag.firstChild.innerHTML, "Marshall Thompson likes: music,programming");
-
-	hobbies.pop();
-	person.first = "Justin";
-	person.last = "Meyer";
-
-	QUnit.equal(frag.firstChild.innerHTML, "Justin Meyer likes: music");
 });
 
 QUnit.test("events aren't fired if the value doesn't change", function(){
@@ -221,7 +192,7 @@ QUnit.test("not yet defined properties can be observed on read", function() {
 	});
 	o.start();
 	QUnit.equal(canReflect.getValue(o), undefined, "initial value is undefined");
-	QUnit.equal(o.newObserved[a._cid + "|foo"].obj, a, "observation listened on property");
+	QUnit.ok(canReflect.getValueDependencies(o).keyDependencies.get(a).has("foo"), "observation listened on property");
 	o.stop();
 });
 
@@ -235,7 +206,7 @@ QUnit.test("not yet defined properties cannot be observed on sealed object", fun
 	Object.seal(b);
 	o.start();
 	QUnit.equal(canReflect.getValue(o), undefined, "initial value is undefined");
-	QUnit.deepEqual(o.newObserved, {}, "observation is empty");
+	QUnit.ok(!canReflect.valueHasDependencies(o), "observation is empty");
 	o.stop();
 });
 
@@ -247,7 +218,7 @@ QUnit.test("_cid cannot be observed", function() {
 	});
 	o.start();
 	QUnit.equal(canReflect.getValue(o), a._cid, "initial value is cid");
-	QUnit.deepEqual(o.newObserved, {}, "observation is empty");
+	QUnit.equal(o.newDependencies.keyDependencies.size, 0, "observation is empty");
 	o.stop();
 });
 
@@ -421,7 +392,7 @@ QUnit.test("add events with addEventListener", function() {
 		QUnit.ok(true, "event handler fired");
 		QUnit.equal(newVal, 1, "correct positions");
 	});
-	o.dispatch( "foo", 1);
+	o.dispatch( "foo", [1]);
 	o.foo = 2; // onKeyValue and addEventListener do not overlap;
 });
 
@@ -434,7 +405,7 @@ QUnit.test("remove events with removeEventListener", function() {
 	});
 
 	o.removeEventListener("foo", fn);
-	o.dispatch( "foo", 1);
+	o.dispatch( "foo", [1]);
 	QUnit.ok(true, "finished");
 });
 

@@ -1,6 +1,6 @@
 var cid = require("can-cid");
-var canBatch = require("can-event/batch/batch");
-var Observation = require("can-observation");
+var queues = require("can-queues");
+var ObservationRecorder = require("can-observation-recorder");
 var canSymbol = require("can-symbol");
 var canReflect = require("can-reflect");
 var namespace = require("can-namespace");
@@ -118,18 +118,19 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		var args = Array.from(arguments);
 		// call the function
 		var ret = protoFn.apply(this, arguments);
-		canBatch.start();
+		queues.batch.start();
 		// dispatch all the associated change events
 		Object.keys(changeEvents).forEach(function(event) {
 			var makeArgs = changeEvents[event];
 			var handlerArgs = makeArgs(this, args, ret, old);
+			// This is where we need to replace with the 
 			canEvent.dispatch.call(this, event, handlerArgs);
 		}.bind(this));
 		// dispatch length
 		handlers.length.forEach(function(handler){
-			canBatch.queue([handler, this, [this.length, old.length]]);
+			queues.notifyQueue.enqueue(handler, this, [this.length, old.length]);
 		}, this);
-		canBatch.stop();
+		queues.batch.stop();
 		return ret;
 	};
 });
@@ -194,7 +195,7 @@ var observe = function(obj){
 				!symbolLike && 
 				(hasOwn.call(target, key) || !Object.isSealed(target))
 			) {
-				Observation.add(receiver, key.toString());
+				ObservationRecorder.add(receiver, key.toString());
 			}
 			return value;
 		},
@@ -221,11 +222,11 @@ var observe = function(obj){
 				}
 			}
 			if(change) {
-				canBatch.start();
+				queues.batch.start();
 				(target[observableSymbol].handlers[key] || []).forEach(function(handler){
-					canBatch.queue([handler, receiver, [value, old]]);
+					queues.notifyQueue.enqueue(handler, receiver, [value, old]);
 				});
-				canBatch.stop();
+				queues.batch.stop();
 			}
 			return true;
 		},
@@ -246,13 +247,13 @@ var observe = function(obj){
 			//  Otherwise trigger that the property is now undefined.
 			// If the property is redefined, the handlers will fire again.
 			if(ret && (!Array.isArray(target) || !isIntegerIndex(key))) {
-				canBatch.start();
+				queues.batch.start();
 				(target[observableSymbol].handlers[key] || []).forEach(function(handler, i){
 					if(old !== undefined) {
-						canBatch.queue([handler, receiver, [undefined, old]]);
+						queues.notifyQueue.enqueue(handler, receiver, [undefined, old]);
 					}
 				});
-				canBatch.stop();
+				queues.batch.stop();
 			}
 			return ret;
 		}

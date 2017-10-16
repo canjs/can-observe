@@ -33,14 +33,14 @@
     "can-cid": "^1.0.1",
     "can-event": "^3.7.5",
     "can-namespace": "^1.0.0",
-    "can-observation": "^3.0.7",
+    "can-observation-recorder": "^0.1.0",
+    "can-queues": "^0.2.5",
     "can-reflect": "^1.4.2",
     "can-symbol": "^1.2.0"
   },
   "devDependencies": {
     "bit-docs": "0.0.7",
-    "can-compute": "^3.0.5",
-    "can-stache": "^3.0.19",
+    "can-observation": "^4.0.0-pre.7",
     "can-util": "^3.2.2",
     "jshint": "^2.9.1",
     "steal": "^1.0.0",
