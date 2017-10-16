@@ -385,7 +385,7 @@ QUnit.test("deleting a property", function() {
 	delete o.c;
 });
 
-QUnit.test("add events with addEventListener", function() {
+QUnit.skip("add events with addEventListener", function() {
 	var o = observe({});
 
 	o.addEventListener("foo", function(ev, newVal) {
@@ -396,7 +396,7 @@ QUnit.test("add events with addEventListener", function() {
 	o.foo = 2; // onKeyValue and addEventListener do not overlap;
 });
 
-QUnit.test("remove events with removeEventListener", function() {
+QUnit.skip("remove events with removeEventListener", function() {
 	var o = observe({});
 	var fn;
 
@@ -409,45 +409,59 @@ QUnit.test("remove events with removeEventListener", function() {
 	QUnit.ok(true, "finished");
 });
 
-QUnit.test("array events are automatically triggered (push/pop)", function() {
+QUnit.test("array events are automatically triggered (push)", function() {
 	expect(4);
 	var list = observe([1, 2]);
 	var newThing = 3;
 
-	function addHandler(ev, items, index) {
-		QUnit.deepEqual(items, [newThing], "new thing added");
-		QUnit.equal(index, list.length - 1, "new thing added at end");
-	}
-	function removeHandler(ev, items, index) {
-		QUnit.deepEqual(items, [newThing], "new thing removed");
-		QUnit.equal(index, list.length, "new thing removed from end");
-	}
-
-	list.addEventListener("add", addHandler);
-	list.addEventListener("remove", removeHandler);
+	list[canSymbol.for("can.onPatches")](function(patches) {
+		QUnit.equal(patches.length, 1, "One patch generated");
+		QUnit.equal(patches[0].deleteCount, 0, "nothing removed");
+		QUnit.equal(patches[0].index, list.length - 1, "new thing added to end");
+		QUnit.deepEqual(patches[0].insert, [newThing], "new thing added to end");
+	});
 
 	list.push(newThing);
+});
+
+QUnit.test("array events are automatically triggered (pop)", function() {
+	expect(3);
+	var list = observe([1, 2, 3]);
+
+	list[canSymbol.for("can.onPatches")](function(patches) {
+		QUnit.equal(patches.length, 1, "One patch generated");
+		QUnit.equal(patches[0].deleteCount, 1, "old thing removed");
+		QUnit.equal(patches[0].index, list.length, "old thing removed from end");
+	});
+
 	list.pop();
 });
 
-QUnit.test("array events are automatically triggered (shift/unshift)", function() {
+QUnit.test("array events are automatically triggered (unshift)", function() {
 	expect(4);
 	var list = observe([1, 2]);
 	var newThing = 3;
 
-	function addHandler(ev, items, index) {
-		QUnit.deepEqual(items, [newThing], "new thing added");
-		QUnit.equal(index, 0, "new thing added at beginning");
-	}
-	function removeHandler(ev, items, index) {
-		QUnit.deepEqual(items, [newThing], "new thing removed");
-		QUnit.equal(index, 0, "new thing removed from beginning");
-	}
-
-	list.addEventListener("add", addHandler);
-	list.addEventListener("remove", removeHandler);
+	list[canSymbol.for("can.onPatches")](function(patches) {
+		QUnit.equal(patches.length, 1, "One patch generated");
+		QUnit.equal(patches[0].deleteCount, 0, "nothing removed");
+		QUnit.equal(patches[0].index, 0, "new thing added to beginning");
+		QUnit.deepEqual(patches[0].insert, [newThing], "new thing added to beginning");
+	});
 
 	list.unshift(newThing);
+});
+
+QUnit.test("array events are automatically triggered (shift)", function() {
+	expect(3);
+	var list = observe([1, 2, 3]);
+
+	list[canSymbol.for("can.onPatches")](function(patches) {
+		QUnit.equal(patches.length, 1, "One patch generated");
+		QUnit.equal(patches[0].deleteCount, 1, "old thing removed");
+		QUnit.equal(patches[0].index, 0, "old thing removed from beginning");
+	});
+
 	list.shift();
 });
 
@@ -455,59 +469,42 @@ QUnit.test("array events are automatically triggered (splice)", function() {
 	expect(4);
 	var list = observe([1, 2, 3]);
 	var newThing = 4;
-	var oldThing = list[1];
 
-	function addHandler(ev, items, index) {
-		QUnit.deepEqual(items, [newThing], "new thing added");
-		QUnit.equal(index, 1, "new thing added at index 1");
-	}
-	function removeHandler(ev, items, index) {
-		QUnit.deepEqual(items, [oldThing], "new thing removed");
-		QUnit.equal(index, 1, "old thing removed from index 1");
-	}
-
-	list.addEventListener("add", addHandler);
-	list.addEventListener("remove", removeHandler);
+	list[canSymbol.for("can.onPatches")](function(patches) {
+		QUnit.equal(patches.length, 1, "One patch generated");
+		QUnit.equal(patches[0].deleteCount, 1, "nothing removed");
+		QUnit.equal(patches[0].index, 1, "new thing added to beginning");
+		QUnit.deepEqual(patches[0].insert, [newThing], "new thing added to beginning");
+	});
 
 	list.splice(1, 1, newThing);
 });
 
 QUnit.test("array events are automatically triggered (sort)", function() {
-	expect(4);
+	expect(1);
 	var list = observe(["a", "c", "b"]);
-	var oldList = list.slice(0);
 
-	function addHandler(ev, items, index) {
-		QUnit.deepEqual(items, list, "new list added");
-		QUnit.equal(index, 0, "new list added at index 0");
-	}
-	function removeHandler(ev, items, index) {
-		QUnit.deepEqual(items, oldList, "all old things removed");
-		QUnit.equal(index, 0, "all old things removed from the beginning");
-	}
-
-	list.addEventListener("add", addHandler);
-	list.addEventListener("remove", removeHandler);
+	list[canSymbol.for("can.onPatches")](function(patches) {
+		QUnit.deepEqual(patches, [
+			{"index":1,"deleteCount":0,"insert":["b"]},
+			{"index":3,"deleteCount":1,"insert":[]}
+		], "Patch correct");
+	});
 
 	list.sort();
 });
 
 QUnit.test("array events are automatically triggered (reverse)", function() {
-	expect(4);
+	expect(1);
 	var list = observe(["a", "b", "c"]);
-	var oldList = list.slice(0);
 
-	function addHandler(ev, items, index) {
-		QUnit.deepEqual(items, list, "new list added");
-		QUnit.equal(index, 0, "new list added at index 0");
-	}
-	function removeHandler(ev, items, index) {
-		QUnit.deepEqual(items, oldList, "all old things removed");
-		QUnit.equal(index, 0, "all old things removed from the beginning");
-	}
+	var expectedList = list.slice(0).reverse();
 
-	list.addEventListener("add", addHandler);
-	list.addEventListener("remove", removeHandler);
+	list[canSymbol.for("can.onPatches")](function(patches) {
+		QUnit.deepEqual(patches, [
+			{"index":0,"deleteCount":3,"insert":expectedList}
+		], "Patch replaces whole list");
+	});
 
 	list.reverse();
 });

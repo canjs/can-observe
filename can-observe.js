@@ -4,9 +4,10 @@ var ObservationRecorder = require("can-observation-recorder");
 var canSymbol = require("can-symbol");
 var canReflect = require("can-reflect");
 var namespace = require("can-namespace");
-var canEvent = require("can-event");
+var diffArray = require("can-util/js/diff-array/diff-array");
 
 var observableSymbol = canSymbol.for("can.meta");
+var patchesSymbol = canSymbol("patches");
 var hasOwn = Object.prototype.hasOwnProperty;
 
 // #### isIntegerIndex
@@ -43,93 +44,63 @@ canReflect.assignSymbols(proxyOnly, {
 				keyHandlers.splice(index, 1);
 			}
 		}
+	},
+	"can.onPatches": function(handler) {
+		var handlers = this[observableSymbol].handlers;
+		var patchHandlers = handlers[patchesSymbol];
+		if (!patchHandlers) {
+			patchHandlers = handlers[patchesSymbol] = [];
+		}
+		patchHandlers.push(handler);
+	},
+	"can.offPatches": function(handler) {
+		var handlers = this[observableSymbol].handlers;
+		var patchHandlers = handlers[patchesSymbol];
+		if(patchHandlers) {
+			var index = patchHandlers.indexOf(handler);
+			if(index >= 0) {
+				patchHandlers.splice(index, 1);
+			}
+		}
 	}
 });
-// proxyOnly includes the can-event suite, for the purpose of triggering
-// array events (seee below)
-Object.assign(proxyOnly, canEvent);
-
-// arrayMethodInterceptors are a special group of functions that wrap the
-// ES5 Array mutating methods.  When list-likes change, can-view-live expects certain
-// events to fire, so these wrapper functions call the original then dispatch
-// the expected events.
-var arrayMethodInterceptors = Object.create(null);
-// Each of these methods below creates the appropriate arguments for dispatch of
-// their respective event names.
-var mutateMethods = {
-	"push": {
-		add: function(arr, args, retVal) {
-			return [args, arr.length - args.length];
-		}
-	},
-	"pop": {
-		remove: function(arr, args, retVal) {
-			return [[retVal], arr.length];
-		}
-	},
-	"shift": {
-		remove: function(arr, args, retVal) {
-			return [[retVal], 0];
-		}
-	},
-	"unshift": {
-		add: function(arr, args, retVal) {
-			return [args, 0];
-		}
-	},
-	"splice": {
-		remove: function(arr, args, retVal) {
-			return [retVal, args[0]];
-		},
-		add: function(arr, args, retVal) {
-			return [args.slice(2), args[0]];
-		}
-	},
-	"sort": {
-		remove: function(arr, args, retVal, old) {
-			return [old, 0];
-		},
-		add: function(arr, args, retVal) {
-			return [arr, 0];
-		}
-	},
-	"reverse": {
-		remove: function(arr, args, retVal, old) {
-			return [old, 0];
-		},
-		add: function(arr, args, retVal) {
-			return [arr, 0];
-		}
+var dispatch = proxyOnly.dispatch = function(key, args) {
+	var handlers = this[observableSymbol].handlers;
+	var keyHandlers = handlers[key];
+	if(keyHandlers) {
+		keyHandlers.forEach(function(handler){
+			queues.notifyQueue.enqueue(handler, this, args);
+		}, this);
 	}
 };
 
+
+// arrayMethodInterceptors are a special group of functions that wrap the
+// ES5 Array mutating methods.  When list-likes change, "patch" type handlers
+// are called to show the new changes (found from diffing).
+var arrayMethodInterceptors = Object.create(null);
+// Each of these methods below creates the appropriate arguments for dispatch of
+// their respective event names.
+var mutateMethods = [
+	"push","pop","shift","unshift","splice","sort","reverse"
+];
+
 // #### make arrayMethodInterceptors here
-Object.keys(mutateMethods).forEach(function(prop) {
-	var changeEvents = mutateMethods[prop];
+mutateMethods.forEach(function(prop) {
 	var protoFn = Array.prototype[prop];
 	arrayMethodInterceptors[prop] = function() {
-		var handlers = this[observableSymbol].handlers;
-		// the value of "length" is commonly listened on
-		// for array changes, so make sure it is fired.
-		handlers.length = handlers.length || [];
 		// stash the previous array contents. Use the native
 		// function instead of going through the proxy or target.
 		var old = [].slice.call(this, 0);
-		var args = Array.from(arguments);
 		// call the function
 		var ret = protoFn.apply(this, arguments);
+		var patches = diffArray(old, this);
+
 		queues.batch.start();
 		// dispatch all the associated change events
-		Object.keys(changeEvents).forEach(function(event) {
-			var makeArgs = changeEvents[event];
-			var handlerArgs = makeArgs(this, args, ret, old);
-			// This is where we need to replace with the 
-			canEvent.dispatch.call(this, event, handlerArgs);
-		}.bind(this));
+		dispatch.call(this, patchesSymbol, [patches]);
 		// dispatch length
-		handlers.length.forEach(function(handler){
-			queues.notifyQueue.enqueue(handler, this, [this.length, old.length]);
-		}, this);
+		dispatch.call(this, "length", [this.length, old.length]);
 		queues.batch.stop();
 		return ret;
 	};

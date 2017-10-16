@@ -31,7 +31,6 @@
   "homepage": "https://github.com/canjs/can-observe",
   "dependencies": {
     "can-cid": "^1.0.1",
-    "can-event": "^3.7.5",
     "can-namespace": "^1.0.0",
     "can-observation-recorder": "^0.1.0",
     "can-queues": "^0.2.5",
