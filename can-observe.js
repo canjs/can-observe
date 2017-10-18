@@ -5,6 +5,7 @@ var canSymbol = require("can-symbol");
 var canReflect = require("can-reflect");
 var namespace = require("can-namespace");
 var diffArray = require("can-util/js/diff-array/diff-array");
+var KeyTree = require("can-key-tree");
 
 var observableSymbol = canSymbol.for("can.meta");
 var patchesSymbol = canSymbol("patches");
@@ -23,52 +24,28 @@ function isIntegerIndex(prop) {
 // from the proxy object, but not from the object under observation.  For example, the onKeyValue and
 // offKeyValue symbols below, if applied to the target object, would erroneously present that object
 // as observable, when only the Proxy is.
-// 
-// TODO replace these handler loops with can-stache-key
 var proxyOnly = Object.create(null);
 canReflect.assignSymbols(proxyOnly, {
 	"can.onKeyValue": function(key, handler) {
 		var handlers = this[observableSymbol].handlers;
-		var keyHandlers = handlers[key];
-		if (!keyHandlers) {
-			keyHandlers = handlers[key] = [];
-		}
-		// TODO: Binding directly on getters (currently does not work)
-		//   need to add an observation instead of just firing handlers.
-		keyHandlers.push(handler);
+		handlers.add([key, handler]);
 	},
 	"can.offKeyValue": function(key, handler) {
 		var handlers = this[observableSymbol].handlers;
-		var keyHandlers = handlers[key];
-		if(keyHandlers) {
-			var index = keyHandlers.indexOf(handler);
-			if(index >= 0) {
-				keyHandlers.splice(index, 1);
-			}
-		}
+		handlers.delete([key, handler]);
 	},
 	"can.onPatches": function(handler) {
 		var handlers = this[observableSymbol].handlers;
-		var patchHandlers = handlers[patchesSymbol];
-		if (!patchHandlers) {
-			patchHandlers = handlers[patchesSymbol] = [];
-		}
-		patchHandlers.push(handler);
+		handlers.add([patchesSymbol, handler]);
 	},
 	"can.offPatches": function(handler) {
 		var handlers = this[observableSymbol].handlers;
-		var patchHandlers = handlers[patchesSymbol];
-		if(patchHandlers) {
-			var index = patchHandlers.indexOf(handler);
-			if(index >= 0) {
-				patchHandlers.splice(index, 1);
-			}
-		}
+		handlers.delete([patchesSymbol, handler]);
 	}
 });
 var dispatch = proxyOnly.dispatch = function(key, args) {
 	var handlers = this[observableSymbol].handlers;
-	var keyHandlers = handlers[key];
+	var keyHandlers = handlers.getNode([key]);
 	if(keyHandlers) {
 		keyHandlers.forEach(function(handler){
 			queues.notifyQueue.enqueue(handler, this, args);
@@ -84,8 +61,6 @@ var arrayMethodInterceptors = Object.create(null);
 // Each of these methods below creates the appropriate arguments for dispatch of
 // their respective event names.
 // TODO: Similar stuff for object diffing (new keys, keys deleted, array update() with keyed props)
-// Each of these methods below creates the appropriate arguments for dispatch of
-// their respective event names.
 var mutateMethods = {
 	"push": function(arr, args) {
 		return [{
@@ -239,9 +214,7 @@ var observe = function(obj){
 			}
 			if(change) {
 				queues.batch.start();
-				(target[observableSymbol].handlers[key] || []).forEach(function(handler){
-					queues.notifyQueue.enqueue(handler, receiver, [value, old]);
-				});
+				dispatch.call(receiver, key, [value, old]);
 				queues.batch.stop();
 			}
 			return true;
@@ -262,20 +235,16 @@ var observe = function(obj){
 			// Don't trigger handlers on array indexes, as they will change with length.
 			//  Otherwise trigger that the property is now undefined.
 			// If the property is redefined, the handlers will fire again.
-			if(ret && (!Array.isArray(target) || !isIntegerIndex(key))) {
+			if(ret && (!Array.isArray(target) || !isIntegerIndex(key)) && old !== undefined) {
 				queues.batch.start();
-				(target[observableSymbol].handlers[key] || []).forEach(function(handler, i){
-					if(old !== undefined) {
-						queues.notifyQueue.enqueue(handler, receiver, [undefined, old]);
-					}
-				});
+				dispatch.call(receiver, key, [undefined, old]);
 				queues.batch.stop();
 			}
 			return ret;
 		}
 	});
 
-	p[observableSymbol] = {handlers: {}, __bindEvents: {}, proxy: p};
+	obj[observableSymbol] = {handlers: new KeyTree([Object,Array]), __bindEvents: {}, proxy: p};
 	return p;
 };
 
