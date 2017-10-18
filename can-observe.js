@@ -109,6 +109,7 @@ var mutateMethods = {
 Object.keys(mutateMethods).forEach(function(prop) {
 	var protoFn = Array.prototype[prop];
 	arrayMethodInterceptors[prop] = function() {
+		this[observableSymbol].inArrayMutator = true;
 		// stash the previous array contents. Use the native
 		// function instead of going through the proxy or target.
 		var old = [].slice.call(this, 0);
@@ -121,7 +122,9 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		dispatch.call(this, patchesSymbol, [patches]);
 		// dispatch length
 		dispatch.call(this, "length", [this.length, old.length]);
+		dispatch.call(this, patchesSymbol, [[{property: "length", type: "set", value: this.length}]]);
 		queues.batch.stop();
+		this[observableSymbol].inArrayMutator = false;
 		return ret;
 	};
 });
@@ -192,6 +195,8 @@ var observe = function(obj){
 		},
 		set: function(target, key, value, receiver){
 			var old, change;
+			var hadOwn = hasOwn.call(target, key);
+			var integerIndex = isIntegerIndex(key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			// make a proxy for any non-observable objects being passed in as values
 			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && (canReflect.isPlainObject(value) || Array.isArray(value))) {
@@ -212,9 +217,27 @@ var observe = function(obj){
 					target[key] = value;
 				}
 			}
-			if(change) {
+			if(change && (key !== "length" || !isArray || !target[observableSymbol].inArrayMutator)) {
 				queues.batch.start();
 				dispatch.call(receiver, key, [value, old]);
+				if(!target[observableSymbol].inArrayMutator) {
+					dispatch.call(receiver, patchesSymbol, [[{property: key, type: hadOwn ? "set" : "add", value: value}]]);				
+					// The set handler should not attempt to dispatch length patches stemming from array mutations because
+					//  we cannot reliably detect a change to the length (it's already set to the new value on the target).  
+					//  Instead, the array method interceptor should handle it, since it has information about the previous
+					//  state.
+					// The one possible exception to this is when an array index is *added* that changes the length.
+					if(isArray && integerIndex && !hadOwn && +key === target.length - 1) {
+						dispatch.call(receiver, patchesSymbol, [[{property: "length", type: "set", value: target.length}]]);
+					}
+				}
+				// In the case of deleting items by setting the length of the array, fire "remove" patches.
+				// (deleting individual items from an array doesn't change the length; it just creates holes)
+				if(isArray && key === "length" && value < old && !target[observableSymbol].inArrayMutator) {
+					while(old-- > value) {
+						dispatch.call(receiver, patchesSymbol, [[{property: old, type: "remove"}]]);
+					}
+				}
 				queues.batch.stop();
 			}
 			return true;
@@ -235,9 +258,10 @@ var observe = function(obj){
 			// Don't trigger handlers on array indexes, as they will change with length.
 			//  Otherwise trigger that the property is now undefined.
 			// If the property is redefined, the handlers will fire again.
-			if(ret && (!Array.isArray(target) || !isIntegerIndex(key)) && old !== undefined) {
+			if(ret && !target[observableSymbol].inArrayMutator && old !== undefined) {
 				queues.batch.start();
 				dispatch.call(receiver, key, [undefined, old]);
+				dispatch.call(receiver, patchesSymbol, [[{property: key, type: "remove"}]]);
 				queues.batch.stop();
 			}
 			return ret;
