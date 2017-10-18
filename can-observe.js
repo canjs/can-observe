@@ -23,6 +23,8 @@ function isIntegerIndex(prop) {
 // from the proxy object, but not from the object under observation.  For example, the onKeyValue and
 // offKeyValue symbols below, if applied to the target object, would erroneously present that object
 // as observable, when only the Proxy is.
+// 
+// TODO replace these handler loops with can-stache-key
 var proxyOnly = Object.create(null);
 canReflect.assignSymbols(proxyOnly, {
 	"can.onKeyValue": function(key, handler) {
@@ -81,12 +83,55 @@ var dispatch = proxyOnly.dispatch = function(key, args) {
 var arrayMethodInterceptors = Object.create(null);
 // Each of these methods below creates the appropriate arguments for dispatch of
 // their respective event names.
-var mutateMethods = [
-	"push","pop","shift","unshift","splice","sort","reverse"
-];
+// TODO: Similar stuff for object diffing (new keys, keys deleted, array update() with keyed props)
+// Each of these methods below creates the appropriate arguments for dispatch of
+// their respective event names.
+var mutateMethods = {
+	"push": function(arr, args) {
+		return [{
+			index: arr.length - args.length,
+			deleteCount: 0,
+			insert: args
+		}];
+  	},
+	"pop": function(arr) {
+		return [{
+			index: arr.length,
+			deleteCount: 1,
+			insert: []
+		}];
+	},
+	"shift": function() {
+		return [{
+			index: 0,
+			deleteCount: 1,
+			insert: []
+		}];
+	},
+	"unshift": function(arr, args) {
+		return [{
+			index: 0,
+			deleteCount: 0,
+			insert: args
+		}];
+	},
+	"splice": function(arr, args) {
+		return [{
+			index: args[0],
+			deleteCount: args[1],
+			insert: args.slice(2)
+		}];
+	},
+	"sort": function(arr, args, old) {
+		return diffArray(old, arr);
+	},
+ 	"reverse": function(arr, args, old) {
+ 		return diffArray(old, arr);
+	}
+};
 
 // #### make arrayMethodInterceptors here
-mutateMethods.forEach(function(prop) {
+Object.keys(mutateMethods).forEach(function(prop) {
 	var protoFn = Array.prototype[prop];
 	arrayMethodInterceptors[prop] = function() {
 		// stash the previous array contents. Use the native
@@ -94,7 +139,7 @@ mutateMethods.forEach(function(prop) {
 		var old = [].slice.call(this, 0);
 		// call the function
 		var ret = protoFn.apply(this, arguments);
-		var patches = diffArray(old, this);
+		var patches = mutateMethods[prop](this, Array.from(arguments), old);
 
 		queues.batch.start();
 		// dispatch all the associated change events
