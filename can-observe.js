@@ -132,6 +132,8 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		canBatch.stop();
 		return ret;
 	};
+	// TODO: make non-mutating array functions return proxied arrays.
+	//       Or rather, all functions.
 });
 
 var observe = function(obj){

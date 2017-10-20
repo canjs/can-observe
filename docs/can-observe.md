@@ -66,7 +66,7 @@ person.last = "Le Hara";
 
 ## Nested Objects
 
-Any Object property in a `can-observe` will be replaced with a `can-observe`d Proxy on read or write.  This allows deep path traversal in objects, with observable changes all along the way.
+Any Object property in a `can-observe` will be replaced with a `can-observe` observed Proxy on read or write.  This allows deep path traversal in objects, with observable changes all along the way.
 
 ```js
 var observe = require("can-observe");
@@ -114,7 +114,7 @@ canComponent.extend({
 ```
 
 ```html
-<my-widget messageFromParent="world" />
+<my-widget messageFromParent:from="'world'" />
 
 <!-- above tag will contain "<p>Hello, world!</p>" on render --> 
 ```
