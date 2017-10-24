@@ -60,7 +60,6 @@ var dispatch = proxyOnly.dispatch = function(key, args) {
 var arrayMethodInterceptors = Object.create(null);
 // Each of these methods below creates the appropriate arguments for dispatch of
 // their respective event names.
-// TODO: Similar stuff for object diffing (new keys, keys deleted, array update() with keyed props)
 var mutateMethods = {
 	"push": function(arr, args) {
 		return [{
@@ -109,7 +108,7 @@ var mutateMethods = {
 Object.keys(mutateMethods).forEach(function(prop) {
 	var protoFn = Array.prototype[prop];
 	arrayMethodInterceptors[prop] = function() {
-		this[observableSymbol].inArrayMutator = true;
+		this[observableSymbol].inArrayMethod = true;
 		// stash the previous array contents. Use the native
 		// function instead of going through the proxy or target.
 		var old = [].slice.call(this, 0);
@@ -124,15 +123,25 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		dispatch.call(this, "length", [this.length, old.length]);
 		dispatch.call(this, patchesSymbol, [[{property: "length", type: "set", value: this.length}]]);
 		queues.batch.stop();
-		this[observableSymbol].inArrayMutator = false;
+		this[observableSymbol].inArrayMethod = false;
 		return ret;
 	};
 });
-//TODO make map/filter/reduce/slice/some/all interceptors that add 
-// This goes along with ignoring individual array element changes
-//Object.keys(Array.prototype).filter(function(prop) {
-//  return prop !== "constructor" && typeof Array.prototype[prop] === "function" && !~mutateMethods.indexOf(prop)
-//})
+Object.getOwnPropertyNames(Array.prototype).forEach(function(prop) {
+	if(mutateMethods[prop]) {
+		return;
+	}
+	var protoFn = Array.prototype[prop];
+	if(prop !== "constructor" && typeof protoFn === "function") {
+		arrayMethodInterceptors[prop] = function() {
+			ObservationRecorder.add(this, patchesSymbol);
+			this[observableSymbol].inArrayMethod = true;
+			var ret = protoFn.apply(this, arguments);
+			this[observableSymbol].inArrayMethod = false;
+			return ret;
+		};
+	}
+});
 
 var observe = function(obj){
 	// oberve proxies are meant to be singletons per-object.
@@ -167,12 +176,7 @@ var observe = function(obj){
 			if(descriptor && descriptor.get) {
 				value = descriptor.get.call(receiver);
 			} else {
-				// __bindEvents for can-event is kept on the meta properties.
-				if(key === "__bindEvents") {
-					value = target[observableSymbol].__bindEvents;
-				} else {
-					value = target[key];				
-				}
+				value = target[key];
 			}
 			// If the value for this key is an object and not already observable, make a proxy for it
 			if (!symbolLike &&
@@ -186,17 +190,18 @@ var observe = function(obj){
 				value = arrayMethodInterceptors[key];
 			}
 			// add Observations for things that satisfy all of these conditions:
-			//  - not _cid, not __bindEvents
+			//  - not _cid
 			//  - non-function values
 			//  - non-symbol keys
 			//  - not an unknown property on a sealed object
-			if (key !== "_cid" && key !== "__bindEvents" &&
+			//  - not integer index on array if in an array mutator or comprehension
+			//  	(treat all sets on an array as a splice and use array patches instead)
+			if (key !== "_cid" &&
 				typeof value !== "function" &&
 				!symbolLike && 
-				(hasOwn.call(target, key) || !Object.isSealed(target))
+				(hasOwn.call(target, key) || !Object.isSealed(target)) && 
+				!target[observableSymbol].inArrayMethod
 			) {
-				// TODO don't listen to changes on individual array indexes.  (Increases performance).
-				//   Instead, treat all sets on an array as a splice and use array patches instead.
 				ObservationRecorder.add(receiver, key.toString());
 			}
 			return value;
@@ -226,23 +231,28 @@ var observe = function(obj){
 				}
 			}
 			// TODO refactor long predicates into helper functions
-			if(change && (key !== "length" || !isArray || !target[observableSymbol].inArrayMutator)) {
+			if(change && (key !== "length" || !isArray || !target[observableSymbol].inArrayMethod)) {
 				queues.batch.start();
 				dispatch.call(receiver, key, [value, old]);
-				if(!target[observableSymbol].inArrayMutator) {
+				if(!target[observableSymbol].inArrayMethod) {
 					dispatch.call(receiver, patchesSymbol, [[{property: key, type: hadOwn ? "set" : "add", value: value}]]);				
-					// The set handler should not attempt to dispatch length patches stemming from array mutations because
-					//  we cannot reliably detect a change to the length (it's already set to the new value on the target).  
-					//  Instead, the array method interceptor should handle it, since it has information about the previous
-					//  state.
-					// The one possible exception to this is when an array index is *added* that changes the length.
-					if(isArray && integerIndex && !hadOwn && +key === target.length - 1) {
-						dispatch.call(receiver, patchesSymbol, [[{property: "length", type: "set", value: target.length}]]);
+					if(isArray && integerIndex) {
+						// The set handler should not attempt to dispatch length patches stemming from array mutations because
+						//  we cannot reliably detect a change to the length (it's already set to the new value on the target).  
+						//  Instead, the array method interceptor should handle it, since it has information about the previous
+						//  state.
+						// The one possible exception to this is when an array index is *added* that changes the length.
+						if(!hadOwn && +key === target.length - 1) {
+							dispatch.call(receiver, patchesSymbol, [[{property: "length", type: "set", value: target.length}]]);
+						} else {
+							// In the case of setting an array index, dispatch a splice patch.
+							dispatch.call(receiver, patchesSymbol, [mutateMethods.splice(obj, [+key, 1, value])]);
+						}
 					}
 				}
 				// In the case of deleting items by setting the length of the array, fire "remove" patches.
 				// (deleting individual items from an array doesn't change the length; it just creates holes)
-				if(isArray && key === "length" && value < old && !target[observableSymbol].inArrayMutator) {
+				if(isArray && key === "length" && value < old && !target[observableSymbol].inArrayMethod) {
 					while(old-- > value) {
 						dispatch.call(receiver, patchesSymbol, [[{property: old, type: "remove"}]]);
 					}
@@ -267,7 +277,7 @@ var observe = function(obj){
 			// Don't trigger handlers on array indexes, as they will change with length.
 			//  Otherwise trigger that the property is now undefined.
 			// If the property is redefined, the handlers will fire again.
-			if(ret && !target[observableSymbol].inArrayMutator && old !== undefined) {
+			if(ret && !target[observableSymbol].inArrayMethod && old !== undefined) {
 				queues.batch.start();
 				dispatch.call(receiver, key, [undefined, old]);
 				dispatch.call(receiver, patchesSymbol, [[{property: key, type: "remove"}]]);
@@ -277,7 +287,7 @@ var observe = function(obj){
 		}
 	});
 
-	obj[observableSymbol] = {handlers: new KeyTree([Object,Array]), __bindEvents: {}, proxy: p};
+	obj[observableSymbol] = {handlers: new KeyTree([Object,Array]), proxy: p};
 	return p;
 };
 

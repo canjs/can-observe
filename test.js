@@ -576,3 +576,44 @@ QUnit.test("patches events for set/deleted indexed properties on arrays", functi
 	});
 	deleteArrayObject.length = 1; // deleting object at index 1 is implicit in setting length
 });
+
+QUnit.test("arrays don't listen on individual keys in comprehensions", function() {
+	expect(5);
+	var a = [1, 2];
+	var p = observe(a);
+	var o = new Observation(function() {
+		return p[0];
+	});
+	var o2 = new Observation(function() {
+		return p.map(function(b) { return b + 1; });
+	});
+
+	canReflect.onValue(o, function(newVal) {
+		QUnit.equal(newVal, a[0], "Sanity check: observation on index 0");
+	});
+	canReflect.onValue(o2, function(newVal) {
+		QUnit.deepEqual(newVal, a.map(function(b) { return b + 1; }), "Sanity check: observation on map");
+	});
+
+	QUnit.ok(p[observableSymbol].handlers.getNode(["0"]), "Handlers for directly read index");
+	QUnit.ok(!p[observableSymbol].handlers.getNode(["1"]), "no handlers for indirectly read index");
+
+	p[0] = 2;
+	p[1] = 3;
+ });
+
+QUnit.test("changing an item at an array index dispatches a splice patch", function() {
+	expect(3);
+	var a = observe([1, 2]);
+
+	a[canSymbol.for("can.onPatches")](function(patches) {
+		if(patches[0].property) {
+			return;
+		}
+		QUnit.equal(patches[0].index, 0);
+		QUnit.equal(patches[0].deleteCount, 1);
+		QUnit.deepEqual(patches[0].insert, [2]);
+	});
+
+	a[0] = 2;
+});
