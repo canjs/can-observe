@@ -554,3 +554,26 @@ QUnit.test("non-mutating reduce functions return proxied objects", function() {
 	QUnit.ok(list.reduce(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "Reduce returns proxy");
 	QUnit.ok(list.reduceRight(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "ReduceRight returns proxy");
 });
+
+QUnit.test("custom, non-array functions return proxied objects as well", function() {
+	var p = observe({
+		foo: function() {
+			return {};
+		}
+	});
+
+	QUnit.ok(p.foo()[observableSymbol], "Proxied function returns proxy");
+});
+
+QUnit.test("custom, non-array functions can be redefined", function() {
+	expect(1);
+	var p = observe({
+		foo: function() {
+			QUnit.ok(true, "first function called");
+		}
+	});
+
+	p.foo();
+	p.foo = function() {};
+	p.foo();
+});

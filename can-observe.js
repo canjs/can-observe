@@ -135,17 +135,19 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		return ret;
 	};
 });
-// #### and here.
-// These interceptors are for non-mutating functions that may return objects
-proxiableFunctions.forEach(function(prop) {
-	var protoFn = Array.prototype[prop];
-	arrayMethodInterceptors[prop] = function() {
-		var ret = protoFn.apply(this, arguments);
+// #### proxyIntercept
+// Generator for interceptors for any generic function that may return objects
+function proxyIntercept(fn) {
+	return function() {
+		var ret = fn.apply(this, arguments);
 		if(ret && typeof ret === "object") {
 			ret = observe(ret);
 		}
 		return ret;
 	};
+}
+proxiableFunctions.forEach(function(prop) {
+	arrayMethodInterceptors[prop] = proxyIntercept(Array.prototype[prop]);
 });
 
 var observe = function(obj){ //jshint ignore:line
@@ -189,14 +191,19 @@ var observe = function(obj){ //jshint ignore:line
 			}
 			// If the value for this key is an object and not already observable, make a proxy for it
 			if (!symbolLike &&
+				key !== "__bindEvents" &&
 				!canReflect.isObservableLike(value) &&
 				(canReflect.isPlainObject(value) || Array.isArray(value))
 			) {
 				value = target[key] = observe(value);
 			}
 			// Intercept calls to Array mutation methods.
-			if (isArray && typeof value === "function" && arrayMethodInterceptors[key]) {
-				value = arrayMethodInterceptors[key];
+			if (typeof value === "function") {
+				if(isArray && arrayMethodInterceptors[key]) {
+					value = arrayMethodInterceptors[key];
+				} else {
+					value = obj[observableSymbol].interceptors[key] || (obj[observableSymbol].interceptors[key] = proxyIntercept(value));
+				}
 			}
 			// add Observations for things that satisfy all of these conditions:
 			//  - not _cid, not __bindEvents
@@ -234,6 +241,9 @@ var observe = function(obj){ //jshint ignore:line
 					target[key] = value;
 				}
 			}
+			if(typeof old === "function") {
+				target[observableSymbol].interceptors[key] = null;
+			}
 			if(change) {
 				canBatch.start();
 				(target[observableSymbol].handlers[key] || []).forEach(function(handler){
@@ -268,11 +278,12 @@ var observe = function(obj){ //jshint ignore:line
 				});
 				canBatch.stop();
 			}
+			target[observableSymbol].interceptors[key] = null;
 			return ret;
 		}
 	});
 
-	p[observableSymbol] = {handlers: {}, __bindEvents: {}, proxy: p};
+	p[observableSymbol] = {handlers: {}, __bindEvents: {}, proxy: p, interceptors: {}};
 	return p;
 };
 
