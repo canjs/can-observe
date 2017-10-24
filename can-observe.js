@@ -128,6 +128,11 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		return ret;
 	};
 });
+//TODO make map/filter/reduce/slice/some/all interceptors that add 
+// This goes along with ignoring individual array element changes
+//Object.keys(Array.prototype).filter(function(prop) {
+//  return prop !== "constructor" && typeof Array.prototype[prop] === "function" && !~mutateMethods.indexOf(prop)
+//})
 
 var observe = function(obj){
 	// oberve proxies are meant to be singletons per-object.
@@ -146,6 +151,7 @@ var observe = function(obj){
 	var isArray = obj instanceof Array;
 
 	var p = new Proxy(obj, {
+		// TODO proxy values only if there are listeners on this object
 		get: function(target, key, receiver){
 			// The proxy only objects don't need any further processing.
 			if(proxyOnly[key]) {
@@ -189,6 +195,8 @@ var observe = function(obj){
 				!symbolLike && 
 				(hasOwn.call(target, key) || !Object.isSealed(target))
 			) {
+				// TODO don't listen to changes on individual array indexes.  (Increases performance).
+				//   Instead, treat all sets on an array as a splice and use array patches instead.
 				ObservationRecorder.add(receiver, key.toString());
 			}
 			return value;
@@ -199,7 +207,7 @@ var observe = function(obj){
 			var integerIndex = isIntegerIndex(key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			// make a proxy for any non-observable objects being passed in as values
-			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && (canReflect.isPlainObject(value) || Array.isArray(value))) {
+			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && typeof value === "object" && !!value) {
 				value = observe(value);
 			} else if (value && value[observableSymbol]){
 				value = value[observableSymbol].proxy;
@@ -217,6 +225,7 @@ var observe = function(obj){
 					target[key] = value;
 				}
 			}
+			// TODO refactor long predicates into helper functions
 			if(change && (key !== "length" || !isArray || !target[observableSymbol].inArrayMutator)) {
 				queues.batch.start();
 				dispatch.call(receiver, key, [value, old]);
