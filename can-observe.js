@@ -30,7 +30,7 @@ canReflect.assignSymbols(proxyOnly, {
 		if (!keyHandlers) {
 			keyHandlers = handlers[key] = [];
 		}
-		// TODO: Binding directly on getters (currently does not work)
+		// Possible enhancement here: Binding directly on getters (currently does not work)
 		//   need to add an observation instead of just firing handlers.
 		keyHandlers.push(handler);
 	},
@@ -102,6 +102,7 @@ var mutateMethods = {
 		}
 	}
 };
+var proxiableFunctions = ["map", "filter", "slice", "concat", "reduce", "reduceRight"];
 
 // #### make arrayMethodInterceptors here
 Object.keys(mutateMethods).forEach(function(prop) {
@@ -116,7 +117,8 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		// function instead of going through the proxy or target.
 		var old = [].slice.call(this, 0);
 		var args = Array.from(arguments);
-		// call the function
+		// call the function -- note that *this* is the Proxy here, so 
+		//  accesses in the function still go through get() and set()
 		var ret = protoFn.apply(this, arguments);
 		canBatch.start();
 		// dispatch all the associated change events
@@ -132,11 +134,21 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		canBatch.stop();
 		return ret;
 	};
-	// TODO: make non-mutating array functions return proxied arrays.
-	//       Or rather, all functions.
+});
+// #### and here.
+// These interceptors are for non-mutating functions that may return objects
+proxiableFunctions.forEach(function(prop) {
+	var protoFn = Array.prototype[prop];
+	arrayMethodInterceptors[prop] = function() {
+		var ret = protoFn.apply(this, arguments);
+		if(ret && typeof ret === "object") {
+			ret = observe(ret);
+		}
+		return ret;
+	};
 });
 
-var observe = function(obj){
+var observe = function(obj){ //jshint ignore:line
 	// oberve proxies are meant to be singletons per-object.
 	// Or to put it another way, it would be very difficult to manage
 	// multiple observation proxies for one object.  So calling observe()

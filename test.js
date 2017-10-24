@@ -421,7 +421,7 @@ QUnit.test("add events with addEventListener", function() {
 		QUnit.ok(true, "event handler fired");
 		QUnit.equal(newVal, 1, "correct positions");
 	});
-	o.dispatch( "foo", 1);
+	o.dispatch( "foo", [1]);
 	o.foo = 2; // onKeyValue and addEventListener do not overlap;
 });
 
@@ -434,7 +434,7 @@ QUnit.test("remove events with removeEventListener", function() {
 	});
 
 	o.removeEventListener("foo", fn);
-	o.dispatch( "foo", 1);
+	o.dispatch( "foo", [1]);
 	QUnit.ok(true, "finished");
 });
 
@@ -539,4 +539,18 @@ QUnit.test("array events are automatically triggered (reverse)", function() {
 	list.addEventListener("remove", removeHandler);
 
 	list.reverse();
+});
+
+QUnit.test("non-mutating array -> array functions return proxied arrays", function() {
+	var list = observe([0,2,3]);
+	QUnit.ok(list.map(function(x) { return x + 1; })[observableSymbol], "Map returns proxy");
+	QUnit.ok(list.filter(function(x) { return x; })[observableSymbol], "Filter returns proxy");
+	QUnit.ok(list.slice(0)[observableSymbol], "Slice returns proxy");
+	QUnit.ok(list.concat([5, 6])[observableSymbol], "Concat returns proxy");
+});
+
+QUnit.test("non-mutating reduce functions return proxied objects", function() {
+	var list = observe([0,2,3]);
+	QUnit.ok(list.reduce(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "Reduce returns proxy");
+	QUnit.ok(list.reduceRight(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "ReduceRight returns proxy");
 });
