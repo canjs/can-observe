@@ -20,6 +20,23 @@ function isIntegerIndex(prop) {
 		(+prop % 1 === 0);  // floats should be treated as strings
 }
 
+// #### shouldAddObservation
+// Decide whether a key/value/object group should add an Observation
+// Observations are added for things that satisfy all of these conditions:
+//  - not _cid
+//  - non-function values
+//  - non-symbol keys
+//  - not an unknown property on a sealed object
+//  - not integer index on array if in an array mutator or comprehension
+//  	(treat all sets on an array as a splice and use array patches instead)
+function shouldAddObservation(key, value, target) {
+	return key !== "_cid" &&
+		typeof value !== "function" &&
+		!canReflect.isSymbolLike(key) &&
+		(hasOwn.call(target, key) || !Object.isSealed(target)) && 
+		!target[observableSymbol].inArrayMethod;
+}
+
 // proxyOnly contains any prototype (i.e. shared) symbols and keys that should be available (gettable)
 // from the proxy object, but not from the object under observation.  For example, the onKeyValue and
 // offKeyValue symbols below, if applied to the target object, would erroneously present that object
@@ -189,19 +206,7 @@ var observe = function(obj){
 			if (isArray && typeof value === "function" && arrayMethodInterceptors[key]) {
 				value = arrayMethodInterceptors[key];
 			}
-			// add Observations for things that satisfy all of these conditions:
-			//  - not _cid
-			//  - non-function values
-			//  - non-symbol keys
-			//  - not an unknown property on a sealed object
-			//  - not integer index on array if in an array mutator or comprehension
-			//  	(treat all sets on an array as a splice and use array patches instead)
-			if (key !== "_cid" &&
-				typeof value !== "function" &&
-				!symbolLike && 
-				(hasOwn.call(target, key) || !Object.isSealed(target)) && 
-				!target[observableSymbol].inArrayMethod
-			) {
+			if (shouldAddObservation(key, value, target)) {
 				ObservationRecorder.add(receiver, key.toString());
 			}
 			return value;
