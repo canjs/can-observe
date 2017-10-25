@@ -397,11 +397,13 @@ QUnit.test("array events are automatically triggered (push)", function() {
 	var newThing = 3;
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property) { return; } // ignore length property patches
-		QUnit.equal(patches.length, 1, "One patches generated");
-		QUnit.equal(patches[0].deleteCount, 0, "nothing removed");
-		QUnit.equal(patches[0].index, list.length - 1, "new thing added to end");
-		QUnit.deepEqual(patches[0].insert, [newThing], "new thing added to end");
+		QUnit.ok(patches.length > 1, "Patches generated");
+		patches.forEach(function(patch) {
+			if(patch.property) { return; } // ignore length property patches
+			QUnit.equal(patch.deleteCount, 0, "nothing removed");
+			QUnit.equal(patch.index, list.length - 1, "new thing added to end");
+			QUnit.deepEqual(patch.insert, [newThing], "new thing added to end");
+		});
 	});
 
 	list.push(newThing);
@@ -412,10 +414,12 @@ QUnit.test("array events are automatically triggered (pop)", function() {
 	var list = observe([1, 2, 3]);
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property) { return; } // ignore length property patches
-		QUnit.equal(patches.length, 1, "One patches generated");
-		QUnit.equal(patches[0].deleteCount, 1, "old thing removed");
-		QUnit.equal(patches[0].index, list.length, "old thing removed from end");
+		QUnit.ok(patches.length > 1, "Patches generated");
+		patches.forEach(function(patch) {
+			if(patch.property) { return; } // ignore length property patches
+			QUnit.equal(patch.deleteCount, 1, "old thing removed");
+			QUnit.equal(patch.index, list.length, "old thing removed from end");
+		});
 	});
 
 	list.pop();
@@ -427,11 +431,13 @@ QUnit.test("array events are automatically triggered (unshift)", function() {
 	var newThing = 3;
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property) { return; } // ignore length property patches
-		QUnit.equal(patches.length, 1, "One patches generated");
-		QUnit.equal(patches[0].deleteCount, 0, "nothing removed");
-		QUnit.equal(patches[0].index, 0, "new thing added to beginning");
-		QUnit.deepEqual(patches[0].insert, [newThing], "new thing added to beginning");
+		QUnit.ok(patches.length > 1, "Patches generated");
+		patches.forEach(function(patch) {
+			if(patch.property) { return; } // ignore length property patches
+			QUnit.equal(patch.deleteCount, 0, "nothing removed");
+			QUnit.equal(patch.index, 0, "new thing added to beginning");
+			QUnit.deepEqual(patch.insert, [newThing], "new thing added to beginning");
+		});
 	});
 
 	list.unshift(newThing);
@@ -442,10 +448,12 @@ QUnit.test("array events are automatically triggered (shift)", function() {
 	var list = observe([1, 2, 3]);
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property) { return; } // ignore length property patches
-		QUnit.equal(patches.length, 1, "One patches generated");
-		QUnit.equal(patches[0].deleteCount, 1, "old thing removed");
-		QUnit.equal(patches[0].index, 0, "old thing removed from beginning");
+		QUnit.ok(patches.length > 1, "Patches generated");
+		patches.forEach(function(patch) {
+			if(patch.property) { return; } // ignore length property patches
+			QUnit.equal(patch.deleteCount, 1, "old thing removed");
+			QUnit.equal(patch.index, 0, "old thing removed from beginning");
+		});
 	});
 
 	list.shift();
@@ -457,11 +465,13 @@ QUnit.test("array events are automatically triggered (splice)", function() {
 	var newThing = 4;
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property) { return; } // ignore length property patches
-		QUnit.equal(patches.length, 1, "One patches generated");
-		QUnit.equal(patches[0].deleteCount, 1, "nothing removed");
-		QUnit.equal(patches[0].index, 1, "new thing added to beginning");
-		QUnit.deepEqual(patches[0].insert, [newThing], "new thing added to beginning");
+		QUnit.ok(patches.length > 1, "Patches generated");
+		patches.forEach(function(patch) {
+			if(patch.property) { return; } // ignore length property patches
+			QUnit.equal(patch.deleteCount, 1, "nothing removed");
+			QUnit.equal(patch.index, 1, "new thing added to beginning");
+			QUnit.deepEqual(patch.insert, [newThing], "new thing added to beginning");
+		});
 	});
 
 	list.splice(1, 1, newThing);
@@ -472,8 +482,7 @@ QUnit.test("array events are automatically triggered (sort)", function() {
 	var list = observe(["a", "c", "b"]);
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property) { return; } // ignore length property patches
-		QUnit.deepEqual(patches, [
+		QUnit.deepEqual(patches.filter(function(p) { return !p.property; }), [
 			{"index":1,"deleteCount":0,"insert":["b"]},
 			{"index":3,"deleteCount":1,"insert":[]}
 		], "patches correct");
@@ -489,8 +498,7 @@ QUnit.test("array events are automatically triggered (reverse)", function() {
 	var expectedList = list.slice(0).reverse();
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property) { return; } // ignore length property patches
-		QUnit.deepEqual(patches, [
+		QUnit.deepEqual(patches.filter(function(p) { return !p.property; }), [
 			{"index":0,"deleteCount":3,"insert":expectedList}
 		], "patches replaces whole list");
 	});

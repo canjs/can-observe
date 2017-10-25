@@ -146,11 +146,9 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		var patches = mutateMethods[prop](this, Array.from(arguments), old);
 
 		queues.batch.start();
-		// dispatch all the associated change events
-		dispatch.call(this, patchesSymbol, [patches]);
-		// dispatch length
+		// dispatch all the associated change events and length
 		dispatch.call(this, "length", [this.length, old.length]);
-		dispatch.call(this, patchesSymbol, [[{property: "length", type: "set", value: this.length}]]);
+		dispatch.call(this, patchesSymbol, [patches.concat([{property: "length", type: "set", value: this.length}])]);
 		queues.batch.stop();
 		this[observableSymbol].inArrayMethod = false;
 		return ret;
