@@ -43,6 +43,14 @@ function shouldObserveValue(key, value, target) {
 		target[observableSymbol].handlers.getNode([key]);
 }
 
+function shouldDispatchEvents(key, value, target, change, isArray) {
+	return change && (key !== "length" || !isArray || !target[observableSymbol].inArrayMethod);
+}
+
+function didLengthChangeCauseDeletions(key, value, target, old, isArray) {
+	return isArray && key === "length" && value < old && !target[observableSymbol].inArrayMethod;
+}
+
 // proxyOnly contains any prototype (i.e. shared) symbols and keys that should be available (gettable)
 // from the proxy object, but not from the object under observation.  For example, the onKeyValue and
 // offKeyValue symbols below, if applied to the target object, would erroneously present that object
@@ -237,11 +245,12 @@ var observe = function(obj){
 				}
 			}
 			// TODO refactor long predicates into helper functions
-			if(change && (key !== "length" || !isArray || !target[observableSymbol].inArrayMethod)) {
+			if(shouldDispatchEvents(key, value, target, change, isArray)) {
 				queues.batch.start();
+				var patches = [];
 				dispatch.call(receiver, key, [value, old]);
 				if(!target[observableSymbol].inArrayMethod) {
-					dispatch.call(receiver, patchesSymbol, [[{property: key, type: hadOwn ? "set" : "add", value: value}]]);				
+					patches.push({property: key, type: hadOwn ? "set" : "add", value: value});
 					if(isArray && integerIndex) {
 						// The set handler should not attempt to dispatch length patches stemming from array mutations because
 						//  we cannot reliably detect a change to the length (it's already set to the new value on the target).  
@@ -249,19 +258,22 @@ var observe = function(obj){
 						//  state.
 						// The one possible exception to this is when an array index is *added* that changes the length.
 						if(!hadOwn && +key === target.length - 1) {
-							dispatch.call(receiver, patchesSymbol, [[{property: "length", type: "set", value: target.length}]]);
+							patches.push({property: "length", type: "set", value: target.length});
 						} else {
 							// In the case of setting an array index, dispatch a splice patch.
-							dispatch.call(receiver, patchesSymbol, [mutateMethods.splice(obj, [+key, 1, value])]);
+							patches.push.apply(patches, mutateMethods.splice(obj, [+key, 1, value]));
 						}
 					}
 				}
 				// In the case of deleting items by setting the length of the array, fire "remove" patches.
 				// (deleting individual items from an array doesn't change the length; it just creates holes)
-				if(isArray && key === "length" && value < old && !target[observableSymbol].inArrayMethod) {
+				if(didLengthChangeCauseDeletions(key, value, target, old, isArray)) {
 					while(old-- > value) {
-						dispatch.call(receiver, patchesSymbol, [[{property: old, type: "remove"}]]);
+						patches.push({property: old, type: "remove"});
 					}
+				}
+				if(patches.length) {
+					dispatch.call(receiver, patchesSymbol, [patches]);
 				}
 				queues.batch.stop();
 			}

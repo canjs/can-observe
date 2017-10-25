@@ -559,26 +559,30 @@ QUnit.test("patches events for set/deleted indexed properties on arrays", functi
 	var setArrayObject = observe([]);
 	var deleteArrayObject = observe(["a", "b"]);
 	setArrayObject[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property === "length") {
-			QUnit.equal(patches[0].type, "set");
-			QUnit.equal(patches[0].value, 1);			
-		} else {
-			QUnit.equal(patches[0].property, "0");
-			QUnit.equal(patches[0].type, "add");
-			QUnit.equal(patches[0].value, "a");
-		}
+		patches.forEach(function(patch) {
+			if(patch.property === "length") {
+				QUnit.equal(patch.type, "set");
+				QUnit.equal(patch.value, 1);			
+			} else {
+				QUnit.equal(patch.property, "0");
+				QUnit.equal(patch.type, "add");
+				QUnit.equal(patch.value, "a");
+			}
+		});
 	});
 	setArrayObject[0] = "a";
 
 	deleteArrayObject[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property === "length") {
-			QUnit.equal(patches[0].type, "set");
-			QUnit.equal(patches[0].value, 1);			
-		} else {
-			QUnit.equal(patches[0].property, "1");
-			QUnit.equal(patches[0].type, "remove");
-			QUnit.ok(!patches[0].value);
-		}
+		patches.forEach(function(patch) {
+			if(patch.property === "length") {
+				QUnit.equal(patch.type, "set");
+				QUnit.equal(patch.value, 1);
+			} else {
+				QUnit.equal(patch.property, "1");
+				QUnit.equal(patch.type, "remove");
+				QUnit.ok(!patch.value);
+			}
+		});
 	});
 	deleteArrayObject.length = 1; // deleting object at index 1 is implicit in setting length
 });
@@ -613,12 +617,14 @@ QUnit.test("changing an item at an array index dispatches a splice patch", funct
 	var a = observe([1, 2]);
 
 	a[canSymbol.for("can.onPatches")](function(patches) {
-		if(patches[0].property) {
-			return;
-		}
-		QUnit.equal(patches[0].index, 0);
-		QUnit.equal(patches[0].deleteCount, 1);
-		QUnit.deepEqual(patches[0].insert, [2]);
+		patches.forEach(function(patch) {
+			if(patch.property) {
+				return;
+			}
+			QUnit.equal(patch.index, 0);
+			QUnit.equal(patch.deleteCount, 1);
+			QUnit.deepEqual(patch.insert, [2]);
+		});
 	});
 
 	a[0] = 2;
