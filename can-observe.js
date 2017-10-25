@@ -37,10 +37,10 @@ function shouldAddObservation(key, value, target) {
 		!target[observableSymbol].inArrayMethod;
 }
 
-function shouldObserveValue(key, value, target) {
+function shouldObserveValue(key, value, target, onlyIfHandlers) {
 	return value && typeof value === "object" &&
 		!canReflect.isSymbolLike(key) &&
-		target[observableSymbol].handlers.getNode([key]);
+		(!onlyIfHandlers || target[observableSymbol].handlers.getNode([key]));
 }
 
 function shouldDispatchEvents(key, value, target, change, isArray) {
@@ -208,7 +208,7 @@ var observe = function(obj){
 				value = target[key];
 			}
 			// If the value for this key is an object and not already observable, make a proxy for it
-			if (shouldObserveValue(key, value, target)) {
+			if (shouldObserveValue(key, value, target, true)) {
 				value = target[key] = observe(value);
 			}
 			// Intercept calls to Array mutation methods.
@@ -226,7 +226,7 @@ var observe = function(obj){
 			var integerIndex = isIntegerIndex(key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			// make a proxy for any non-observable objects being passed in as values
-			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && typeof value === "object" && !!value) {
+			if (shouldObserveValue(key, value, target)) {
 				value = observe(value);
 			} else if (value && value[observableSymbol]){
 				value = value[observableSymbol].proxy;
@@ -244,7 +244,6 @@ var observe = function(obj){
 					target[key] = value;
 				}
 			}
-			// TODO refactor long predicates into helper functions
 			if(shouldDispatchEvents(key, value, target, change, isArray)) {
 				queues.batch.start();
 				var patches = [];
