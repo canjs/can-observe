@@ -37,16 +37,42 @@ function shouldAddObservation(key, value, target) {
 		!target[observableSymbol].inArrayMethod;
 }
 
+// #### shouldObserveValue
+// Decide whether a value being read or written should be converted to its
+// Proxied equivalent.
+// Proxy when all of the following conditions are true:
+//  - value is an object (it exists, so is not null, and has type "object")
+//  - key is not a symbol (symbolic properties are assumed not to be desired as observables)
+//  - for the read case, there is at least one listener for the property on the parent object
+//  	(represented by the onlyIfHandlers flag)
+//  - for the write case, the previous stipulation does not apply.
 function shouldObserveValue(key, value, target, onlyIfHandlers) {
 	return value && typeof value === "object" &&
 		!canReflect.isSymbolLike(key) &&
 		(!onlyIfHandlers || target[observableSymbol].handlers.getNode([key]));
 }
 
+// #### shouldDispatchEvents
+// Decide whether listeners should be dispatched for the current key.
+// Dispatch when all of the following conditions are true:
+//  - there has been a change (the value is different from the previous key value)
+//  - any of the following are true:
+//    - the parent object is not an Array
+//    - the key is not "length"
+//    - an array method (mutator or comprehension) is not currently executing
+//       (during e.g. map/filter or push, the length will be dispatched by the method interceptor)
 function shouldDispatchEvents(key, value, target, change, isArray) {
 	return change && (key !== "length" || !isArray || !target[observableSymbol].inArrayMethod);
 }
 
+// #### didLengthChangeCauseDeletions
+// Decide whether a new length property on an object had side effects on other properties
+// Deletions happened when all of the following conditions are true:
+//  - the parent object is an Array
+//  - the key being examined is "length"
+//  - the new value of length is strictly less than the old one.
+//  - an array method (mutator or comprehension) is not currently executing
+//     (during e.g. pop or splice, property removal events will be dispatched by the method interceptor)
 function didLengthChangeCauseDeletions(key, value, target, old, isArray) {
 	return isArray && key === "length" && value < old && !target[observableSymbol].inArrayMethod;
 }
@@ -192,8 +218,6 @@ var observe = function(obj){
 			if(proxyOnly[key]) {
 				return proxyOnly[key];
 			}
-			// Is the key a symbol?  By default we don't observe symbol properties
-			// (prevents unnecessary handler pollution)
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			var value;
 			// If this is a getter, call the getter on the Proxy in order to observe
