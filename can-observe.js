@@ -57,30 +57,28 @@ function didLengthChangeCauseDeletions(key, value, target, old, isArray) {
 // as observable, when only the Proxy is.
 var proxyOnly = Object.create(null);
 canReflect.assignSymbols(proxyOnly, {
-	"can.onKeyValue": function(key, handler) {
+	"can.onKeyValue": function(key, handler, queue) {
 		var handlers = this[observableSymbol].handlers;
-		handlers.add([key, handler]);
+		handlers.add([key, queue || "notify", handler]);
 	},
-	"can.offKeyValue": function(key, handler) {
+	"can.offKeyValue": function(key, handler, queue) {
 		var handlers = this[observableSymbol].handlers;
-		handlers.delete([key, handler]);
+		handlers.delete([key, queue || "notify", handler]);
 	},
-	"can.onPatches": function(handler) {
+	"can.onPatches": function(handler, queue) {
 		var handlers = this[observableSymbol].handlers;
-		handlers.add([patchesSymbol, handler]);
+		handlers.add([patchesSymbol, queue || "notify", handler]);
 	},
-	"can.offPatches": function(handler) {
+	"can.offPatches": function(handler, queue) {
 		var handlers = this[observableSymbol].handlers;
-		handlers.delete([patchesSymbol, handler]);
+		handlers.delete([patchesSymbol, queue || "notify", handler]);
 	}
 });
 var dispatch = proxyOnly.dispatch = function(key, args) {
 	var handlers = this[observableSymbol].handlers;
 	var keyHandlers = handlers.getNode([key]);
 	if(keyHandlers) {
-		keyHandlers.forEach(function(handler){
-			queues.notifyQueue.enqueue(handler, this, args);
-		}, this);
+		queues.enqueueByQueue(keyHandlers, this, args);
 	}
 };
 
@@ -304,7 +302,7 @@ var observe = function(obj){
 		}
 	});
 
-	obj[observableSymbol] = {handlers: new KeyTree([Object,Array]), proxy: p};
+	obj[observableSymbol] = {handlers: new KeyTree([Object, Object, Array]), proxy: p};
 	return p;
 };
 
