@@ -37,6 +37,12 @@ function shouldAddObservation(key, value, target) {
 		!target[observableSymbol].inArrayMethod;
 }
 
+function shouldObserveValue(key, value, target) {
+	return value && typeof value === "object" &&
+		!canReflect.isSymbolLike(key) &&
+		target[observableSymbol].handlers.getNode([key]);
+}
+
 // proxyOnly contains any prototype (i.e. shared) symbols and keys that should be available (gettable)
 // from the proxy object, but not from the object under observation.  For example, the onKeyValue and
 // offKeyValue symbols below, if applied to the target object, would erroneously present that object
@@ -177,7 +183,6 @@ var observe = function(obj){
 	var isArray = obj instanceof Array;
 
 	var p = new Proxy(obj, {
-		// TODO proxy values only if there are listeners on this object
 		get: function(target, key, receiver){
 			// The proxy only objects don't need any further processing.
 			if(proxyOnly[key]) {
@@ -185,7 +190,6 @@ var observe = function(obj){
 			}
 			// Is the key a symbol?  By default we don't observe symbol properties
 			// (prevents unnecessary handler pollution)
-			var symbolLike = canReflect.isSymbolLike(key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			var value;
 			// If this is a getter, call the getter on the Proxy in order to observe
@@ -196,10 +200,7 @@ var observe = function(obj){
 				value = target[key];
 			}
 			// If the value for this key is an object and not already observable, make a proxy for it
-			if (!symbolLike &&
-				!canReflect.isObservableLike(value) &&
-				(canReflect.isPlainObject(value) || Array.isArray(value))
-			) {
+			if (shouldObserveValue(key, value, target)) {
 				value = target[key] = observe(value);
 			}
 			// Intercept calls to Array mutation methods.
