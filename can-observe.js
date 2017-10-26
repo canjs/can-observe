@@ -1,13 +1,18 @@
 var cid = require("can-cid");
-var canBatch = require("can-event/batch/batch");
-var Observation = require("can-observation");
+var queues = require("can-queues");
+var ObservationRecorder = require("can-observation-recorder");
 var canSymbol = require("can-symbol");
 var canReflect = require("can-reflect");
 var namespace = require("can-namespace");
-var canEvent = require("can-event");
+var diffArray = require("can-util/js/diff-array/diff-array");
+var KeyTree = require("can-key-tree");
 
 var observableSymbol = canSymbol.for("can.meta");
+var patchesSymbol = canSymbol("patches");
 var hasOwn = Object.prototype.hasOwnProperty;
+// The interceptors map holds proxy intercept function wrappers for all functions that are ever observed
+//  in an observe Proxy.
+var interceptors = new WeakMap();
 
 // #### isIntegerIndex
 // takes a string prop and returns whether it can be coerced into an integer with unary +
@@ -18,123 +23,182 @@ function isIntegerIndex(prop) {
 		(+prop % 1 === 0);  // floats should be treated as strings
 }
 
+// #### shouldAddObservation
+// Decide whether a key/value/object group should add an Observation
+// Observations are added for things that satisfy all of these conditions:
+//  - not _cid
+//  - non-function values
+//  - non-symbol keys
+//  - not an unknown property on a sealed object
+//  - not integer index on array if in an array mutator or comprehension
+//  	(treat all sets on an array as a splice and use array patches instead)
+function shouldAddObservation(key, value, target) {
+	return key !== "_cid" &&
+		typeof value !== "function" &&
+		!canReflect.isSymbolLike(key) &&
+		(hasOwn.call(target, key) || !Object.isSealed(target)) && 
+		!target[observableSymbol].inArrayMethod;
+}
+
+// #### shouldObserveValue
+// Decide whether a value being read or written should be converted to its
+// Proxied equivalent.
+// Proxy when all of the following conditions are true:
+//  - value is an object (it exists, so is not null, and has type "object")
+//  - key is not a symbol (symbolic properties are assumed not to be desired as observables)
+//  - for the write case, there is at least one listener for the property on the parent object
+//  	(represented by the onlyIfHandlers flag)
+//  - for the read case, the previous stipulation does not apply; reads always return observed objects.
+function shouldObserveValue(key, value, target, onlyIfHandlers) {
+	return value && typeof value === "object" &&
+		!canReflect.isSymbolLike(key) &&
+		(!onlyIfHandlers || target[observableSymbol].handlers.getNode([key]));
+}
+
+// #### shouldDispatchEvents
+// Decide whether listeners should be dispatched for the current key.
+// Dispatch when all of the following conditions are true:
+//  - there has been a change (the value is different from the previous key value)
+//  - any of the following are true:
+//    - the parent object is not an Array
+//    - the key is not "length"
+//    - an array method (mutator or comprehension) is not currently executing
+//       (during e.g. map/filter or push, the length will be dispatched by the method interceptor)
+function shouldDispatchEvents(key, value, target, change, isArray) {
+	return change && (key !== "length" || !isArray || !target[observableSymbol].inArrayMethod);
+}
+
+// #### didLengthChangeCauseDeletions
+// Decide whether a new length property on an object had side effects on other properties
+// Deletions happened when all of the following conditions are true:
+//  - the parent object is an Array
+//  - the key being examined is "length"
+//  - the new value of length is strictly less than the old one.
+//  - an array method (mutator or comprehension) is not currently executing
+//     (during e.g. pop or splice, property removal events will be dispatched by the method interceptor)
+function didLengthChangeCauseDeletions(key, value, target, old, isArray) {
+	return isArray && key === "length" && value < old && !target[observableSymbol].inArrayMethod;
+}
+
 // proxyOnly contains any prototype (i.e. shared) symbols and keys that should be available (gettable)
 // from the proxy object, but not from the object under observation.  For example, the onKeyValue and
 // offKeyValue symbols below, if applied to the target object, would erroneously present that object
 // as observable, when only the Proxy is.
 var proxyOnly = Object.create(null);
 canReflect.assignSymbols(proxyOnly, {
-	"can.onKeyValue": function(key, handler) {
+	"can.onKeyValue": function(key, handler, queue) {
 		var handlers = this[observableSymbol].handlers;
-		var keyHandlers = handlers[key];
-		if (!keyHandlers) {
-			keyHandlers = handlers[key] = [];
-		}
-		// Possible enhancement here: Binding directly on getters (currently does not work)
-		//   need to add an observation instead of just firing handlers.
-		keyHandlers.push(handler);
+		handlers.add([key, queue || "notify", handler]);
 	},
-	"can.offKeyValue": function(key, handler) {
+	"can.offKeyValue": function(key, handler, queue) {
 		var handlers = this[observableSymbol].handlers;
-		var keyHandlers = handlers[key];
-		if(keyHandlers) {
-			var index = keyHandlers.indexOf(handler);
-			if(index >= 0) {
-				keyHandlers.splice(index, 1);
-			}
-		}
+		handlers.delete([key, queue || "notify", handler]);
+	},
+	"can.onPatches": function(handler, queue) {
+		var handlers = this[observableSymbol].handlers;
+		handlers.add([patchesSymbol, queue || "notify", handler]);
+	},
+	"can.offPatches": function(handler, queue) {
+		var handlers = this[observableSymbol].handlers;
+		handlers.delete([patchesSymbol, queue || "notify", handler]);
 	}
 });
-// proxyOnly includes the can-event suite, for the purpose of triggering
-// array events (seee below)
-Object.assign(proxyOnly, canEvent);
+var dispatch = proxyOnly.dispatch = function(key, args) {
+	var handlers = this[observableSymbol].handlers;
+	var keyHandlers = handlers.getNode([key]);
+	if(keyHandlers) {
+		queues.enqueueByQueue(keyHandlers, this, args);
+	}
+};
 
-// arrayMethodInterceptors are a special group of functions that wrap the
-// ES5 Array mutating methods.  When list-likes change, can-view-live expects certain
-// events to fire, so these wrapper functions call the original then dispatch
-// the expected events.
-var arrayMethodInterceptors = Object.create(null);
 // Each of these methods below creates the appropriate arguments for dispatch of
 // their respective event names.
 var mutateMethods = {
-	"push": {
-		add: function(arr, args, retVal) {
-			return [args, arr.length - args.length];
-		}
+	"push": function(arr, args) {
+		return [{
+			index: arr.length - args.length,
+			deleteCount: 0,
+			insert: args
+		}];
+  	},
+	"pop": function(arr) {
+		return [{
+			index: arr.length,
+			deleteCount: 1,
+			insert: []
+		}];
 	},
-	"pop": {
-		remove: function(arr, args, retVal) {
-			return [[retVal], arr.length];
-		}
+	"shift": function() {
+		return [{
+			index: 0,
+			deleteCount: 1,
+			insert: []
+		}];
 	},
-	"shift": {
-		remove: function(arr, args, retVal) {
-			return [[retVal], 0];
-		}
+	"unshift": function(arr, args) {
+		return [{
+			index: 0,
+			deleteCount: 0,
+			insert: args
+		}];
 	},
-	"unshift": {
-		add: function(arr, args, retVal) {
-			return [args, 0];
-		}
+	"splice": function(arr, args) {
+		return [{
+			index: args[0],
+			deleteCount: args[1],
+			insert: args.slice(2)
+		}];
 	},
-	"splice": {
-		remove: function(arr, args, retVal) {
-			return [retVal, args[0]];
-		},
-		add: function(arr, args, retVal) {
-			return [args.slice(2), args[0]];
-		}
+	"sort": function(arr, args, old) {
+		return diffArray(old, arr);
 	},
-	"sort": {
-		remove: function(arr, args, retVal, old) {
-			return [old, 0];
-		},
-		add: function(arr, args, retVal) {
-			return [arr, 0];
-		}
-	},
-	"reverse": {
-		remove: function(arr, args, retVal, old) {
-			return [old, 0];
-		},
-		add: function(arr, args, retVal) {
-			return [arr, 0];
-		}
+ 	"reverse": function(arr, args, old) {
+ 		return diffArray(old, arr);
 	}
 };
-var proxiableFunctions = ["map", "filter", "slice", "concat", "reduce", "reduceRight"];
 
-// #### make arrayMethodInterceptors here
+// #### make special interceptors for all Array mutation functions
 Object.keys(mutateMethods).forEach(function(prop) {
-	var changeEvents = mutateMethods[prop];
 	var protoFn = Array.prototype[prop];
-	arrayMethodInterceptors[prop] = function() {
-		var handlers = this[observableSymbol].handlers;
-		// the value of "length" is commonly listened on
-		// for array changes, so make sure it is fired.
-		handlers.length = handlers.length || [];
+	interceptors.set(protoFn, function() {
+		this[observableSymbol].inArrayMethod = true;
 		// stash the previous array contents. Use the native
 		// function instead of going through the proxy or target.
 		var old = [].slice.call(this, 0);
-		var args = Array.from(arguments);
 		// call the function -- note that *this* is the Proxy here, so 
 		//  accesses in the function still go through get() and set()
 		var ret = protoFn.apply(this, arguments);
-		canBatch.start();
-		// dispatch all the associated change events
-		Object.keys(changeEvents).forEach(function(event) {
-			var makeArgs = changeEvents[event];
-			var handlerArgs = makeArgs(this, args, ret, old);
-			canEvent.dispatch.call(this, event, handlerArgs);
-		}.bind(this));
-		// dispatch length
-		handlers.length.forEach(function(handler){
-			canBatch.queue([handler, this, [this.length, old.length]]);
-		}, this);
-		canBatch.stop();
+		var patches = mutateMethods[prop](this, Array.from(arguments), old);
+
+		queues.batch.start();
+		// dispatch all the associated change events and length
+		dispatch.call(this, "length", [this.length, old.length]);
+		dispatch.call(this, patchesSymbol, [patches.concat([{property: "length", type: "set", value: this.length}])]);
+		queues.batch.stop();
+		this[observableSymbol].inArrayMethod = false;
 		return ret;
-	};
+	});
 });
+// #### make special interceptors for all non-mutating Array functions
+Object.getOwnPropertyNames(Array.prototype).forEach(function(prop) {
+	if(mutateMethods[prop]) {
+		return;
+	}
+	var protoFn = Array.prototype[prop];
+	if(prop !== "constructor" && typeof protoFn === "function") {
+		interceptors.set(protoFn, function() {
+			ObservationRecorder.add(this, patchesSymbol);
+			this[observableSymbol].inArrayMethod = true;
+			var ret = protoFn.apply(this, arguments);
+			this[observableSymbol].inArrayMethod = false;
+			if(ret && typeof ret === "object") {
+				ret = observe(ret);
+			}
+			return ret;
+		});
+	}
+});
+
 // #### proxyIntercept
 // Generator for interceptors for any generic function that may return objects
 function proxyIntercept(fn) {
@@ -146,9 +210,6 @@ function proxyIntercept(fn) {
 		return ret;
 	};
 }
-proxiableFunctions.forEach(function(prop) {
-	arrayMethodInterceptors[prop] = proxyIntercept(Array.prototype[prop]);
-});
 
 var observe = function(obj){ //jshint ignore:line
 	// oberve proxies are meant to be singletons per-object.
@@ -172,9 +233,6 @@ var observe = function(obj){ //jshint ignore:line
 			if(proxyOnly[key]) {
 				return proxyOnly[key];
 			}
-			// Is the key a symbol?  By default we don't observe symbol properties
-			// (prevents unnecessary handler pollution)
-			var symbolLike = canReflect.isSymbolLike(key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			var value;
 			// If this is a getter, call the getter on the Proxy in order to observe
@@ -182,48 +240,32 @@ var observe = function(obj){ //jshint ignore:line
 			if(descriptor && descriptor.get) {
 				value = descriptor.get.call(receiver);
 			} else {
-				// __bindEvents for can-event is kept on the meta properties.
-				if(key === "__bindEvents") {
-					value = target[observableSymbol].__bindEvents;
-				} else {
-					value = target[key];				
-				}
+				value = target[key];
 			}
 			// If the value for this key is an object and not already observable, make a proxy for it
-			if (!symbolLike &&
-				key !== "__bindEvents" &&
-				!canReflect.isObservableLike(value) &&
-				(canReflect.isPlainObject(value) || Array.isArray(value))
-			) {
+			if (shouldObserveValue(key, value, target)) {
 				value = target[key] = observe(value);
 			}
 			// Intercept calls to Array mutation methods.
 			if (typeof value === "function") {
-				if(isArray && arrayMethodInterceptors[key]) {
-					value = arrayMethodInterceptors[key];
+				if(interceptors.has(value)) {
+					value = interceptors.get(value);
 				} else {
-					value = obj[observableSymbol].interceptors[key] || (obj[observableSymbol].interceptors[key] = proxyIntercept(value));
+					interceptors.set(value, value = proxyIntercept(value));
 				}
 			}
-			// add Observations for things that satisfy all of these conditions:
-			//  - not _cid, not __bindEvents
-			//  - non-function values
-			//  - non-symbol keys
-			//  - not an unknown property on a sealed object
-			if (key !== "_cid" && key !== "__bindEvents" &&
-				typeof value !== "function" &&
-				!symbolLike && 
-				(hasOwn.call(target, key) || !Object.isSealed(target))
-			) {
-				Observation.add(receiver, key.toString());
+			if (shouldAddObservation(key, value, target)) {
+				ObservationRecorder.add(receiver, key.toString());
 			}
 			return value;
 		},
 		set: function(target, key, value, receiver){
 			var old, change;
+			var hadOwn = hasOwn.call(target, key);
+			var integerIndex = isIntegerIndex(key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			// make a proxy for any non-observable objects being passed in as values
-			if (!canReflect.isSymbolLike(key) && !canReflect.isObservableLike(value) && (canReflect.isPlainObject(value) || Array.isArray(value))) {
+			if (shouldObserveValue(key, value, target, true)) {
 				value = observe(value);
 			} else if (value && value[observableSymbol]){
 				value = value[observableSymbol].proxy;
@@ -241,15 +283,37 @@ var observe = function(obj){ //jshint ignore:line
 					target[key] = value;
 				}
 			}
-			if(typeof old === "function") {
-				target[observableSymbol].interceptors[key] = null;
-			}
-			if(change) {
-				canBatch.start();
-				(target[observableSymbol].handlers[key] || []).forEach(function(handler){
-					canBatch.queue([handler, receiver, [value, old]]);
-				});
-				canBatch.stop();
+			if(shouldDispatchEvents(key, value, target, change, isArray)) {
+				queues.batch.start();
+				var patches = [];
+				dispatch.call(receiver, key, [value, old]);
+				if(!target[observableSymbol].inArrayMethod) {
+					patches.push({property: key, type: hadOwn ? "set" : "add", value: value});
+					if(isArray && integerIndex) {
+						// The set handler should not attempt to dispatch length patches stemming from array mutations because
+						//  we cannot reliably detect a change to the length (it's already set to the new value on the target).  
+						//  Instead, the array method interceptor should handle it, since it has information about the previous
+						//  state.
+						// The one possible exception to this is when an array index is *added* that changes the length.
+						if(!hadOwn && +key === target.length - 1) {
+							patches.push({property: "length", type: "set", value: target.length});
+						} else {
+							// In the case of setting an array index, dispatch a splice patch.
+							patches.push.apply(patches, mutateMethods.splice(obj, [+key, 1, value]));
+						}
+					}
+				}
+				// In the case of deleting items by setting the length of the array, fire "remove" patches.
+				// (deleting individual items from an array doesn't change the length; it just creates holes)
+				if(didLengthChangeCauseDeletions(key, value, target, old, isArray)) {
+					while(old-- > value) {
+						patches.push({property: old, type: "remove"});
+					}
+				}
+				if(patches.length) {
+					dispatch.call(receiver, patchesSymbol, [patches]);
+				}
+				queues.batch.stop();
 			}
 			return true;
 		},
@@ -269,21 +333,17 @@ var observe = function(obj){ //jshint ignore:line
 			// Don't trigger handlers on array indexes, as they will change with length.
 			//  Otherwise trigger that the property is now undefined.
 			// If the property is redefined, the handlers will fire again.
-			if(ret && (!Array.isArray(target) || !isIntegerIndex(key))) {
-				canBatch.start();
-				(target[observableSymbol].handlers[key] || []).forEach(function(handler, i){
-					if(old !== undefined) {
-						canBatch.queue([handler, receiver, [undefined, old]]);
-					}
-				});
-				canBatch.stop();
+			if(ret && !target[observableSymbol].inArrayMethod && old !== undefined) {
+				queues.batch.start();
+				dispatch.call(receiver, key, [undefined, old]);
+				dispatch.call(receiver, patchesSymbol, [[{property: key, type: "remove"}]]);
+				queues.batch.stop();
 			}
-			target[observableSymbol].interceptors[key] = null;
 			return ret;
 		}
 	});
 
-	p[observableSymbol] = {handlers: {}, __bindEvents: {}, proxy: p, interceptors: {}};
+	obj[observableSymbol] = {handlers: new KeyTree([Object, Object, Array]), proxy: p};
 	return p;
 };
 
