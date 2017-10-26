@@ -64,6 +64,27 @@ person.first = "Chasen";
 person.last = "Le Hara";
 ```
 
+## Nested Objects
+
+Any Object property in a `can-observe` will be replaced with a `can-observe` observed Proxy on read or write.  This allows deep path traversal in objects, with observable changes all along the way.
+
+```js
+var observe = require("can-observe");
+
+var name = { first: "Justin", last: "Meyer" };
+var person = { 
+	name: name
+};
+
+var observed = observe(person); 
+observed;       // -> observed is a Proxy;
+observed.name;  // -> also a Proxy
+person.name;    // -> this is a plain object instead
+
+observed.address = { city: "Chicago" };  // this gets proxified on set, so...
+person.address // -> this is a Proxy
+```
+
 ## ES6 Classes
 
 `can-observe` is specifically designed to work with ES6 classes.  To make view models for your [can-component can-components] from ES6 classes, only a few lines of constructor code are necessary:
@@ -93,7 +114,7 @@ canComponent.extend({
 ```
 
 ```html
-<my-widget messageFromParent="world" />
+<my-widget messageFromParent:from="'world'" />
 
 <!-- above tag will contain "<p>Hello, world!</p>" on render --> 
 ```

@@ -500,6 +500,43 @@ QUnit.test("array events are automatically triggered (reverse)", function() {
 	list.reverse();
 });
 
+QUnit.test("non-mutating array -> array functions return proxied arrays", function() {
+	var list = observe([0,2,3]);
+	QUnit.ok(list.map(function(x) { return x + 1; })[observableSymbol], "Map returns proxy");
+	QUnit.ok(list.filter(function(x) { return x; })[observableSymbol], "Filter returns proxy");
+	QUnit.ok(list.slice(0)[observableSymbol], "Slice returns proxy");
+	QUnit.ok(list.concat([5, 6])[observableSymbol], "Concat returns proxy");
+});
+
+QUnit.test("non-mutating reduce functions return proxied objects", function() {
+	var list = observe([0,2,3]);
+	QUnit.ok(list.reduce(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "Reduce returns proxy");
+	QUnit.ok(list.reduceRight(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "ReduceRight returns proxy");
+});
+
+QUnit.test("custom, non-array functions return proxied objects as well", function() {
+	var p = observe({
+		foo: function() {
+			return {};
+		}
+	});
+
+	QUnit.ok(p.foo()[observableSymbol], "Proxied function returns proxy");
+});
+
+QUnit.test("custom, non-array functions can be redefined", function() {
+	expect(1);
+	var p = observe({
+		foo: function() {
+			QUnit.ok(true, "first function called");
+		}
+	});
+
+	p.foo();
+	p.foo = function() {};
+	p.foo();
+});
+
 QUnit.test("patches events for keyed properties on objects", function() {
 	expect(9);
 	var addObject = observe({});

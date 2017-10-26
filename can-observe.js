@@ -167,7 +167,8 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		// stash the previous array contents. Use the native
 		// function instead of going through the proxy or target.
 		var old = [].slice.call(this, 0);
-		// call the function
+		// call the function -- note that *this* is the Proxy here, so 
+		//  accesses in the function still go through get() and set()
 		var ret = protoFn.apply(this, arguments);
 		var patches = mutateMethods[prop](this, Array.from(arguments), old);
 
@@ -191,12 +192,27 @@ Object.getOwnPropertyNames(Array.prototype).forEach(function(prop) {
 			this[observableSymbol].inArrayMethod = true;
 			var ret = protoFn.apply(this, arguments);
 			this[observableSymbol].inArrayMethod = false;
+			if(ret && typeof ret === "object") {
+				ret = observe(ret);
+			}
 			return ret;
 		};
 	}
 });
 
-var observe = function(obj){
+// #### proxyIntercept
+// Generator for interceptors for any generic function that may return objects
+function proxyIntercept(fn) {
+	return function() {
+		var ret = fn.apply(this, arguments);
+		if(ret && typeof ret === "object") {
+			ret = observe(ret);
+		}
+		return ret;
+	};
+}
+
+var observe = function(obj){ //jshint ignore:line
 	// oberve proxies are meant to be singletons per-object.
 	// Or to put it another way, it would be very difficult to manage
 	// multiple observation proxies for one object.  So calling observe()
@@ -232,8 +248,12 @@ var observe = function(obj){
 				value = target[key] = observe(value);
 			}
 			// Intercept calls to Array mutation methods.
-			if (isArray && typeof value === "function" && arrayMethodInterceptors[key]) {
-				value = arrayMethodInterceptors[key];
+			if (typeof value === "function") {
+				if(isArray && arrayMethodInterceptors[key]) {
+					value = arrayMethodInterceptors[key];
+				} else {
+					value = obj[observableSymbol].interceptors[key] || (obj[observableSymbol].interceptors[key] = proxyIntercept(value));
+				}
 			}
 			if (shouldAddObservation(key, value, target)) {
 				ObservationRecorder.add(receiver, key.toString());
@@ -263,6 +283,9 @@ var observe = function(obj){
 				if (change) {
 					target[key] = value;
 				}
+			}
+			if(typeof old === "function") {
+				target[observableSymbol].interceptors[key] = null;
 			}
 			if(shouldDispatchEvents(key, value, target, change, isArray)) {
 				queues.batch.start();
@@ -320,11 +343,12 @@ var observe = function(obj){
 				dispatch.call(receiver, patchesSymbol, [[{property: key, type: "remove"}]]);
 				queues.batch.stop();
 			}
+			target[observableSymbol].interceptors[key] = null;
 			return ret;
 		}
 	});
 
-	obj[observableSymbol] = {handlers: new KeyTree([Object, Object, Array]), proxy: p};
+	obj[observableSymbol] = {handlers: new KeyTree([Object, Object, Array]), proxy: p, interceptors: {}};
 	return p;
 };
 
