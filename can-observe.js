@@ -10,6 +10,9 @@ var KeyTree = require("can-key-tree");
 var observableSymbol = canSymbol.for("can.meta");
 var patchesSymbol = canSymbol("patches");
 var hasOwn = Object.prototype.hasOwnProperty;
+// The interceptors map holds proxy intercept function wrappers for all functions that are ever observed
+//  in an observe Proxy.
+var interceptors = new WeakMap();
 
 // #### isIntegerIndex
 // takes a string prop and returns whether it can be coerced into an integer with unary +
@@ -108,11 +111,6 @@ var dispatch = proxyOnly.dispatch = function(key, args) {
 	}
 };
 
-
-// arrayMethodInterceptors are a special group of functions that wrap the
-// ES5 Array mutating methods.  When list-likes change, "patch" type handlers
-// are called to show the new changes (found from diffing).
-var arrayMethodInterceptors = Object.create(null);
 // Each of these methods below creates the appropriate arguments for dispatch of
 // their respective event names.
 var mutateMethods = {
@@ -159,10 +157,10 @@ var mutateMethods = {
 	}
 };
 
-// #### make arrayMethodInterceptors here
+// #### make special interceptors for all Array mutation functions
 Object.keys(mutateMethods).forEach(function(prop) {
 	var protoFn = Array.prototype[prop];
-	arrayMethodInterceptors[prop] = function() {
+	interceptors.set(protoFn, function() {
 		this[observableSymbol].inArrayMethod = true;
 		// stash the previous array contents. Use the native
 		// function instead of going through the proxy or target.
@@ -179,15 +177,16 @@ Object.keys(mutateMethods).forEach(function(prop) {
 		queues.batch.stop();
 		this[observableSymbol].inArrayMethod = false;
 		return ret;
-	};
+	});
 });
+// #### make special interceptors for all non-mutating Array functions
 Object.getOwnPropertyNames(Array.prototype).forEach(function(prop) {
 	if(mutateMethods[prop]) {
 		return;
 	}
 	var protoFn = Array.prototype[prop];
 	if(prop !== "constructor" && typeof protoFn === "function") {
-		arrayMethodInterceptors[prop] = function() {
+		interceptors.set(protoFn, function() {
 			ObservationRecorder.add(this, patchesSymbol);
 			this[observableSymbol].inArrayMethod = true;
 			var ret = protoFn.apply(this, arguments);
@@ -196,7 +195,7 @@ Object.getOwnPropertyNames(Array.prototype).forEach(function(prop) {
 				ret = observe(ret);
 			}
 			return ret;
-		};
+		});
 	}
 });
 
@@ -249,10 +248,10 @@ var observe = function(obj){ //jshint ignore:line
 			}
 			// Intercept calls to Array mutation methods.
 			if (typeof value === "function") {
-				if(isArray && arrayMethodInterceptors[key]) {
-					value = arrayMethodInterceptors[key];
+				if(interceptors.has(value)) {
+					value = interceptors.get(value);
 				} else {
-					value = obj[observableSymbol].interceptors[key] || (obj[observableSymbol].interceptors[key] = proxyIntercept(value));
+					interceptors.set(value, value = proxyIntercept(value));
 				}
 			}
 			if (shouldAddObservation(key, value, target)) {
@@ -283,9 +282,6 @@ var observe = function(obj){ //jshint ignore:line
 				if (change) {
 					target[key] = value;
 				}
-			}
-			if(typeof old === "function") {
-				target[observableSymbol].interceptors[key] = null;
 			}
 			if(shouldDispatchEvents(key, value, target, change, isArray)) {
 				queues.batch.start();
@@ -343,12 +339,11 @@ var observe = function(obj){ //jshint ignore:line
 				dispatch.call(receiver, patchesSymbol, [[{property: key, type: "remove"}]]);
 				queues.batch.stop();
 			}
-			target[observableSymbol].interceptors[key] = null;
 			return ret;
 		}
 	});
 
-	obj[observableSymbol] = {handlers: new KeyTree([Object, Object, Array]), proxy: p, interceptors: {}};
+	obj[observableSymbol] = {handlers: new KeyTree([Object, Object, Array]), proxy: p};
 	return p;
 };
 
