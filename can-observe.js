@@ -43,9 +43,9 @@ function shouldAddObservation(key, value, target) {
 // Proxy when all of the following conditions are true:
 //  - value is an object (it exists, so is not null, and has type "object")
 //  - key is not a symbol (symbolic properties are assumed not to be desired as observables)
-//  - for the read case, there is at least one listener for the property on the parent object
+//  - for the write case, there is at least one listener for the property on the parent object
 //  	(represented by the onlyIfHandlers flag)
-//  - for the write case, the previous stipulation does not apply.
+//  - for the read case, the previous stipulation does not apply; reads always return observed objects.
 function shouldObserveValue(key, value, target, onlyIfHandlers) {
 	return value && typeof value === "object" &&
 		!canReflect.isSymbolLike(key) &&
@@ -228,7 +228,7 @@ var observe = function(obj){
 				value = target[key];
 			}
 			// If the value for this key is an object and not already observable, make a proxy for it
-			if (shouldObserveValue(key, value, target, true)) {
+			if (shouldObserveValue(key, value, target)) {
 				value = target[key] = observe(value);
 			}
 			// Intercept calls to Array mutation methods.
@@ -246,7 +246,7 @@ var observe = function(obj){
 			var integerIndex = isIntegerIndex(key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			// make a proxy for any non-observable objects being passed in as values
-			if (shouldObserveValue(key, value, target)) {
+			if (shouldObserveValue(key, value, target, true)) {
 				value = observe(value);
 			} else if (value && value[observableSymbol]){
 				value = value[observableSymbol].proxy;
