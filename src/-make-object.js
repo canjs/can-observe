@@ -7,6 +7,7 @@ var ObservationRecorder = require("can-observation-recorder");
 var symbols = require("./-symbols");
 
 var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
+var dispatchBoundChangeSymbol = canSymbol.for("can.dispatchInstanceBoundChange");
 var hasOwn = Object.prototype.hasOwnProperty;
 
 
@@ -45,12 +46,12 @@ var makeObject = {
     observable: function(object, options){
 		var receiverKeys = Object.create( makeObject.metaKeys() );
         var meta = {
-            handlers: new KeyTree([Object, Object, Array]),
             target: object,
             receiverKeys: receiverKeys,
             options: options,
 			createSideEffects: true
         };
+		meta.handlers = makeObject.handlers(meta);
 		receiverKeys[symbols.metaSymbol] = meta;
         return meta.receiver = new Proxy(object, {
             get: makeObject.get.bind(meta),
@@ -60,7 +61,20 @@ var makeObject = {
 			meta: meta
         });
     },
-
+	handlers: function(meta){
+		return new KeyTree([Object, Object, Array],{
+			onFirst: function(){
+				if(meta.receiver.constructor[dispatchBoundChangeSymbol]) {
+					meta.receiver.constructor[dispatchBoundChangeSymbol](meta.receiver, true);
+				}
+			},
+			onEmpty: function(){
+				if(meta.receiver.constructor[dispatchBoundChangeSymbol]) {
+					meta.receiver.constructor[dispatchBoundChangeSymbol](meta.receiver, false);
+				}
+			}
+		});
+	},
     metaKeys: function(){
         return metaKeys;
     },
@@ -113,11 +127,11 @@ var makeObject = {
         //  Otherwise trigger that the property is now undefined.
         // If the property is redefined, the handlers will fire again.
         if(ret && this.createSideEffects !== false && old !== undefined) {
-            queues.batch.start();
-            queues.enqueueByQueue(this.handlers.getNode(key), this.receiver,
+			queues.batch.start();
+            queues.enqueueByQueue(this.handlers.getNode([key]), this.receiver,
                 [undefined, old]);
             var patches = [{key: key, type: "delete"}];
-            queues.enqueueByQueue(this.handlers.getNode(symbols.patchesSymbol), this.receiver,
+            queues.enqueueByQueue(this.handlers.getNode([symbols.patchesSymbol]), this.receiver,
                 [patches]);
 
             var constructor = this.target.constructor,

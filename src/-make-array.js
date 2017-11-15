@@ -138,11 +138,11 @@ var makeArray = {
 		var receiverKeys = Object.create( makeArray.metaKeys() );
 
         var meta = {
-            handlers: new KeyTree([Object, Object, Array]),
             target: object,
             receiverKeys: receiverKeys,
             options: options
         };
+		meta.handlers = makeObject.handlers(meta);
 		receiverKeys[symbols.metaSymbol] = meta;
         return meta.receiver = new Proxy(object, {
             get: makeObject.get.bind(meta),

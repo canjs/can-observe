@@ -53,7 +53,7 @@ QUnit.test("Should convert nested arrays to observables in a lazy way (get case)
 	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is not observed");
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after read");
-	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
+	QUnit.equal(obs.nested, observe(nested), "converted to same observable" );
 });
 
 
@@ -67,7 +67,7 @@ QUnit.test("Should convert nested arrays to observables (set case) #21", functio
 	obs.nested = nested;
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after set");
-	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
+	QUnit.equal(obs.nested, observe(nested), "converted to same observable" );
 });
 
 
@@ -202,15 +202,7 @@ QUnit.test("non-mutating reduce functions return proxied objects", function() {
 	QUnit.ok(list.reduceRight(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "ReduceRight returns proxy");
 });
 
-QUnit.test("custom, non-array functions return proxied objects as well", function() {
-	var p = observe({
-		foo: function() {
-			return {};
-		}
-	});
 
-	QUnit.ok(p.foo()[observableSymbol], "Proxied function returns proxy");
-});
 
 QUnit.test("custom, non-array functions can be redefined", function() {
 	expect(1);

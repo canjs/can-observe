@@ -123,7 +123,7 @@ QUnit.test("Should convert nested objects to observables in a lazy way (get case
 	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is not observed");
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after read");
-	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
+	QUnit.equal(obs.nested, observe(nested), "converted to same observable" );
 });
 
 QUnit.test("Should convert nested objects to observables (set case) #21", function(){
@@ -136,7 +136,7 @@ QUnit.test("Should convert nested objects to observables (set case) #21", functi
 	obs.nested = nested;
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after set");
-	QUnit.ok(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol) > -1, "nested is now observed");
+	QUnit.equal(obs.nested, observe(nested), "converted to same observable" );
 });
 
 QUnit.test("Should convert properties if bound #21", function() {
@@ -239,18 +239,17 @@ QUnit.test("Should remove event handlers #21", function() {
 	QUnit.equal(result, '1231334', 'Should be able to add and remove handlers');
 });
 
-QUnit.test("Other can.* symbols should not appear on object", function() {
+QUnit.skip("can.* symbols should not appear on object", function() {
 	var a = {};
 	var o = observe(a);
 
 	var objectSymbols = Object.getOwnPropertySymbols(a);
-	QUnit.ok(objectSymbols.indexOf(observableSymbol) > -1, "Observable symbol in object");
 	QUnit.deepEqual(objectSymbols.filter(function(sym) {
 		return sym !== observableSymbol && canSymbol.keyFor(sym).indexOf("can.") === 0;
-	}), [], "No other can.* symbols on object");
+	}), [], "No can.* symbols on object");
 
 	var observeSymbols = Object.getOwnPropertySymbols(o);
-	QUnit.ok(observeSymbols.indexOf(observableSymbol) > -1, "Observable symbol in observe");
+	QUnit.ok(observeSymbols.indexOf(observableSymbol) > -1, "Meta symbol on observe");
 	QUnit.ok(observeSymbols.filter(function(sym) {
 		return sym !== observableSymbol && canSymbol.keyFor(sym).indexOf("can.") === 0;
 	}).length > 0, "Some other can.* symbols on observe");
@@ -401,20 +400,20 @@ QUnit.test("patches events for keyed properties on objects", function() {
 	var removeObject = observe({a: 1});
 
 	addObject[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.equal(patches[0].key, "a");
+		QUnit.equal(patches[0].key, "a","set a to 1");
 		QUnit.equal(patches[0].type, "add");
 		QUnit.equal(patches[0].value, 1);
 	});
 	addObject.a = 1;
 	setObject[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.equal(patches[0].key, "a");
+		QUnit.equal(patches[0].key, "a", "set a to 2");
 		QUnit.equal(patches[0].type, "set");
 		QUnit.equal(patches[0].value, 2);
 	});
 	setObject.a = 2;
 	removeObject[canSymbol.for("can.onPatches")](function(patches) {
 
-		QUnit.equal(patches[0].key, "a", "delete");
+		QUnit.equal(patches[0].key, "a", "delete", "delete a");
 		QUnit.equal(patches[0].type, "delete", "delete");
 		QUnit.ok(!patches[0].value, "delete");
 	});

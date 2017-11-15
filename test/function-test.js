@@ -11,6 +11,17 @@ var observableSymbol = canSymbol.for("can.meta");
 
 QUnit.module("can-observe with Functions");
 
+QUnit.test("custom, non-array functions return proxied objects as well", function() {
+	var p = observe({
+		foo: function() {
+			return {};
+		}
+	});
+
+	QUnit.ok(p.foo()[observableSymbol], "Proxied function returns proxy");
+});
+
+
 QUnit.test("basics with constructor functions", 3, function(){
     var OriginalPerson = function(first, last){
         this.first = first;
