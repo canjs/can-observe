@@ -1,7 +1,8 @@
 var canReflect = require("can-reflect");
 var queues = require("can-queues");
 var symbols = require("./-symbols");
-
+var canSymbol = require("can-symbol");
+var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
 
 // proxyOnly contains any prototype (i.e. shared) symbols and keys that should be available (gettable)
 // from the proxy object, but not from the object under observation.  For example, the onKeyValue and
@@ -27,6 +28,7 @@ canReflect.assignSymbols(proxyOnly, {
 	}
 });
 
+
 module.exports = {
     keys: proxyOnly,
     dispatch: function(key, args) {
@@ -35,5 +37,11 @@ module.exports = {
     	if(keyHandlers) {
     		queues.enqueueByQueue(keyHandlers, this, args);
     	}
+		if(key === symbols.patchesSymbol){
+			var dispatchPatches = this.constructor[dispatchInstanceOnPatchesSymbol];
+			if(dispatchPatches) {
+				dispatchPatches.call(this.constructor, this, args);
+			}
+		}
     }
 };

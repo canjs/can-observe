@@ -9,6 +9,23 @@ var observableSymbol = canSymbol.for("can.meta");
 
 QUnit.module("can-observe with Array");
 
+var makeArray = require("../src/-make-array");
+var makeObserve = require("../src/-make-observe");
+
+QUnit.test("makeArray basics", function(){
+	var hobbies = makeArray.observable(["basketball","programming"],makeObserve);
+
+	var hobbiesList = new Observation(function(){
+		return hobbies.join(",");
+	});
+
+	canReflect.onValue(hobbiesList, function(newVal) {
+		QUnit.equal(newVal, "basketball");
+	});
+
+	// causes change event above
+	hobbies.pop();
+});
 
 QUnit.test("basics with array", function(){
 	var hobbies = observe(["basketball","programming"]);

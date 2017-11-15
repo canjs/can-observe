@@ -6,10 +6,23 @@ var queues = require("can-queues");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 var Observation = require("can-observation");
+var makeObject = require("../src/-make-object");
 
 var observableSymbol = canSymbol.for("can.meta");
 
 QUnit.module("can-observe with Objects");
+
+QUnit.test("makeObject basics", function(){
+	var person = makeObject.observable({},{observe: makeObject.observable});
+	person.first = "Justin";
+	person.last = "Meyer";
+
+	canReflect.onKeyValue(person, "first", function(newVal) {
+		QUnit.equal(newVal, "Vyacheslav");
+	});
+
+	person.first = "Vyacheslav";
+});
 
 QUnit.test("basics with object", function(){
 	var person = observe({});
@@ -407,4 +420,8 @@ QUnit.test("patches events for keyed properties on objects", function() {
 	});
 	delete removeObject.a;
 
+});
+
+require("can-reflect-tests/observables/map-like/instance/on-get-set-delete-key")("", function(){
+	return observe({});
 });

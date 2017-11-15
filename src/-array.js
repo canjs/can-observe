@@ -171,6 +171,8 @@ module.exports = function(options){
 				}
 				if(patches.length) {
 					dispatch.call(receiver, symbols.patchesSymbol, [patches]);
+
+					// var dispatchPatches = event.patches && this.constructor[dispatchInstanceOnPatchesSymbol];
 				}
 				queues.batch.stop();
 			}

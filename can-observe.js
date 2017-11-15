@@ -9,6 +9,7 @@ var proxied = require("./src/-proxy-keys");
 var makeProxiedMethods = require("./src/-proxy-methods");
 var makeArray = require("./src/-array");
 var makeObject = require("./src/-object");
+var makeFunction = require("./src/-function");
 var symbols = require("./src/-symbols");
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -50,7 +51,7 @@ function shouldMakeValueObservable(key, value, target, onlyIfHandlers) {
 var injectionOptions = {};
 
 
-var observe = function(obj){ //jshint ignore:line
+var observe = function(obj, options){ //jshint ignore:line
 	if(!obj) {
 		return obj;
 	}
@@ -58,15 +59,26 @@ var observe = function(obj){ //jshint ignore:line
 	if (obj[symbols.metaSymbol]) {
 		return obj[symbols.metaSymbol].proxy;
 	}
+	options = options || {};
+
+	options = canReflect.assign({
+		defaultGetTraps: {}
+	},options);
 
 	// Handle certain things about Arrays and subclasses of Arrays specially.
 	var isArray = obj instanceof Array;
 
-	var p = new Proxy(obj, {
+	var baseProxyHandlers = {
 		get: function(target, key, receiver){
 			// The proxy only objects don't need any further processing.
 			if(proxied.keys[key] !== undefined) {
 				return proxied.keys[key];
+			}
+			if(injectionOptions.function.keys[key] !== undefined) {
+				return injectionOptions.function.keys[key];
+			}
+			if(options.defaultGetTraps[key]) {
+				return options.defaultGetTraps[key];
 			}
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
 			var value;
@@ -91,6 +103,9 @@ var observe = function(obj){ //jshint ignore:line
 			return value;
 		},
 		set: function(target, key, value, receiver){
+			if(options.defaultGetTraps[key]) {
+				delete options.defaultGetTraps[key];
+			}
 			var old, change;
 			var hadOwn = hasOwn.call(target, key);
 			var descriptor = Object.getOwnPropertyDescriptor(target, key);
@@ -128,7 +143,8 @@ var observe = function(obj){ //jshint ignore:line
 			// that the Proxy is observable.
 			return Object.getOwnPropertyNames(target)
 				.concat(Object.getOwnPropertySymbols(target))
-				.concat(Object.getOwnPropertySymbols(proxied.keys));
+				.concat(Object.getOwnPropertySymbols(proxied.keys))
+				.concat(Object.getOwnPropertySymbols(injectionOptions.function.keys));
 		},
 		deleteProperty: function(target, key) {
 			var old = target[key];
@@ -145,7 +161,19 @@ var observe = function(obj){ //jshint ignore:line
 			}
 			return ret;
 		}
-	});
+	};
+	if(typeof obj === "function") {
+		canReflect.assign(baseProxyHandlers,injectionOptions.function.proxyHandlers);
+	}
+
+	var p = new Proxy(obj, baseProxyHandlers );
+	if(typeof obj === "function") {
+		var defaultGetTraps = injectionOptions.function.init(obj, p);
+		if(defaultGetTraps) {
+			console.log(defaultGetTraps.constructor);
+			canReflect.assign( options.defaultGetTraps, defaultGetTraps );
+		}
+	}
 
 	obj[symbols.metaSymbol] = {
 		handlers: new KeyTree([Object, Object, Array]),
@@ -160,7 +188,7 @@ injectionOptions.observe = observe;
 injectionOptions.proxiedMethods = makeProxiedMethods(injectionOptions);
 injectionOptions.object = makeObject(injectionOptions);
 injectionOptions.array = makeArray(injectionOptions);
-
+injectionOptions.function = makeFunction(injectionOptions);
 
 namespace.observe = observe;
 module.exports = observe;

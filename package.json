@@ -31,6 +31,7 @@
   },
   "homepage": "https://github.com/canjs/can-observe",
   "dependencies": {
+    "can-event-queue": "^0.8.1",
     "can-key-tree": "<2.0.0",
     "can-namespace": "^1.0.0",
     "can-observation-recorder": "<2.0.0",
@@ -41,6 +42,7 @@
   "devDependencies": {
     "bit-docs": "0.0.7",
     "can-observation": "^4.0.0-pre.7",
+    "can-reflect-tests": "0.0.4",
     "can-util": "^3.2.2",
     "detect-cyclic-packages": "^1.1.0",
     "jshint": "^2.9.1",
