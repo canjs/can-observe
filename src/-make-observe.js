@@ -1,36 +1,31 @@
 var canReflect = require("can-reflect");
 var observables = require("./-observable-store");
+var helpers = require("./-helpers");
 
 var makeObserve = {
     observe: function(value){
         if(canReflect.isPrimitive(value)) {
             return value;
         }
-        var observable = observables.get(value)
+        var observable = observables.proxiedObjects.get(value);
         if(observable) {
             return observable;
         }
-        if(typeof value === "function") {
-            if(makeObserve.function) {
-                observable = makeObserve.function(value);
-            } else {
-                observable = value;
-            }
-        } else if(Array.isArray(value)) {
-            if(makeObserve.array) {
-                observable = makeObserve.array(value);
-            } else {
-                observable = value;
-            }
-        } else {
-            if(makeObserve.object) {
-                observable = makeObserve.object(value);
-            } else {
-                observable = value;
-            }
+        if( observables.proxies.has(value) ) {
+            return value;
         }
-        observables.set(value, observable);
-        observables.set(observable, observable);
+        if( helpers.isBuiltInButNotArrayOrPlainObject(value) ) {
+            return value;
+        }
+        if(typeof value === "function") {
+            observable = makeObserve.function(value);
+        } else if(helpers.inheritsFromArray(value)) {
+            observable = makeObserve.array(value);
+        } else {
+            observable = makeObserve.object(value);
+        }
+        observables.proxiedObjects.set(value, observable);
+        observables.proxies.add(observable);
         return observable;
     }
 };

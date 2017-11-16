@@ -60,6 +60,14 @@ QUnit.test("basics with object and new Observation", function(){
 	queues.batch.stop();
 });
 
+QUnit.test("reading properties up the prototype chain does not set property", function(){
+	var obj = observe( Object.create({foo:{bar: "zed"}}) );
+
+	obj.foo;
+
+	QUnit.notOk( obj.hasOwnProperty("foo"), "no foo property" );
+});
+
 QUnit.test("events aren't fired if the value doesn't change", function(){
 	var dog = observe({name: "Wilbur"});
 

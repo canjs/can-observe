@@ -1,1 +1,4 @@
-module.exports = new WeakMap();
+module.exports = {
+    proxiedObjects: new WeakMap(),
+    proxies: new WeakSet()
+};

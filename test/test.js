@@ -1,3 +1,3 @@
-//require("./object-test");
+require("./object-test");
 require("./array-test");
-//require("./function-test");
+require("./function-test");

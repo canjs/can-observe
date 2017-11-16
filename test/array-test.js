@@ -228,19 +228,19 @@ QUnit.test("patches events for keyed properties on arrays", function() {
 	removeObject.a = 1;
 
 	addObject[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.equal(patches[0].key, "a");
+		QUnit.equal(patches[0].key, "a", "a=1");
 		QUnit.equal(patches[0].type, "add");
 		QUnit.equal(patches[0].value, 1);
 	});
 	addObject.a = 1;
 	setObject[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.equal(patches[0].key, "a");
+		QUnit.equal(patches[0].key, "a", "a=2");
 		QUnit.equal(patches[0].type, "set");
 		QUnit.equal(patches[0].value, 2);
 	});
 	setObject.a = 2;
 	removeObject[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.equal(patches[0].key, "a");
+		QUnit.equal(patches[0].key, "a", "delete a");
 		QUnit.equal(patches[0].type, "delete");
 		QUnit.ok(!patches[0].value);
 	});
@@ -252,13 +252,14 @@ QUnit.test("patches events for set/deleted indexed properties on arrays", functi
 	expect(10);
 	var setArrayObject = observe([]);
 	var deleteArrayObject = observe(["a", "b"]);
+
 	setArrayObject[canSymbol.for("can.onPatches")](function(patches) {
 		patches.forEach(function(patch) {
 			if(patch.key === "length") {
-				QUnit.equal(patch.type, "set");
+				QUnit.equal(patch.type, "set", "[0] = 'a', length");
 				QUnit.equal(patch.value, 1);
 			} else {
-				QUnit.equal(patch.key, "0");
+				QUnit.equal(patch.key, "0","[0] = 'a', patch");
 				QUnit.equal(patch.type, "add");
 				QUnit.equal(patch.value, "a");
 			}
@@ -269,10 +270,10 @@ QUnit.test("patches events for set/deleted indexed properties on arrays", functi
 	deleteArrayObject[canSymbol.for("can.onPatches")](function(patches) {
 		patches.forEach(function(patch) {
 			if(patch.key === "length") {
-				QUnit.equal(patch.type, "set");
+				QUnit.equal(patch.type, "set", "length=1, length");
 				QUnit.equal(patch.value, 1);
 			} else {
-				QUnit.equal(patch.key, "1");
+				QUnit.equal(patch.key, "1", "length=1, patch");
 				QUnit.equal(patch.type, "delete");
 				QUnit.ok(!patch.value);
 			}
