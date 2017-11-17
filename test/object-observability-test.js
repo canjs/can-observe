@@ -24,7 +24,6 @@ QUnit.test("basics with object", function() {
 	person.first = "Vyacheslav";
 });
 
-
 QUnit.test("basics with object and new Observation", function() {
 	var person = observe({});
 	person.first = "Justin";
@@ -107,6 +106,13 @@ QUnit.test("proxy on prototype gets, sets and deletes correctly and fires parent
 	QUnit.notOk( obj.hasOwnProperty("foo"), "no foo property on parent" );
 	QUnit.equal(obj.foo, "bar", "reads foo");
 });*/
+
+QUnit.test("isBound", function(){
+	var obj = observe({});
+	QUnit.notOk( canReflect.isBound(obj), "not bound");
+	canReflect.onKeyValue(obj, "foo", function(){});
+	QUnit.ok( canReflect.isBound(obj), "bound");
+});
 
 QUnit.test("events aren't fired if the value doesn't change", function() {
 	var dog = observe({

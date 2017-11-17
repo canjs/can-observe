@@ -30,6 +30,9 @@ var metaKeys = canReflect.assignSymbols(Object.create(null), {
 	"can.offPatches": function(handler, queue) {
 		var handlers = this[symbols.metaSymbol].handlers;
 		handlers.delete([symbols.patchesSymbol, queue || "notify", handler]);
+	},
+	"can.isBound": function(){
+		return this[symbols.metaSymbol].handlers.size() > 0;
 	}
 });
 var makeObject = {

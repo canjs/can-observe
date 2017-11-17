@@ -25,9 +25,6 @@ QUnit.test("makeObject basics", function() {
 	person.first = "Vyacheslav";
 });
 
-
-
-
 QUnit.test("reading properties up the prototype chain does not set property", function() {
 	var fooObj = {
 		bar: "zed"
