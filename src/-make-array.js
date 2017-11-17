@@ -83,7 +83,7 @@ var mutateMethods = {
     		var old = [].slice.call(meta.target, 0);
     		// call the function -- note that *this* is the Proxy here, so
     		//  accesses in the function still go through get() and set()
-    		var ret = protoFn.apply(this, arguments);
+    		var ret = protoFn.apply(meta.target, arguments);
     		var patches = mutateMethods[prop](meta.target, Array.from(arguments), old);
 
 			if(preventSideEffects === 0) {
@@ -123,7 +123,7 @@ var mutateMethods = {
     			ObservationRecorder.add(this, symbols.patchesSymbol);
                 var meta = this[symbols.metaSymbol];
     			meta.preventSideEffects++;
-    			var ret = protoFn.apply(meta.target, arguments);
+    			var ret = protoFn.apply(this, arguments);
     			meta.preventSideEffects--;
     			return meta.options.observe(ret);
     		};
@@ -177,13 +177,7 @@ var makeArray = {
     set: function(target, key, value, receiver){
 		// this is on the proto chain of something, set on that something
 		if(receiver !== this.proxy) {
-			console.warn("Possibly setting a value in the wrong spot");
-			var proto = Object.getPrototypeOf(receiver);
-
-			Object.setPrototypeOf(receiver, null);
-			receiver[key] = value;
-			Object.setPrototypeOf(receiver, proto);
-			return;
+			return makeObject.setPrototypeKey(key, value, receiver, this);
 		}
         value = makeObject.getValueToSet(key, value, this);
         // make a proxy for any non-observable objects being passed in as values

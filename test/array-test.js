@@ -4,8 +4,9 @@ var observe = require("can-observe");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 var Observation = require("can-observation");
+var ObservationRecorder = require("can-observation-recorder");
 
-var observableSymbol = canSymbol.for("can.meta");
+var metaSymbol = canSymbol.for("can.meta");
 
 QUnit.module("can-observe with Array");
 
@@ -43,6 +44,36 @@ QUnit.test("basics with array", function(){
 });
 
 
+QUnit.test("filter with an expando property", function(){
+	var arr = observe([{id: 1, complete: true},{id: 2, complete: false},{id: 3, complete: true}]);
+	arr.filterComplete = true;
+
+	
+	ObservationRecorder.start();
+	arr.filter(function(item, index, array){
+		QUnit.equal(arr, array, "got passed the array");
+		return array.filterComplete === item.complete;
+	});
+	var record = ObservationRecorder.stop();
+	console.log(record);
+
+	var filtered = new Observation(function(){
+		return arr.filter(function(item, index, array){
+			return array.filterComplete === item.complete;
+		});
+	});
+	var lengths = [];
+	canReflect.onValue(filtered, function(newFiltered){
+		lengths.push(newFiltered.length)
+	});
+
+	arr[1].complete = true; //-> 3
+
+	arr.filterComplete = false; //-> 0
+
+	QUnit.deepEqual(lengths, [3,0], "got the right updates");
+});
+
 
 QUnit.test("Should convert nested arrays to observables in a lazy way (get case) #21", function(){
 	var nested = [];
@@ -50,7 +81,7 @@ QUnit.test("Should convert nested arrays to observables in a lazy way (get case)
 	var obs = observe(obj);
 
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted before read");
-	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is not observed");
+	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(metaSymbol), -1, "nested is not observed");
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after read");
 	QUnit.equal(obs.nested, observe(nested), "converted to same observable" );
@@ -63,7 +94,7 @@ QUnit.test("Should convert nested arrays to observables (set case) #21", functio
 	var obs = observe(obj);
 
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted before set");
-	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(observableSymbol), -1, "nested is not observed");
+	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(metaSymbol), -1, "nested is not observed");
 	obs.nested = nested;
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after set");
@@ -190,16 +221,16 @@ QUnit.test("array events are automatically triggered (reverse)", function() {
 
 QUnit.test("non-mutating array -> array functions return proxied arrays", function() {
 	var list = observe([0,2,3]);
-	QUnit.ok(list.map(function(x) { return x + 1; })[observableSymbol], "Map returns proxy");
-	QUnit.ok(list.filter(function(x) { return x; })[observableSymbol], "Filter returns proxy");
-	QUnit.ok(list.slice(0)[observableSymbol], "Slice returns proxy");
-	QUnit.ok(list.concat([5, 6])[observableSymbol], "Concat returns proxy");
+	QUnit.ok(list.map(function(x) { return x + 1; })[metaSymbol], "Map returns proxy");
+	QUnit.ok(list.filter(function(x) { return x; })[metaSymbol], "Filter returns proxy");
+	QUnit.ok(list.slice(0)[metaSymbol], "Slice returns proxy");
+	QUnit.ok(list.concat([5, 6])[metaSymbol], "Concat returns proxy");
 });
 
 QUnit.test("non-mutating reduce functions return proxied objects", function() {
 	var list = observe([0,2,3]);
-	QUnit.ok(list.reduce(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "Reduce returns proxy");
-	QUnit.ok(list.reduceRight(function(a, b) { a[b] = true; return a; }, {})[observableSymbol], "ReduceRight returns proxy");
+	QUnit.ok(list.reduce(function(a, b) { a[b] = true; return a; }, {})[metaSymbol], "Reduce returns proxy");
+	QUnit.ok(list.reduceRight(function(a, b) { a[b] = true; return a; }, {})[metaSymbol], "ReduceRight returns proxy");
 });
 
 
@@ -300,8 +331,8 @@ QUnit.test("arrays don't listen on individual keys in comprehensions", function(
 		QUnit.deepEqual(newVal, a.map(function(b) { return b + 1; }), "Sanity check: observation on map");
 	});
 
-	QUnit.ok(p[observableSymbol].handlers.getNode(["0"]), "Handlers for directly read index");
-	QUnit.ok(!p[observableSymbol].handlers.getNode(["1"]), "no handlers for indirectly read index");
+	QUnit.ok(p[metaSymbol].handlers.getNode(["0"]), "Handlers for directly read index");
+	QUnit.ok(!p[metaSymbol].handlers.getNode(["1"]), "no handlers for indirectly read index");
 
 	p[0] = 2;
 	p[1] = 3;

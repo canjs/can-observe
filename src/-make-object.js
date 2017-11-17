@@ -12,13 +12,6 @@ var hasOwn = Object.prototype.hasOwnProperty;
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
 
-function shouldRecordObservation(key, value, meta) {
-	// performance optimization
-	return (hasOwn.call(meta.target, key) || !Object.isSealed(meta.target)) &&
-        // special
-		meta.preventSideEffects === 0;
-}
-
 
 
 var metaKeys = canReflect.assignSymbols(Object.create(null), {
@@ -81,7 +74,7 @@ var makeObject = {
 	// If it finds one,
 	//   - it creates one (which registers itself in the observableStore) and
 	//   - returns that value without modifying the underlying target
-    get: function(target, key){
+    get: function(target, key, receiver){
         if(this.proxyKeys[key] !== undefined) {
             return this.proxyKeys[key];
         }
@@ -89,39 +82,27 @@ var makeObject = {
 		if(canReflect.isSymbolLike(key)) {
 			return target[key];
 		}
-		var canGetValueFromStore = true;
-		var descriptor = Object.getOwnPropertyDescriptor(target, key);
-		// If this is a getter, call the getter on the Proxy in order to observe
-		// what other values it reads.
-		var value;
-		if(descriptor) {
-			if(descriptor.get) {
-				value = descriptor.get.call(this.proxy);
-			} else {
-				canGetValueFromStore = descriptor.writable === true
-				value = descriptor.value;
-			}
-		} else {
-			value = this.target[key];
-		}
-		if(canGetValueFromStore) {
+		var keyInfo = makeObject.getKeyInfo(target,key, receiver, this);
+		var value = keyInfo.targetValue;
+
+		if(!keyInfo.valueIsInvariant) {
 			value = makeObject.getValueFromStore(key, value, this);
 		}
-        if (canGetValueFromStore && shouldRecordObservation(key, value, this)) {
+		if(makeObject.shouldRecordObservationOnOwnAndMissingKeys(keyInfo, this)) {
             ObservationRecorder.add(this.proxy, key.toString());
         }
+		if(keyInfo.parentObservableGetCalledOn) {
+			ObservationRecorder.add(keyInfo.parentObservableGetCalledOn, key.toString());
+		}
         return value;
     },
     // a proxied function needs to have .constructor point to the proxy, while the underlying property points to
     // what was there. Maybe
     set: function(target, key, value, receiver){
+		//
 		if(receiver !== this.proxy) {
 			// TODO: eliminate this code
-			var proto = Object.getPrototypeOf(receiver);
-			Object.setPrototypeOf(receiver, null);
-			receiver[key] = value;
-			Object.setPrototypeOf(receiver, proto);
-			return;
+			return makeObject.setPrototypeKey(key, value, receiver, this);
 		}
         value = makeObject.getValueToSet(key, value, this);
         // make a proxy for any non-observable objects being passed in as values
@@ -155,6 +136,41 @@ var makeObject = {
             .concat(Object.getOwnPropertySymbols(this.target))
             .concat(Object.getOwnPropertySymbols(this.proxyKeys));
     },
+	getKeyInfo: function(target, key, receiver, meta){
+		var descriptor = Object.getOwnPropertyDescriptor(target, key);
+		var propertyInfo = {
+			key: key,
+			descriptor: descriptor,
+			targetHasOwnKey: Boolean(descriptor),
+			protoHasKey: descriptor ? false : (key in target),
+			valueIsInvariant: descriptor ? descriptor.writable !== true : false  ,
+			targetValue: undefined,
+			getCalledOnParent: receiver !== meta.proxy
+		};
+		if(descriptor) {
+			if(descriptor.get) {
+				propertyInfo.targetValue = descriptor.get.call(meta.proxy);
+			} else {
+				propertyInfo.targetValue = descriptor.value;
+			}
+		} else {
+			propertyInfo.targetValue = meta.target[key];
+		}
+		if(propertyInfo.getCalledOnParent) {
+			propertyInfo.parentObservableGetCalledOn = observableStore.proxiedObjects.get(receiver)
+		}
+		return propertyInfo;
+	},
+	// This will record on own keys, and on "missing" keys
+	shouldRecordObservationOnOwnAndMissingKeys: function(keyInfo, meta){
+		return meta.preventSideEffects === 0 &&
+			(
+				// it's on us
+				keyInfo.targetHasOwnKey ||
+				// it's "missing", and we are not sealed
+				(!keyInfo.protoHasKey && !Object.isSealed(meta.target) )
+			);
+	},
     deleteProperty: function(target, key) {
         var old = this.target[key];
         var ret = delete this.target[key];
@@ -179,6 +195,15 @@ var makeObject = {
         }
         return ret;
     },
+	setPrototypeKey: function(key, value, receiver, meta){
+		Object.defineProperty(receiver,key, {
+			value: value,
+			configurable: true,
+			enumerable: true,
+			writable: true
+		});
+		return true;
+	},
     getValueFromTarget: function(key, meta) {
         var descriptor = Object.getOwnPropertyDescriptor(meta.target, key);
         // If this is a getter, call the getter on the Proxy in order to observe

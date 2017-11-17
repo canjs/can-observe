@@ -13,6 +13,7 @@ var observableSymbol = canSymbol.for("can.meta");
 var observableStore = require("../src/-observable-store");
 var helpers = require("../src/-helpers");
 
+
 QUnit.module("can-observe with Functions");
 
 
