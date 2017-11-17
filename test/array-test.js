@@ -3,7 +3,6 @@ var observe = require("can-observe");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 var Observation = require("can-observation");
-var ObservationRecorder = require("can-observation-recorder");
 
 var metaSymbol = canSymbol.for("can.meta");
 
@@ -55,14 +54,6 @@ QUnit.test("filter with an expando property", function() {
 		complete: true
 	}]);
 	arr.filterComplete = true;
-
-
-	ObservationRecorder.start();
-	arr.filter(function(item, index, array) {
-		QUnit.equal(arr, array, "got passed the array");
-		return array.filterComplete === item.complete;
-	});
-	var record = ObservationRecorder.stop();
 
 	var filtered = new Observation(function() {
 		return arr.filter(function(item, index, array) {

@@ -178,7 +178,7 @@ if (classSupport) {
 		var add = new Add();
 		add.add();
 		QUnit.equal(add.count,1, "count set");
-	})
+	});
 }
 
 
