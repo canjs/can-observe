@@ -164,6 +164,21 @@ if (classSupport) {
 			}
 			return observe(MyArray);
 		});
+
+	QUnit.test("calling methods (that have no prototypes)", function(){
+		class AddBase {
+			constructor() {
+				this.count = 0;
+			}
+			add(){
+				this.count++;
+			}
+		}
+		var Add = observe(AddBase);
+		var add = new Add();
+		add.add();
+		QUnit.equal(add.count,1, "count set");
+	})
 }
 
 

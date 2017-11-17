@@ -63,7 +63,6 @@ QUnit.test("filter with an expando property", function() {
 		return array.filterComplete === item.complete;
 	});
 	var record = ObservationRecorder.stop();
-	console.log(record);
 
 	var filtered = new Observation(function() {
 		return arr.filter(function(item, index, array) {
