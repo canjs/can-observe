@@ -202,3 +202,17 @@ require("can-reflect-tests/observables/list-like/type/on-instance-patches")("obs
 
 	return observe.makeListType("MyArray",{},{});
 });
+
+
+require("can-reflect-tests/observables/list-like/type/on-instance-patches")("observe.makeListType", function() {
+
+	return observe.makeListType("MyArray",{},{});
+});
+
+var MyArray = observe.makeListType("MyArray",{},{});
+var MyType = observe.makeMapType("Type",{},{});
+require("can-reflect-tests/observables/list-like/instance/serialize")("observe.makeListType observe.makeMapType", function(values){
+	return new MyArray(values);
+}, function(values){
+	return new MyType(values);
+});

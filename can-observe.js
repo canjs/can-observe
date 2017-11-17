@@ -47,7 +47,7 @@ makeObserve.observe.makeMapType = function(name, staticProps, prototypeProps){
 };
 makeObserve.observe.makeListType = function(name, staticProps, prototypeProps){
 	var Type = function(values) {
-		this.push.apply(this, arguments);
+		this.push.apply(this, values || []);
 	};
 	Type.prototype = Object.create(Array.prototype);
 	canReflect.assign(Type, staticProps || {});
