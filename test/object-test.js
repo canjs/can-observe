@@ -1,11 +1,8 @@
 
 var QUnit =  require("steal-qunit");
-var assert = QUnit.assert;
 var observe = require("can-observe");
-var queues = require("can-queues");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
-var Observation = require("can-observation");
 var makeObject = require("../src/-make-object");
 
 var observableSymbol = canSymbol.for("can.meta");
@@ -29,10 +26,11 @@ QUnit.test("makeObject basics", function(){
 
 
 QUnit.test("reading properties up the prototype chain does not set property", function(){
-	var obj = observe( Object.create({foo:{bar: "zed"}}) );
+	var fooObj = {bar: "zed"};
+	var obj = observe( Object.create({foo:fooObj}) );
 
-	obj.foo;
-
+	var foo = obj.foo;
+	QUnit.deepEqual(foo, fooObj);
 	QUnit.notOk( obj.hasOwnProperty("foo"), "no foo property" );
 });
 

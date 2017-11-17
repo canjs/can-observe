@@ -1,4 +1,3 @@
-var canReflect = require("can-reflect");
 var classTest = /^\s*class\s+/;
 module.exports = {
     assignEverything: function(d, s){

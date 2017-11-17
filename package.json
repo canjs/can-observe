@@ -9,7 +9,7 @@
     "postversion": "git push --tags && git checkout major && git branch -D release && git push",
     "testee": "testee test.html --browsers firefox",
     "test": "npm run detect-cycle && npm run jshint && npm run testee",
-    "jshint": "jshint *.js --config",
+    "jshint": "jshint src/*.js *.js test/*.js --config",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish",

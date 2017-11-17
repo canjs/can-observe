@@ -1,5 +1,4 @@
 var QUnit =  require("steal-qunit");
-var assert = QUnit.assert;
 var observe = require("can-observe");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
@@ -48,7 +47,7 @@ QUnit.test("filter with an expando property", function(){
 	var arr = observe([{id: 1, complete: true},{id: 2, complete: false},{id: 3, complete: true}]);
 	arr.filterComplete = true;
 
-	
+
 	ObservationRecorder.start();
 	arr.filter(function(item, index, array){
 		QUnit.equal(arr, array, "got passed the array");
@@ -64,7 +63,7 @@ QUnit.test("filter with an expando property", function(){
 	});
 	var lengths = [];
 	canReflect.onValue(filtered, function(newFiltered){
-		lengths.push(newFiltered.length)
+		lengths.push(newFiltered.length);
 	});
 
 	arr[1].complete = true; //-> 3

@@ -1,7 +1,5 @@
-var canReflect = require("can-reflect");
 var queues = require("can-queues");
 var canSymbol = require("can-symbol");
-var KeyTree = require("can-key-tree");
 var ObservationRecorder = require("can-observation-recorder");
 var makeObject = require("./-make-object");
 var symbols = require("./-symbols");

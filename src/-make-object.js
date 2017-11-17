@@ -157,7 +157,7 @@ var makeObject = {
 			propertyInfo.targetValue = meta.target[key];
 		}
 		if(propertyInfo.getCalledOnParent) {
-			propertyInfo.parentObservableGetCalledOn = observableStore.proxiedObjects.get(receiver)
+			propertyInfo.parentObservableGetCalledOn = observableStore.proxiedObjects.get(receiver);
 		}
 		return propertyInfo;
 	},
@@ -227,7 +227,7 @@ var makeObject = {
 
 			// if it's already been made into a proxy
 			if(observableStore.proxiedObjects.has(value)) {
-				value = observableStore.proxiedObjects.get(value)
+				value = observableStore.proxiedObjects.get(value);
 			}
 			// if the value is something we should change
 			else if(!helpers.isBuiltInButNotArrayOrPlainObject(value)) {
@@ -235,7 +235,7 @@ var makeObject = {
 				value = meta.options.observe(value);
 			}
 		}
-		return value
+		return value;
 	},
     setValueAndOnChange: function(key, value, data, onChange){
         var old, change;

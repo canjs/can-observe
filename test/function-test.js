@@ -1,11 +1,8 @@
 
 var QUnit =  require("steal-qunit");
-var assert = QUnit.assert;
 var observe = require("can-observe");
-var queues = require("can-queues");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
-var Observation = require("can-observation");
 var makeFunction = require("../src/-make-function");
 var makeObject = require("../src/-make-object");
 

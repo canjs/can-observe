@@ -1,14 +1,10 @@
 var canReflect = require("can-reflect");
 var queues = require("can-queues");
-var canSymbol = require("can-symbol");
 var KeyTree = require("can-key-tree");
-var ObservationRecorder = require("can-observation-recorder");
 var makeObject = require("./-make-object");
 var symbols = require("./-symbols");
-var diffArray = require("can-util/js/diff-array/diff-array");
 var observableStore = require("./-observable-store");
 
-var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
 var helpers = require("./-helpers");
 
 var metaKeys = helpers.assignEverything(Object.create(null), makeObject.metaKeys());

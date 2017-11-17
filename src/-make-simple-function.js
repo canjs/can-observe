@@ -7,6 +7,6 @@ module.exports = {
     			ret = options.observe(ret);
     		}
     		return ret;
-    	}
+    	};
     }
 };
