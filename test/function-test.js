@@ -1,5 +1,4 @@
-
-var QUnit =  require("steal-qunit");
+var QUnit = require("steal-qunit");
 var observe = require("can-observe");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
@@ -14,62 +13,66 @@ var helpers = require("../src/-helpers");
 QUnit.module("can-observe with Functions");
 
 
-QUnit.test("isBuiltInButNotArrayOrPlainObject", function(){
-    // Testing type constructors
-    QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Function), true, "Function");
-    QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Object), true, "Object");
-    QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Date), true, "Date");
+QUnit.test("isBuiltInButNotArrayOrPlainObject", function() {
+	// Testing type constructors
+	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Function), true, "Function");
+	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Object), true, "Object");
+	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Date), true, "Date");
 
-    QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(function(){}), false, "function instance");
+	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(function() {}), false, "function instance");
 
-    QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject({}), false, "new Object");
-    QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject([]), false, "new Array");
-    QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(new Date()), true, "new Date");
-    QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(new RegExp()), true, "new RegExp");
+	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject({}), false, "new Object");
+	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject([]), false, "new Array");
+	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(new Date()), true, "new Date");
+	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(new RegExp()), true, "new RegExp");
 });
 
-QUnit.test("makeFunction basics", 3, function(){
-    var OriginalPerson = function(first, last){
-        this.first = first;
-        this.last = last;
-        this.constructor.count++;
-    };
-    OriginalPerson.prototype.sayHi = function(){
-        return this.first + this.last;
-    };
-    var observe = function(obj){
-        if(canReflect.isPrimitive(obj)) {
-            return obj;
-        }
-        if(observableStore.proxies.has(obj)) {
-            return obj;
-        }
-        if( helpers.isBuiltInButNotArrayOrPlainObject(obj) ) {
-            return obj;
-        }
-        var observable;
-        if(obj && typeof obj === "object") {
-            observable = makeObject.observable(obj, {observe: observe});
-        } else if(typeof obj === "function"){
-            observable = makeFunction.observable(obj, {observe: observe});
-        } else {
-            return obj;
-        }
-        observableStore.proxies.add(observable);
-        observableStore.proxiedObjects.set(obj,observable);
-        return observable;
-    };
-    var Person = observe(OriginalPerson);
-    QUnit.equal(Person.prototype.constructor, Person, "Person is its own constructor");
-    Person.count = 0;
+QUnit.test("makeFunction basics", 3, function() {
+	var OriginalPerson = function(first, last) {
+		this.first = first;
+		this.last = last;
+		this.constructor.count++;
+	};
+	OriginalPerson.prototype.sayHi = function() {
+		return this.first + this.last;
+	};
+	var observe = function(obj) {
+		if (canReflect.isPrimitive(obj)) {
+			return obj;
+		}
+		if (observableStore.proxies.has(obj)) {
+			return obj;
+		}
+		if (helpers.isBuiltInButNotArrayOrPlainObject(obj)) {
+			return obj;
+		}
+		var observable;
+		if (obj && typeof obj === "object") {
+			observable = makeObject.observable(obj, {
+				observe: observe
+			});
+		} else if (typeof obj === "function") {
+			observable = makeFunction.observable(obj, {
+				observe: observe
+			});
+		} else {
+			return obj;
+		}
+		observableStore.proxies.add(observable);
+		observableStore.proxiedObjects.set(obj, observable);
+		return observable;
+	};
+	var Person = observe(OriginalPerson);
+	QUnit.equal(Person.prototype.constructor, Person, "Person is its own constructor");
+	Person.count = 0;
 
 
 
-    canReflect.onKeyValue(Person, "count", function(newVal) {
+	canReflect.onKeyValue(Person, "count", function(newVal) {
 		QUnit.equal(newVal, 1, "static count");
 	});
 
-	var person = new Person("Justin","Meyer");
+	var person = new Person("Justin", "Meyer");
 
 
 	canReflect.onKeyValue(person, "first", function(newVal) {
@@ -91,26 +94,26 @@ QUnit.test("custom, non-array functions return proxied objects as well", functio
 });
 
 
-QUnit.test("basics with constructor functions", 3, function(){
-    var OriginalPerson = function(first, last){
-        this.first = first;
-        this.last = last;
-        this.constructor.count++;
-    };
-    OriginalPerson.prototype.sayHi = function(){
-        return this.first + this.last;
-    };
-    var Person = observe(OriginalPerson);
-    QUnit.equal(Person.prototype.constructor, Person, "Person is its own constructor");
-    Person.count = 0;
+QUnit.test("basics with constructor functions", 3, function() {
+	var OriginalPerson = function(first, last) {
+		this.first = first;
+		this.last = last;
+		this.constructor.count++;
+	};
+	OriginalPerson.prototype.sayHi = function() {
+		return this.first + this.last;
+	};
+	var Person = observe(OriginalPerson);
+	QUnit.equal(Person.prototype.constructor, Person, "Person is its own constructor");
+	Person.count = 0;
 
 
 
-    canReflect.onKeyValue(Person, "count", function(newVal) {
+	canReflect.onKeyValue(Person, "count", function(newVal) {
 		QUnit.equal(newVal, 1, "static count");
 	});
 
-	var person = new Person("Justin","Meyer");
+	var person = new Person("Justin", "Meyer");
 
 
 	canReflect.onKeyValue(person, "first", function(newVal) {
@@ -121,56 +124,56 @@ QUnit.test("basics with constructor functions", 3, function(){
 });
 
 
-require("can-reflect-tests/observables/map-like/type/type")("", function(){
-	return observe(function(props){
+require("can-reflect-tests/observables/map-like/type/type")("", function() {
+	return observe(function(props) {
 		canReflect.assign(this, props || {});
 	});
 });
 
 
-QUnit.test(".constructor of array subclass is itself", function(){
-    var MyArray = function(values){
-        this.push.apply(this, arguments);
-    };
-    MyArray.prototype = Object.create(Array.prototype);
-    MyArray.prototype.constructor = MyArray;
-    var ArrayType = observe(MyArray);
+QUnit.test(".constructor of array subclass is itself", function() {
+	var MyArray = function(values) {
+		this.push.apply(this, arguments);
+	};
+	MyArray.prototype = Object.create(Array.prototype);
+	MyArray.prototype.constructor = MyArray;
+	var ArrayType = observe(MyArray);
 
-    QUnit.equal(ArrayType.prototype.constructor,ArrayType , "type");
+	QUnit.equal(ArrayType.prototype.constructor, ArrayType, "type");
 
-    var arr = new MyArray();
-    QUnit.equal(arr.constructor,ArrayType, "instance" );
+	var arr = new MyArray();
+	QUnit.equal(arr.constructor, ArrayType, "instance");
 });
 
 
-var classSupport = (function(){
-    try{
-        eval( '"use strict"; class A{};' );
-        return true;
-    } catch(e) {
-        return false;
-    }
+var classSupport = (function() {
+	try {
+		eval('"use strict"; class A{};');
+		return true;
+	} catch (e) {
+		return false;
+	}
 
 })();
 
-if(classSupport) {
-    require("can-reflect-tests/observables/list-like/type/on-instance-patches")("class extends Array",
-    function(){
-        class MyArray extends Array {
+if (classSupport) {
+	require("can-reflect-tests/observables/list-like/type/on-instance-patches")("class extends Array",
+		function() {
+			class MyArray extends Array {
 
-        }
-        return observe(MyArray);
-    });
+			}
+			return observe(MyArray);
+		});
 }
 
 
-require("can-reflect-tests/observables/list-like/type/on-instance-patches")("Object.create(Array)", function(){
+require("can-reflect-tests/observables/list-like/type/on-instance-patches")("Object.create(Array)", function() {
 
-    var MyArray = function(values){
-        this.push.apply(this, arguments);
-    };
-    MyArray.prototype = Object.create(Array.prototype);
-    MyArray.prototype.constructor = MyArray;
+	var MyArray = function(values) {
+		this.push.apply(this, arguments);
+	};
+	MyArray.prototype = Object.create(Array.prototype);
+	MyArray.prototype.constructor = MyArray;
 
-    return observe(MyArray);
+	return observe(MyArray);
 });

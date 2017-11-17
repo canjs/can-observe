@@ -1,4 +1,4 @@
-var QUnit =  require("steal-qunit");
+var QUnit = require("steal-qunit");
 var assert = QUnit.assert;
 var observe = require("can-observe");
 var queues = require("can-queues");
@@ -11,7 +11,7 @@ var observableSymbol = canSymbol.for("can.meta");
 
 QUnit.module("can-observe Objects observability");
 
-QUnit.test("basics with object", function(){
+QUnit.test("basics with object", function() {
 	var person = observe({});
 	person.first = "Justin";
 	person.last = "Meyer";
@@ -25,13 +25,13 @@ QUnit.test("basics with object", function(){
 });
 
 
-QUnit.test("basics with object and new Observation", function(){
+QUnit.test("basics with object and new Observation", function() {
 	var person = observe({});
 	person.first = "Justin";
 	person.last = "Meyer";
 
-	var fullName = new Observation(function(){
-		return person.first+" "+person.last;
+	var fullName = new Observation(function() {
+		return person.first + " " + person.last;
 	});
 
 	QUnit.stop();
@@ -49,37 +49,39 @@ QUnit.test("basics with object and new Observation", function(){
 });
 
 
-QUnit.test("observables with defaults on the prototype", function(){
-    var Type = function(){};
-    Type.prototype = {
-        age: 35,
-        name: "Justin"
-    };
+QUnit.test("observables with defaults on the prototype", function() {
+	var Type = function() {};
+	Type.prototype = {
+		age: 35,
+		name: "Justin"
+	};
 
-    var t = observe( new Type() );
+	var t = observe(new Type());
 
-    ObservationRecorder.start();
-    var age = t.age;
-    QUnit.equal(age, 35, "got default value");
-    var record = ObservationRecorder.stop();
-    QUnit.equal(record.keyDependencies.size, 0, "does not observe on anything");
+	ObservationRecorder.start();
+	var age = t.age;
+	QUnit.equal(age, 35, "got default value");
+	var record = ObservationRecorder.stop();
+	QUnit.equal(record.keyDependencies.size, 0, "does not observe on anything");
 
 
-    var Type2 = function(){this.name = "type2";};
-    Type2.prototype = observe({
-        age: 35,
-        name: "Justin"
-    });
+	var Type2 = function() {
+		this.name = "type2";
+	};
+	Type2.prototype = observe({
+		age: 35,
+		name: "Justin"
+	});
 
-    var t2 = observe( new Type2() );
+	var t2 = observe(new Type2());
 
-    ObservationRecorder.start();
-    var age2 = t2.age;
-    QUnit.equal(age2, 35, "got default value");
-    var record2 = ObservationRecorder.stop();
-    QUnit.equal(record2.keyDependencies.size, 2, "sees two Observation.add");
-    QUnit.ok( record2.keyDependencies.has(t2), "observed on the instance" );
-    QUnit.ok( record2.keyDependencies.has(Type2.prototype), "observed on the prototype" );
+	ObservationRecorder.start();
+	var age2 = t2.age;
+	QUnit.equal(age2, 35, "got default value");
+	var record2 = ObservationRecorder.stop();
+	QUnit.equal(record2.keyDependencies.size, 2, "sees two Observation.add");
+	QUnit.ok(record2.keyDependencies.has(t2), "observed on the instance");
+	QUnit.ok(record2.keyDependencies.has(Type2.prototype), "observed on the prototype");
 });
 
 
@@ -106,11 +108,13 @@ QUnit.test("proxy on prototype gets, sets and deletes correctly and fires parent
 	QUnit.equal(obj.foo, "bar", "reads foo");
 });*/
 
-QUnit.test("events aren't fired if the value doesn't change", function(){
-	var dog = observe({name: "Wilbur"});
+QUnit.test("events aren't fired if the value doesn't change", function() {
+	var dog = observe({
+		name: "Wilbur"
+	});
 
 	var events = 0;
-	canReflect.onKeyValue(dog, "name", function(){
+	canReflect.onKeyValue(dog, "name", function() {
 		events++;
 	});
 
@@ -125,8 +129,12 @@ QUnit.test("events aren't fired if the value doesn't change", function(){
 });
 
 QUnit.test("Should convert properties if bound #21", function() {
-	var nested = {nested: 'obj'};
-	var obj = {top: 'obj'};
+	var nested = {
+		nested: 'obj'
+	};
+	var obj = {
+		top: 'obj'
+	};
 	var obs = observe(obj);
 	canReflect.onKeyValue(obs, "nested", function(newVal) {
 		QUnit.ok(Object.getOwnPropertySymbols(newVal).indexOf(observableSymbol) > -1, "nested is now observed");
@@ -138,7 +146,10 @@ QUnit.test("Should convert properties if bound #21", function() {
 
 QUnit.test("Nested objects should be observables #21", function() {
 	expect(1);
-	var obj = {nested: {}, primitive: 2};
+	var obj = {
+		nested: {},
+		primitive: 2
+	};
 	var obs = observe(obj);
 	obs.nested.prop = 1;
 	canReflect.onKeyValue(obs.nested, "prop", function(newVal) {
@@ -176,7 +187,9 @@ QUnit.test("not yet defined properties cannot be observed on sealed object", fun
 
 
 QUnit.skip("_cid cannot be observed", function() {
-	var a = observe({_cid: 123});
+	var a = observe({
+		_cid: 123
+	});
 	var o = new Observation(function() {
 		QUnit.ok("_cid" in a, "property is on the object");
 		return a._cid;
@@ -189,7 +202,11 @@ QUnit.skip("_cid cannot be observed", function() {
 
 QUnit.test("Should remove event handlers #21", function() {
 	var result = '';
-	var obj = {nested: {prop:''}};
+	var obj = {
+		nested: {
+			prop: ''
+		}
+	};
 	var obs = observe(obj);
 
 	var handler1 = function(newVal) {
@@ -234,12 +251,12 @@ QUnit.test("getters can be bound within Observations", function() {
 		},
 		c: "d"
 	});
-    var observation = new Observation(function(){
-        return o.b;
-    });
+	var observation = new Observation(function() {
+		return o.b;
+	});
 
 	var fn;
-	canReflect.onValue(observation, fn = function(){
+	canReflect.onValue(observation, fn = function() {
 		QUnit.ok(true, "Hit the updater");
 	}); // Also reads b's getter, #1
 
@@ -265,7 +282,7 @@ QUnit.skip("getters can be bound within observes", function() {
 	});
 
 	var fn;
-	canReflect.onKeyValue(o, "b", fn = function(){
+	canReflect.onKeyValue(o, "b", fn = function() {
 		QUnit.ok(true, "Hit the updater");
 	}); // Also reads b's getter, #1
 
@@ -282,7 +299,9 @@ QUnit.skip("getters can be bound within observes", function() {
 QUnit.skip("getters can be bound across observes", function() {
 	expect(5);
 	var count = 0;
-	var b = observe({ c: "d" });
+	var b = observe({
+		c: "d"
+	});
 	var o = observe({
 		get b() {
 			QUnit.ok(count <= 4, "hit the getter " + (++count) + " of 4");
@@ -291,7 +310,7 @@ QUnit.skip("getters can be bound across observes", function() {
 	});
 
 	var fn;
-	canReflect.onKeyValue(o, "b", fn = function(){
+	canReflect.onKeyValue(o, "b", fn = function() {
 		QUnit.ok(true, "Hit the updater");
 	}); // Also reads b's getter, #1
 
@@ -307,7 +326,8 @@ QUnit.skip("getters can be bound across observes", function() {
 
 QUnit.skip("getter/setters within observes", function() {
 	expect(7);
-	var getCount = 0, setCount = 0;
+	var getCount = 0,
+		setCount = 0;
 	var o = observe({
 		get b() {
 			QUnit.ok(getCount <= 4, "hit the getter " + (++getCount) + " of 4");
@@ -321,7 +341,7 @@ QUnit.skip("getter/setters within observes", function() {
 	});
 
 	var fn;
-	canReflect.onKeyValue(o, "b", fn = function(){
+	canReflect.onKeyValue(o, "b", fn = function() {
 		QUnit.ok(true, "Hit the updater");
 	}); // Also reads b's getter, #1
 
@@ -349,11 +369,11 @@ QUnit.test("deleting a property", function() {
 		c: "d"
 	});
 
-	canReflect.onKeyValue(o, "b", function(newVal){
+	canReflect.onKeyValue(o, "b", function(newVal) {
 		QUnit.equal(newVal, undefined, "Hit the updater for getter/setter");
 	}); // Also reads b's getter, #1
 
-	canReflect.onKeyValue(o, "c", function(newVal){
+	canReflect.onKeyValue(o, "c", function(newVal) {
 		QUnit.equal(newVal, undefined, "Hit the updater for value");
 	}); // Does not read b's getter so long as getters aren't treated specially.
 
@@ -364,11 +384,15 @@ QUnit.test("deleting a property", function() {
 QUnit.test("patches events for keyed properties on objects", function() {
 	expect(9);
 	var addObject = observe({});
-	var setObject = observe({ a: 1 });
-	var removeObject = observe({a: 1});
+	var setObject = observe({
+		a: 1
+	});
+	var removeObject = observe({
+		a: 1
+	});
 
 	addObject[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.equal(patches[0].key, "a","set a to 1");
+		QUnit.equal(patches[0].key, "a", "set a to 1");
 		QUnit.equal(patches[0].type, "add");
 		QUnit.equal(patches[0].value, 1);
 	});
@@ -389,6 +413,6 @@ QUnit.test("patches events for keyed properties on objects", function() {
 
 });
 
-require("can-reflect-tests/observables/map-like/instance/on-get-set-delete-key")("", function(){
+require("can-reflect-tests/observables/map-like/instance/on-get-set-delete-key")("", function() {
 	return observe({});
 });

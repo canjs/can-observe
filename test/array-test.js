@@ -1,4 +1,4 @@
-var QUnit =  require("steal-qunit");
+var QUnit = require("steal-qunit");
 var observe = require("can-observe");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
@@ -12,10 +12,10 @@ QUnit.module("can-observe with Array");
 var makeArray = require("../src/-make-array");
 var makeObserve = require("../src/-make-observe");
 
-QUnit.test("makeArray basics", function(){
-	var hobbies = makeArray.observable(["basketball","programming"],makeObserve);
+QUnit.test("makeArray basics", function() {
+	var hobbies = makeArray.observable(["basketball", "programming"], makeObserve);
 
-	var hobbiesList = new Observation(function(){
+	var hobbiesList = new Observation(function() {
 		return hobbies.join(",");
 	});
 
@@ -27,10 +27,10 @@ QUnit.test("makeArray basics", function(){
 	hobbies.pop();
 });
 
-QUnit.test("basics with array", function(){
-	var hobbies = observe(["basketball","programming"]);
+QUnit.test("basics with array", function() {
+	var hobbies = observe(["basketball", "programming"]);
 
-	var hobbiesList = new Observation(function(){
+	var hobbiesList = new Observation(function() {
 		return hobbies.join(",");
 	});
 
@@ -43,26 +43,35 @@ QUnit.test("basics with array", function(){
 });
 
 
-QUnit.test("filter with an expando property", function(){
-	var arr = observe([{id: 1, complete: true},{id: 2, complete: false},{id: 3, complete: true}]);
+QUnit.test("filter with an expando property", function() {
+	var arr = observe([{
+		id: 1,
+		complete: true
+	}, {
+		id: 2,
+		complete: false
+	}, {
+		id: 3,
+		complete: true
+	}]);
 	arr.filterComplete = true;
 
 
 	ObservationRecorder.start();
-	arr.filter(function(item, index, array){
+	arr.filter(function(item, index, array) {
 		QUnit.equal(arr, array, "got passed the array");
 		return array.filterComplete === item.complete;
 	});
 	var record = ObservationRecorder.stop();
 	console.log(record);
 
-	var filtered = new Observation(function(){
-		return arr.filter(function(item, index, array){
+	var filtered = new Observation(function() {
+		return arr.filter(function(item, index, array) {
 			return array.filterComplete === item.complete;
 		});
 	});
 	var lengths = [];
-	canReflect.onValue(filtered, function(newFiltered){
+	canReflect.onValue(filtered, function(newFiltered) {
 		lengths.push(newFiltered.length);
 	});
 
@@ -70,24 +79,26 @@ QUnit.test("filter with an expando property", function(){
 
 	arr.filterComplete = false; //-> 0
 
-	QUnit.deepEqual(lengths, [3,0], "got the right updates");
+	QUnit.deepEqual(lengths, [3, 0], "got the right updates");
 });
 
 
-QUnit.test("Should convert nested arrays to observables in a lazy way (get case) #21", function(){
+QUnit.test("Should convert nested arrays to observables in a lazy way (get case) #21", function() {
 	var nested = [];
-	var obj = {nested: nested};
+	var obj = {
+		nested: nested
+	};
 	var obs = observe(obj);
 
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted before read");
 	QUnit.equal(Object.getOwnPropertySymbols(nested).indexOf(metaSymbol), -1, "nested is not observed");
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after read");
-	QUnit.equal(obs.nested, observe(nested), "converted to same observable" );
+	QUnit.equal(obs.nested, observe(nested), "converted to same observable");
 });
 
 
-QUnit.test("Should convert nested arrays to observables (set case) #21", function(){
+QUnit.test("Should convert nested arrays to observables (set case) #21", function() {
 	var nested = [];
 	var obj = {};
 	var obs = observe(obj);
@@ -97,7 +108,7 @@ QUnit.test("Should convert nested arrays to observables (set case) #21", functio
 	obs.nested = nested;
 	QUnit.equal(canReflect.isObservableLike(obs.nested), true, "nested is converted to a proxy and the proxy returned");
 	QUnit.ok(!canReflect.isObservableLike(nested), "nested is not converted after set");
-	QUnit.equal(obs.nested, observe(nested), "converted to same observable" );
+	QUnit.equal(obs.nested, observe(nested), "converted to same observable");
 });
 
 
@@ -111,7 +122,9 @@ QUnit.test("array events are automatically triggered (push)", function() {
 	list[canSymbol.for("can.onPatches")](function(patches) {
 		QUnit.ok(patches.length > 1, "Patches generated");
 		patches.forEach(function(patch) {
-			if(patch.key) { return; } // ignore length property patches
+			if (patch.key) {
+				return;
+			} // ignore length property patches
 			QUnit.equal(patch.deleteCount, 0, "nothing removed");
 			QUnit.equal(patch.index, list.length - 1, "new thing added to end");
 			QUnit.deepEqual(patch.insert, [newThing], "new thing added to end");
@@ -128,7 +141,9 @@ QUnit.test("array events are automatically triggered (pop)", function() {
 	list[canSymbol.for("can.onPatches")](function(patches) {
 		QUnit.ok(patches.length > 1, "Patches generated");
 		patches.forEach(function(patch) {
-			if(patch.key) { return; } // ignore length property patches
+			if (patch.key) {
+				return;
+			} // ignore length property patches
 			QUnit.equal(patch.deleteCount, 1, "old thing removed");
 			QUnit.equal(patch.index, list.length, "old thing removed from end");
 		});
@@ -145,7 +160,9 @@ QUnit.test("array events are automatically triggered (unshift)", function() {
 	list[canSymbol.for("can.onPatches")](function(patches) {
 		QUnit.ok(patches.length > 1, "Patches generated");
 		patches.forEach(function(patch) {
-			if(patch.key) { return; } // ignore length property patches
+			if (patch.key) {
+				return;
+			} // ignore length property patches
 			QUnit.equal(patch.deleteCount, 0, "nothing removed");
 			QUnit.equal(patch.index, 0, "new thing added to beginning");
 			QUnit.deepEqual(patch.insert, [newThing], "new thing added to beginning");
@@ -162,7 +179,9 @@ QUnit.test("array events are automatically triggered (shift)", function() {
 	list[canSymbol.for("can.onPatches")](function(patches) {
 		QUnit.ok(patches.length > 1, "Patches generated");
 		patches.forEach(function(patch) {
-			if(patch.key) { return; } // ignore length property patches
+			if (patch.key) {
+				return;
+			} // ignore length property patches
 			QUnit.equal(patch.deleteCount, 1, "old thing removed");
 			QUnit.equal(patch.index, 0, "old thing removed from beginning");
 		});
@@ -179,7 +198,9 @@ QUnit.test("array events are automatically triggered (splice)", function() {
 	list[canSymbol.for("can.onPatches")](function(patches) {
 		QUnit.ok(patches.length > 1, "Patches generated");
 		patches.forEach(function(patch) {
-			if(patch.key) { return; } // ignore length property patches
+			if (patch.key) {
+				return;
+			} // ignore length property patches
 			QUnit.equal(patch.deleteCount, 1, "nothing removed");
 			QUnit.equal(patch.index, 1, "new thing added to beginning");
 			QUnit.deepEqual(patch.insert, [newThing], "new thing added to beginning");
@@ -194,9 +215,18 @@ QUnit.test("array events are automatically triggered (sort)", function() {
 	var list = observe(["a", "c", "b"]);
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.deepEqual(patches.filter(function(p) { return !p.key; }), [
-			{"index":1,"deleteCount":0,"insert":["b"]},
-			{"index":3,"deleteCount":1,"insert":[]}
+		QUnit.deepEqual(patches.filter(function(p) {
+			return !p.key;
+		}), [{
+				"index": 1,
+				"deleteCount": 0,
+				"insert": ["b"]
+			},
+			{
+				"index": 3,
+				"deleteCount": 1,
+				"insert": []
+			}
 		], "patches correct");
 	});
 
@@ -210,26 +240,40 @@ QUnit.test("array events are automatically triggered (reverse)", function() {
 	var expectedList = list.slice(0).reverse();
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.deepEqual(patches.filter(function(p) { return !p.key; }), [
-			{"index":0,"deleteCount":3,"insert":expectedList}
-		], "patches replaces whole list");
+		QUnit.deepEqual(patches.filter(function(p) {
+			return !p.key;
+		}), [{
+			"index": 0,
+			"deleteCount": 3,
+			"insert": expectedList
+		}], "patches replaces whole list");
 	});
 
 	list.reverse();
 });
 
 QUnit.test("non-mutating array -> array functions return proxied arrays", function() {
-	var list = observe([0,2,3]);
-	QUnit.ok(list.map(function(x) { return x + 1; })[metaSymbol], "Map returns proxy");
-	QUnit.ok(list.filter(function(x) { return x; })[metaSymbol], "Filter returns proxy");
+	var list = observe([0, 2, 3]);
+	QUnit.ok(list.map(function(x) {
+		return x + 1;
+	})[metaSymbol], "Map returns proxy");
+	QUnit.ok(list.filter(function(x) {
+		return x;
+	})[metaSymbol], "Filter returns proxy");
 	QUnit.ok(list.slice(0)[metaSymbol], "Slice returns proxy");
 	QUnit.ok(list.concat([5, 6])[metaSymbol], "Concat returns proxy");
 });
 
 QUnit.test("non-mutating reduce functions return proxied objects", function() {
-	var list = observe([0,2,3]);
-	QUnit.ok(list.reduce(function(a, b) { a[b] = true; return a; }, {})[metaSymbol], "Reduce returns proxy");
-	QUnit.ok(list.reduceRight(function(a, b) { a[b] = true; return a; }, {})[metaSymbol], "ReduceRight returns proxy");
+	var list = observe([0, 2, 3]);
+	QUnit.ok(list.reduce(function(a, b) {
+		a[b] = true;
+		return a;
+	}, {})[metaSymbol], "Reduce returns proxy");
+	QUnit.ok(list.reduceRight(function(a, b) {
+		a[b] = true;
+		return a;
+	}, {})[metaSymbol], "ReduceRight returns proxy");
 });
 
 
@@ -285,11 +329,11 @@ QUnit.test("patches events for set/deleted indexed properties on arrays", functi
 
 	setArrayObject[canSymbol.for("can.onPatches")](function(patches) {
 		patches.forEach(function(patch) {
-			if(patch.key === "length") {
+			if (patch.key === "length") {
 				QUnit.equal(patch.type, "set", "[0] = 'a', length");
 				QUnit.equal(patch.value, 1);
 			} else {
-				QUnit.equal(patch.key, "0","[0] = 'a', patch");
+				QUnit.equal(patch.key, "0", "[0] = 'a', patch");
 				QUnit.equal(patch.type, "add");
 				QUnit.equal(patch.value, "a");
 			}
@@ -299,7 +343,7 @@ QUnit.test("patches events for set/deleted indexed properties on arrays", functi
 
 	deleteArrayObject[canSymbol.for("can.onPatches")](function(patches) {
 		patches.forEach(function(patch) {
-			if(patch.key === "length") {
+			if (patch.key === "length") {
 				QUnit.equal(patch.type, "set", "length=1, length");
 				QUnit.equal(patch.value, 1);
 			} else {
@@ -320,14 +364,18 @@ QUnit.test("arrays don't listen on individual keys in comprehensions", function(
 		return p[0];
 	});
 	var o2 = new Observation(function() {
-		return p.map(function(b) { return b + 1; });
+		return p.map(function(b) {
+			return b + 1;
+		});
 	});
 
 	canReflect.onValue(o, function(newVal) {
 		QUnit.equal(newVal, a[0], "Sanity check: observation on index 0");
 	});
 	canReflect.onValue(o2, function(newVal) {
-		QUnit.deepEqual(newVal, a.map(function(b) { return b + 1; }), "Sanity check: observation on map");
+		QUnit.deepEqual(newVal, a.map(function(b) {
+			return b + 1;
+		}), "Sanity check: observation on map");
 	});
 
 	QUnit.ok(p[metaSymbol].handlers.getNode(["0"]), "Handlers for directly read index");
@@ -335,7 +383,7 @@ QUnit.test("arrays don't listen on individual keys in comprehensions", function(
 
 	p[0] = 2;
 	p[1] = 3;
- });
+});
 
 QUnit.test("changing an item at an array index dispatches a splice patch", function() {
 	expect(3);
@@ -343,7 +391,7 @@ QUnit.test("changing an item at an array index dispatches a splice patch", funct
 
 	a[canSymbol.for("can.onPatches")](function(patches) {
 		patches.forEach(function(patch) {
-			if(patch.key) {
+			if (patch.key) {
 				return;
 			}
 			QUnit.equal(patch.index, 0);
