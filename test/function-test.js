@@ -124,10 +124,14 @@ QUnit.test("basics with constructor functions", 3, function() {
 });
 
 
-require("can-reflect-tests/observables/map-like/type/type")("", function() {
+require("can-reflect-tests/observables/map-like/type/type")("simple map-like constructor", function() {
 	return observe(function(props) {
 		canReflect.assign(this, props || {});
 	});
+});
+
+require("can-reflect-tests/observables/map-like/type/type")("observe.makeMapType", function() {
+	return observe.makeMapType("MyArray",{},{});
 });
 
 
@@ -191,4 +195,10 @@ require("can-reflect-tests/observables/list-like/type/on-instance-patches")("Obj
 	MyArray.prototype.constructor = MyArray;
 
 	return observe(MyArray);
+});
+
+
+require("can-reflect-tests/observables/list-like/type/on-instance-patches")("observe.makeListType", function() {
+
+	return observe.makeListType("MyArray",{},{});
 });
