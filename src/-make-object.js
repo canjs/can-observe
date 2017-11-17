@@ -225,6 +225,7 @@ var makeObject = {
 	},
 	getValueFromStore: function(key, value, meta) {
 		if (!canReflect.isPrimitive(value) &&
+			!canReflect.isObservableLike(value) &&
 			// if it's already a proxy ...
 			!observableStore.proxies.has(value)) {
 

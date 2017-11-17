@@ -42,6 +42,8 @@
   "devDependencies": {
     "bit-docs": "0.0.7",
     "can-observation": "^4.0.0-pre.7",
+    "can-simple-map": "^4.0.0-pre.0",
+    "can-simple-observable": "^2.0.0-pre.7",
     "can-reflect-tests": "<2.0.0",
     "can-util": "^3.2.2",
     "detect-cyclic-packages": "^1.1.0",

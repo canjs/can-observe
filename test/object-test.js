@@ -3,6 +3,8 @@ var observe = require("can-observe");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 var makeObject = require("../src/-make-object");
+var SimpleMap = require("can-simple-map");
+var SimpleObservable = require("can-simple-observable");
 
 var observableSymbol = canSymbol.for("can.meta");
 
@@ -157,4 +159,16 @@ QUnit.skip("can.* symbols should not appear on object", function() {
 		return sym !== observableSymbol && canSymbol.keyFor(sym).indexOf("can.") === 0;
 	}).length > 0, "Some other can.* symbols on observe");
 
+});
+
+QUnit.test("don't wrap observable value, maps or lists", function(){
+	var simpleObservable = new SimpleObservable(1),
+		simpleMap = new SimpleMap();
+	var observable = observe({
+		simpleObservable: simpleObservable,
+		simpleMap: simpleMap
+	});
+
+	QUnit.equal(observable.simpleObservable,simpleObservable, "simpleObservable left alone" );
+	QUnit.equal(observable.simpleMap,simpleMap, "simpleMap left alone" );
 });
