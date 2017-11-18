@@ -12,7 +12,16 @@ var hasOwn = Object.prototype.hasOwnProperty;
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
 
-
+var isSymbolLike = canReflect.isSymbolLike;
+function shouldRecordObservationOnOwnAndMissingKeys(keyInfo, meta) {
+	return meta.preventSideEffects === 0 &&
+		(
+			// it's on us
+			keyInfo.targetHasOwnKey ||
+			// it's "missing", and we are not sealed
+			(!keyInfo.protoHasKey && !Object.isSealed(meta.target))
+		);
+}
 
 var metaKeys = canReflect.assignSymbols(Object.create(null), {
 	"can.onKeyValue": function(key, handler, queue) {
@@ -78,11 +87,12 @@ var makeObject = {
 	//   - it creates one (which registers itself in the observableStore) and
 	//   - returns that value without modifying the underlying target
 	get: function(target, key, receiver) {
-		if (this.proxyKeys[key] !== undefined) {
-			return this.proxyKeys[key];
+		var proxyKey = this.proxyKeys[key];
+		if (proxyKey !== undefined) {
+			return proxyKey;
 		}
 		// Leave symbols alone
-		if (canReflect.isSymbolLike(key)) {
+		if (isSymbolLike(key)) {
 			return target[key];
 		}
 		var keyInfo = makeObject.getKeyInfo(target, key, receiver, this);
@@ -91,7 +101,7 @@ var makeObject = {
 		if (!keyInfo.valueIsInvariant) {
 			value = makeObject.getValueFromStore(key, value, this);
 		}
-		if (makeObject.shouldRecordObservationOnOwnAndMissingKeys(keyInfo, this)) {
+		if (shouldRecordObservationOnOwnAndMissingKeys(keyInfo, this)) {
 			ObservationRecorder.add(this.proxy, key.toString());
 		}
 		if (keyInfo.parentObservableGetCalledOn) {
@@ -142,40 +152,35 @@ var makeObject = {
 			.concat(Object.getOwnPropertySymbols(this.proxyKeys));
 	},
 	getKeyInfo: function(target, key, receiver, meta) {
+		// Optimized
 		var descriptor = Object.getOwnPropertyDescriptor(target, key);
 		var propertyInfo = {
 			key: key,
 			descriptor: descriptor,
 			targetHasOwnKey: Boolean(descriptor),
-			protoHasKey: descriptor ? false : (key in target),
-			valueIsInvariant: descriptor ? descriptor.writable !== true : false,
+			protoHasKey: false,
+			valueIsInvariant: false,
 			targetValue: undefined,
 			getCalledOnParent: receiver !== meta.proxy
 		};
-		if (descriptor) {
-			if (descriptor.get) {
+		if (descriptor !== undefined) {
+			propertyInfo.valueIsInvariant = descriptor.writable !== true;
+			if (descriptor.get !== undefined) {
 				propertyInfo.targetValue = descriptor.get.call(meta.proxy);
 			} else {
 				propertyInfo.targetValue = descriptor.value;
 			}
 		} else {
 			propertyInfo.targetValue = meta.target[key];
+			propertyInfo.protoHasKey = propertyInfo.targetValue !== undefined ? true : (key in target);
 		}
-		if (propertyInfo.getCalledOnParent) {
+		if (propertyInfo.getCalledOnParent === true) {
 			propertyInfo.parentObservableGetCalledOn = observableStore.proxiedObjects.get(receiver);
 		}
 		return propertyInfo;
 	},
 	// This will record on own keys, and on "missing" keys
-	shouldRecordObservationOnOwnAndMissingKeys: function(keyInfo, meta) {
-		return meta.preventSideEffects === 0 &&
-			(
-				// it's on us
-				keyInfo.targetHasOwnKey ||
-				// it's "missing", and we are not sealed
-				(!keyInfo.protoHasKey && !Object.isSealed(meta.target))
-			);
-	},
+	shouldRecordObservationOnOwnAndMissingKeys: shouldRecordObservationOnOwnAndMissingKeys,
 	deleteProperty: function(target, key) {
 		var old = this.target[key];
 		var ret = delete this.target[key];
