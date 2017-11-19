@@ -212,12 +212,12 @@ require("can-reflect-tests/observables/list-like/type/on-instance-patches")("obs
 var MyArray, MyType;
 require("can-reflect-tests/observables/list-like/instance/serialize")("observe.makeListType observe.makeMapType", function(values){
 	if(!MyArray) {
-		MyArray = observe.makeListType("MyArray",{},{})
+		MyArray = observe.makeListType("MyArray",{},{});
 	}
 	return new MyArray(values);
 }, function(values){
 	if(!MyType) {
-		MyType = observe.makeMapType("Type",{},{})
+		MyType = observe.makeMapType("Type",{},{});
 	}
 	return new MyType(values);
 });

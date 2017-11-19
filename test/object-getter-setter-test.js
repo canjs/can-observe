@@ -1,13 +1,8 @@
 var QUnit = require("steal-qunit");
-var assert = QUnit.assert;
 var observe = require("can-observe");
-var queues = require("can-queues");
 var canReflect = require("can-reflect");
-var canSymbol = require("can-symbol");
-var Observation = require("can-observation");
 var ObservationRecorder = require("can-observation-recorder");
 
-var observableSymbol = canSymbol.for("can.meta");
 
 QUnit.module("can-observe Objects getter and setter behavior");
 
