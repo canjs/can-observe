@@ -192,20 +192,6 @@ QUnit.test("not yet defined properties cannot be observed on sealed object", fun
 });
 
 
-QUnit.skip("_cid cannot be observed", function() {
-	var a = observe({
-		_cid: 123
-	});
-	var o = new Observation(function() {
-		QUnit.ok("_cid" in a, "property is on the object");
-		return a._cid;
-	});
-	o.start();
-	QUnit.equal(canReflect.getValue(o), a._cid, "initial value is cid");
-	QUnit.equal(o.newDependencies.keyDependencies.size, 0, "observation is empty");
-	o.stop();
-});
-
 QUnit.test("Should remove event handlers #21", function() {
 	var result = '';
 	var obj = {
@@ -276,90 +262,6 @@ QUnit.test("getters can be bound within Observations", function() {
 	o.c = "f";
 });
 
-QUnit.skip("getters can be bound within observes", function() {
-	expect(5);
-	var count = 0;
-	var o = observe({
-		get b() {
-			QUnit.ok(count <= 4, "hit the getter " + (++count) + " of 4");
-			return this.c;
-		},
-		c: "d"
-	});
-
-	var fn;
-	canReflect.onKeyValue(o, "b", fn = function() {
-		QUnit.ok(true, "Hit the updater");
-	}); // Also reads b's getter, #1
-
-	var d = o.b; // #2
-	o.c = "e"; // #3
-
-	// After offKeyValue these shouldn't trigger more updader calls.
-	canReflect.offKeyValue(o, "b", fn);
-	d = o.b; // #4
-	// This won't trigger b's getter or the updater now.
-	o.c = "f";
-});
-
-QUnit.skip("getters can be bound across observes", function() {
-	expect(5);
-	var count = 0;
-	var b = observe({
-		c: "d"
-	});
-	var o = observe({
-		get b() {
-			QUnit.ok(count <= 4, "hit the getter " + (++count) + " of 4");
-			return b.c;
-		}
-	});
-
-	var fn;
-	canReflect.onKeyValue(o, "b", fn = function() {
-		QUnit.ok(true, "Hit the updater");
-	}); // Also reads b's getter, #1
-
-	var d = o.b; // #2
-	b.c = "e"; // #3
-
-	// After offKeyValue these shouldn't trigger more updader calls.
-	canReflect.offKeyValue(o, "b", fn);
-	d = o.b; // #4
-	// This won't trigger b's getter or the updater now.
-	b.c = "f";
-});
-
-QUnit.skip("getter/setters within observes", function() {
-	expect(7);
-	var getCount = 0,
-		setCount = 0;
-	var o = observe({
-		get b() {
-			QUnit.ok(getCount <= 4, "hit the getter " + (++getCount) + " of 4");
-			return this.c;
-		},
-		set b(val) {
-			QUnit.ok(setCount <= 2, "Setter was called " + (++setCount) + " of 2"); //x2
-			this.c = val;
-		},
-		c: "d"
-	});
-
-	var fn;
-	canReflect.onKeyValue(o, "b", fn = function() {
-		QUnit.ok(true, "Hit the updater");
-	}); // Also reads b's getter, #1
-
-	var d = o.b; // #2
-	o.b = "e"; // #3, set #1
-
-	// After offKeyValue these shouldn't trigger more updader calls.
-	canReflect.offKeyValue(o, "b", fn);
-	d = o.b; // #4
-	// This won't trigger b's getter or the updater now.
-	o.b = "f"; // set #2
-});
 
 QUnit.test("deleting a property", function() {
 	expect(3);

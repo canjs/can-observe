@@ -14,10 +14,11 @@ var helpers = require("./-helpers");
 
 var isSymbolLike = canReflect.isSymbolLike;
 function shouldRecordObservationOnOwnAndMissingKeys(keyInfo, meta) {
-	return meta.preventSideEffects === 0 &&
+	// it's not a getter
+	return meta.preventSideEffects === 0 && !keyInfo.isAccessor &&
 		(
 			// it's on us
-			keyInfo.targetHasOwnKey ||
+			(keyInfo.targetHasOwnKey ) ||
 			// it's "missing", and we are not sealed
 			(!keyInfo.protoHasKey && !Object.isSealed(meta.target))
 		);
@@ -52,7 +53,8 @@ var makeObject = {
 			target: object,
 			proxyKeys: proxyKeys,
 			options: options,
-			preventSideEffects: 0
+			preventSideEffects: 0,
+			getters: {}
 		};
 		meta.handlers = makeObject.handlers(meta);
 		proxyKeys[symbols.metaSymbol] = meta;
@@ -158,15 +160,20 @@ var makeObject = {
 			key: key,
 			descriptor: descriptor,
 			targetHasOwnKey: Boolean(descriptor),
+			getCalledOnParent: receiver !== meta.proxy,
 			protoHasKey: false,
 			valueIsInvariant: false,
 			targetValue: undefined,
-			getCalledOnParent: receiver !== meta.proxy
+			isAccessor: false
 		};
+		if (propertyInfo.getCalledOnParent === true) {
+			propertyInfo.parentObservableGetCalledOn = observableStore.proxiedObjects.get(receiver);
+		}
 		if (descriptor !== undefined) {
-			propertyInfo.valueIsInvariant = descriptor.writable !== true;
+			propertyInfo.valueIsInvariant = descriptor.writable === false;
 			if (descriptor.get !== undefined) {
-				propertyInfo.targetValue = descriptor.get.call(meta.proxy);
+				propertyInfo.targetValue = descriptor.get.call( propertyInfo.parentObservableGetCalledOn || receiver);
+				propertyInfo.isAccessor = true;
 			} else {
 				propertyInfo.targetValue = descriptor.value;
 			}
@@ -174,9 +181,7 @@ var makeObject = {
 			propertyInfo.targetValue = meta.target[key];
 			propertyInfo.protoHasKey = propertyInfo.targetValue !== undefined ? true : (key in target);
 		}
-		if (propertyInfo.getCalledOnParent === true) {
-			propertyInfo.parentObservableGetCalledOn = observableStore.proxiedObjects.get(receiver);
-		}
+
 		return propertyInfo;
 	},
 	// This will record on own keys, and on "missing" keys
