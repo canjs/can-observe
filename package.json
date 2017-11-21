@@ -35,7 +35,7 @@
     "can-event": "^3.7.5",
     "can-namespace": "^1.0.0",
     "can-observation": "^3.0.7",
-    "can-reflect": "^1.4.2",
+    "can-reflect": "^1.10.1",
     "can-symbol": "^1.2.0"
   },
   "devDependencies": {
