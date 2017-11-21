@@ -49,6 +49,9 @@ var makeObject = {
 
 	observable: function(object, options) {
 		var proxyKeys = Object.create(makeObject.metaKeys());
+		if(options.proxyKeys) {
+			canReflect.assign(proxyKeys, options.proxyKeys);
+		}
 		var meta = {
 			target: object,
 			proxyKeys: proxyKeys,

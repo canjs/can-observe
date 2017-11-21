@@ -130,9 +130,6 @@ require("can-reflect-tests/observables/map-like/type/type")("simple map-like con
 	});
 });
 
-require("can-reflect-tests/observables/map-like/type/type")("observe.makeMapType", function() {
-	return observe.makeMapType("MyArray",{},{});
-});
 
 
 QUnit.test(".constructor of array subclass is itself", function() {
@@ -195,29 +192,4 @@ require("can-reflect-tests/observables/list-like/type/on-instance-patches")("Obj
 	MyArray.prototype.constructor = MyArray;
 
 	return observe(MyArray);
-});
-
-
-require("can-reflect-tests/observables/list-like/type/on-instance-patches")("observe.makeListType", function() {
-
-	return observe.makeListType("MyArray",{},{});
-});
-
-
-require("can-reflect-tests/observables/list-like/type/on-instance-patches")("observe.makeListType", function() {
-
-	return observe.makeListType("MyArray",{},{});
-});
-
-var MyArray, MyType;
-require("can-reflect-tests/observables/list-like/instance/serialize")("observe.makeListType observe.makeMapType", function(values){
-	if(!MyArray) {
-		MyArray = observe.makeListType("MyArray",{},{});
-	}
-	return new MyArray(values);
-}, function(values){
-	if(!MyType) {
-		MyType = observe.makeMapType("Type",{},{});
-	}
-	return new MyType(values);
 });
