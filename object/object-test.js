@@ -1,6 +1,6 @@
 var ObserveObject = require("./object");
 var QUnit = require("steal-qunit");
-
+var metaSymbol = require("can-symbol").for("can.meta");
 QUnit.module("can-observe/object");
 
 var classSupport = (function() {
@@ -76,6 +76,32 @@ QUnit.test("Object.extend basics", function(){
 	todo.name = "Ramiya";
 
 });
+
+QUnit.test("connected and disconnected callbacks", function(){
+	var Type = ObserveObject.extend("Type",{},{
+		connectedCallback: function(){
+			this.listenTo(this.name,"first", function(newLength){
+				QUnit.equal(newLength, 3, "length updated");
+			});
+		}
+	});
+
+
+	var instance = new Type({
+		name: {first: "Justin", last: "Meyer"}
+	});
+	var name = instance.name;
+
+	instance.connectedCallback();
+
+	var handlers = name[metaSymbol].handlers;
+	QUnit.equal(handlers.get(["first"]).length, 1, "has one handler");
+
+	instance.disconnectedCallback();
+
+	QUnit.equal(handlers.get(["first"]).length, 0, "has no handlers");
+});
+
 
 require("can-reflect-tests/observables/map-like/type/type")("observe.Object.extend", function() {
 	return ObserveObject.extend("Todo",{},{});

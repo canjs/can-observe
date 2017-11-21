@@ -81,5 +81,14 @@ canReflect.assignSymbols(ObserveArray, {
 ObserveArray.extend = helpers.makeSimpleExtender(ObserveArray);
 
 eventMixin(ObserveArray.prototype);
+Object.defineProperty(ObserveArray.prototype,"disconnectedCallback",{
+    enumerable: false,
+    writable: true,
+    configurable: true,
+    value: function(){
+        this.off();
+        this.stopListening();
+    }
+});
 
 module.exports = ObserveArray;
