@@ -6,6 +6,7 @@ var symbols = require("./-symbols");
 var diffArray = require("can-util/js/diff-array/diff-array");
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
+var canReflect = require("can-reflect");
 
 var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
 
@@ -153,7 +154,9 @@ var makeArray = {
 
 	observable: function(object, options) {
 		var proxyKeys = Object.create(makeArray.metaKeys());
-
+		if(options.proxyKeys) {
+			canReflect.assign(proxyKeys, options.proxyKeys);
+		}
 		var meta = {
 			target: object,
 			proxyKeys: proxyKeys,
