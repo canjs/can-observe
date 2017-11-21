@@ -49,8 +49,11 @@ var makeObject = {
 
 	observable: function(object, options) {
 		var proxyKeys = Object.create(makeObject.metaKeys());
-		if(options.proxyKeys) {
+		if(options.proxyKeys !== undefined) {
 			canReflect.assign(proxyKeys, options.proxyKeys);
+		}
+		if(options.shouldRecordObservation === undefined) {
+			options.shouldRecordObservation = shouldRecordObservationOnOwnAndMissingKeys;
 		}
 		var meta = {
 			target: object,
@@ -106,7 +109,7 @@ var makeObject = {
 		if (!keyInfo.valueIsInvariant) {
 			value = makeObject.getValueFromStore(key, value, this);
 		}
-		if (shouldRecordObservationOnOwnAndMissingKeys(keyInfo, this)) {
+		if (this.options.shouldRecordObservation(keyInfo, this)) {
 			ObservationRecorder.add(this.proxy, key.toString());
 		}
 		if (keyInfo.parentObservableGetCalledOn) {

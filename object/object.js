@@ -18,6 +18,18 @@ function ensureTypeDefinition(obj) {
     return typeDefs;
 }
 
+function shouldRecordObservationOnAllKeysExceptFunctionsOnProto(keyInfo, meta){
+    return meta.preventSideEffects === 0 && !keyInfo.isAccessor &&
+		(
+			// it's on us
+			(keyInfo.targetHasOwnKey ) ||
+			// it's "missing", and we are not sealed
+			(!keyInfo.protoHasKey && !Object.isSealed(meta.target)) ||
+            // it's on our proto, but not a function
+            (keyInfo.protoHasKey && (typeof targetValue !== "function"))
+		);
+}
+
 var ObserveObject = function(props) {
     var prototype = Object.getPrototypeOf(this);
     var constructor = this.constructor;
@@ -33,7 +45,8 @@ var ObserveObject = function(props) {
         observe: makeObserve.observe,
         proxyKeys: {
             constructor: constructor
-        }
+        },
+        shouldRecordObservation: shouldRecordObservationOnAllKeysExceptFunctionsOnProto
     });
 };
 

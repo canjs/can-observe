@@ -36,7 +36,9 @@ canReflect.assignSymbols(metaKeys, {
 var makeFunction = {
 
 	observable: function(object, options) {
-
+		if(options.shouldRecordObservation === undefined) {
+			options.shouldRecordObservation = makeObject.shouldRecordObservationOnOwnAndMissingKeys;
+		}
 		var proxyKeys = Object.create(makeFunction.metaKeys());
 
 		var meta = {

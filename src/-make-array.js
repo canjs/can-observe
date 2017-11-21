@@ -153,6 +153,9 @@ var metaKeys = helpers.assignEverything(Object.create(null), makeObject.metaKeys
 var makeArray = {
 
 	observable: function(object, options) {
+		if(options.shouldRecordObservation === undefined) {
+			options.shouldRecordObservation = makeObject.shouldRecordObservationOnOwnAndMissingKeys;
+		}
 		var proxyKeys = Object.create(makeArray.metaKeys());
 		if(options.proxyKeys) {
 			canReflect.assign(proxyKeys, options.proxyKeys);

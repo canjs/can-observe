@@ -1,7 +1,9 @@
 var ObserveObject = require("./object");
 var QUnit = require("steal-qunit");
 var metaSymbol = require("can-symbol").for("can.meta");
+var ObservationRecorder = require("can-observation-recorder");
 QUnit.module("can-observe/object");
+
 
 var classSupport = (function() {
 	try {
@@ -102,6 +104,41 @@ QUnit.test("connected and disconnected callbacks", function(){
 	QUnit.equal(handlers.get(["first"]).length, 0, "has no handlers");
 });
 
+QUnit.test("default values are observable", 3, function(){
+	var Type = ObserveObject.extend("Type",{},{
+		someValue: 3
+	});
+
+	var instance = new Type({});
+
+	ObservationRecorder.start();
+	var val = instance.someValue;
+	var record = ObservationRecorder.stop();
+	QUnit.equal(val, 3, "got someValue");
+	QUnit.ok( record.keyDependencies.get(instance).has("someValue"), "bound to someValue" );
+
+	instance.on("someValue", function(newVal){
+		QUnit.equal(newVal, 4, "got newVal");
+	});
+	instance.someValue = 4;
+});
+
+QUnit.test("Don't observe functions", function(){
+	var Type = ObserveObject.extend("Type",{},{
+		someValue: 3,
+		method: function(){
+			return this.someValue;
+		}
+	});
+
+	var instance = new Type({});
+
+	ObservationRecorder.start();
+	var val = instance.method();
+	var record = ObservationRecorder.stop();
+	QUnit.equal(val, 3, "got someValue");
+	QUnit.ok( record.keyDependencies.get(instance).has("someValue"), "bound to someValue" );
+});
 
 require("can-reflect-tests/observables/map-like/type/type")("observe.Object.extend", function() {
 	return ObserveObject.extend("Todo",{},{});
