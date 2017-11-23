@@ -128,15 +128,42 @@ var makeObject = {
 		value = makeObject.getValueToSet(key, value, this);
 		// make a proxy for any non-observable objects being passed in as values
 		makeObject.setValueAndOnChange(key, value, this, function(key, value, meta, hadOwn, old) {
+			//!steal-remove-start
+			var reasonLog = [canReflect.getName(meta.proxy)+" set", key,"to", value];
+			//!steal-remove-end
+
 			queues.batch.start();
-			queues.enqueueByQueue(meta.handlers.getNode([key]), meta.proxy, [value, old]);
+			queues.enqueueByQueue(meta.handlers.getNode([key]), meta.proxy, [value, old]
+				//!steal-remove-start
+				/* jshint laxcomma: true */
+				, undefined
+				, reasonLog
+				/* jshint laxcomma: false */
+				//!steal-remove-end
+			);
 			var patches = [{
 				key: key,
 				type: hadOwn ? "set" : "add",
 				value: value
 			}];
-			queues.enqueueByQueue(meta.handlers.getNode([symbols.patchesSymbol]), meta.proxy, [patches]);
-
+			queues.enqueueByQueue(meta.handlers.getNode([symbols.patchesSymbol]), meta.proxy, [patches]
+				//!steal-remove-start
+				/* jshint laxcomma: true */
+				, undefined
+				, reasonLog
+				/* jshint laxcomma: false */
+				//!steal-remove-end
+			);
+			if(!hadOwn) {
+				queues.enqueueByQueue(meta.handlers.getNode([symbols.keysSymbol]), meta.proxy, [key]
+					//!steal-remove-start
+					/* jshint laxcomma: true */
+					, undefined
+					, reasonLog
+					/* jshint laxcomma: false */
+					//!steal-remove-end
+				);
+			}
 			// might need to be .proxy
 			var constructor = meta.target.constructor,
 				dispatchPatches = constructor[dispatchInstanceOnPatchesSymbol];
@@ -151,6 +178,7 @@ var makeObject = {
 		return true;
 	},
 	ownKeys: function(target, key) {
+		ObservationRecorder.add(this.proxy, symbols.keysSymbol);
 		// Proxies should return the keys and symbols from proxyOnly
 		// as well as from the target, so operators like `in` and
 		// functions like `hasOwnProperty` can be used to determine
@@ -199,13 +227,38 @@ var makeObject = {
 		//  Otherwise trigger that the property is now undefined.
 		// If the property is redefined, the handlers will fire again.
 		if (ret && this.preventSideEffects === 0 && old !== undefined) {
+			//!steal-remove-start
+			var reasonLog = [canReflect.getName(this.proxy)+" deleted", key];
+			//!steal-remove-end
 			queues.batch.start();
-			queues.enqueueByQueue(this.handlers.getNode([key]), this.proxy, [undefined, old]);
+			queues.enqueueByQueue(this.handlers.getNode([key]), this.proxy, [undefined, old]
+				//!steal-remove-start
+				/* jshint laxcomma: true */
+				, undefined
+				, reasonLog
+				/* jshint laxcomma: false */
+				//!steal-remove-end
+			);
+			queues.enqueueByQueue(this.handlers.getNode([symbols.keysSymbol]), this.proxy, [undefined,key]
+				//!steal-remove-start
+				/* jshint laxcomma: true */
+				, undefined
+				, reasonLog
+				/* jshint laxcomma: false */
+				//!steal-remove-end
+			);
 			var patches = [{
 				key: key,
 				type: "delete"
 			}];
-			queues.enqueueByQueue(this.handlers.getNode([symbols.patchesSymbol]), this.proxy, [patches]);
+			queues.enqueueByQueue(this.handlers.getNode([symbols.patchesSymbol]), this.proxy, [patches]
+				//!steal-remove-start
+				/* jshint laxcomma: true */
+				, undefined
+				, reasonLog
+				/* jshint laxcomma: false */
+				//!steal-remove-end
+			);
 
 			var constructor = this.target.constructor,
 				dispatchPatches = constructor[dispatchInstanceOnPatchesSymbol];

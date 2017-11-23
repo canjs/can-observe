@@ -321,6 +321,36 @@ QUnit.test("patches events for keyed properties on objects", function() {
 
 });
 
+QUnit.test("can.offPatches unbinds", function(){
+	var addObject = observe({});
+
+	addObject[canSymbol.for("can.onPatches")](function(patches) { });
+
+	var handlers = addObject[canSymbol.for("can.meta")].handlers;
+	QUnit.equal(handlers.get([]).length, 1, "one handler");
+});
+
 require("can-reflect-tests/observables/map-like/instance/on-get-set-delete-key")("", function() {
 	return observe({});
+});
+
+QUnit.test("adding, removing properites is observable to for-in loops", function(){
+	var obj = observe({});
+	var keys = new Observation(function getKeys(){
+		var keys = [];
+		for(var key in obj) {
+			keys.push(key)
+		}
+		return keys;
+	});
+	var keyChanges = [];
+
+	canReflect.onValue( keys, function gotNewSerialized(newVal){
+		keyChanges.push(newVal);
+	});
+	obj.foo = "bar";
+	delete obj.foo;
+
+
+	QUnit.deepEqual(keyChanges, [["foo"],[]],"got updated");
 });

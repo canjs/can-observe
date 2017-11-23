@@ -79,7 +79,15 @@ var helpers = {
 
 			return Type;
 		};
-	}
+	}/*,
+	assignNonEnumerable: function(obj, key, value){
+		return Object.defineProperty(obj,key,{
+		    enumerable: false,
+		    writable: true,
+		    configurable: true,
+		    value: value
+		});
+	}*/
 };
 
 

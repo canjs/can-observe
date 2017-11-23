@@ -79,31 +79,6 @@ QUnit.test("Object.extend basics", function(){
 
 });
 
-QUnit.test("connected and disconnected callbacks", function(){
-	var Type = ObserveObject.extend("Type",{},{
-		connectedCallback: function(){
-			this.listenTo(this.name,"first", function(newLength){
-				QUnit.equal(newLength, 3, "length updated");
-			});
-		}
-	});
-
-
-	var instance = new Type({
-		name: {first: "Justin", last: "Meyer"}
-	});
-	var name = instance.name;
-
-	instance.connectedCallback();
-
-	var handlers = name[metaSymbol].handlers;
-	QUnit.equal(handlers.get(["first"]).length, 1, "has one handler");
-
-	instance.disconnectedCallback();
-
-	QUnit.equal(handlers.get(["first"]).length, 0, "has no handlers");
-});
-
 QUnit.test("default values are observable", 3, function(){
 	var Type = ObserveObject.extend("Type",{},{
 		someValue: 3

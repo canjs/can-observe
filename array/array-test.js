@@ -68,28 +68,6 @@ QUnit.test("observe.Array.extend basics", function(){
 
 });
 
-QUnit.test("connected and disconnected callbacks", function(){
-	var List = ObserveArray.extend("List",{},{
-		connectedCallback: function(){
-			this.listenTo(this[0],"name", function(newName){
-				QUnit.equal(newName, "Ramiya", "name updated");
-			});
-		}
-	});
-
-	var instance = new List([{name: "Justin"}]);
-	var first = instance[0];
-
-	instance.connectedCallback();
-
-	var handlers = first[metaSymbol].handlers;
-	QUnit.equal(handlers.get(["name"]).length, 1, "has one handler");
-
-	instance.disconnectedCallback();
-
-	QUnit.equal(handlers.get(["name"]).length, 0, "has no handlers");
-});
-
 require("can-reflect-tests/observables/list-like/type/on-instance-patches")("observe.Array.extend", function() {
     return ObserveArray.extend("TodoList",{},{});
 });
