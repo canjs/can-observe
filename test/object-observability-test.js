@@ -339,7 +339,7 @@ QUnit.test("adding, removing properites is observable to for-in loops", function
 	var keys = new Observation(function getKeys(){
 		var keys = [];
 		for(var key in obj) {
-			keys.push(key)
+			keys.push(key);
 		}
 		return keys;
 	});
