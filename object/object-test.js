@@ -1,6 +1,5 @@
 var ObserveObject = require("./object");
 var QUnit = require("steal-qunit");
-var metaSymbol = require("can-symbol").for("can.meta");
 var ObservationRecorder = require("can-observation-recorder");
 QUnit.module("can-observe/object");
 
