@@ -6,7 +6,6 @@ var symbols = require("./-symbols");
 var diffArray = require("can-util/js/diff-array/diff-array");
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
-var canReflect = require("can-reflect");
 
 var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
 
@@ -156,18 +155,14 @@ var makeArray = {
 		if(options.shouldRecordObservation === undefined) {
 			options.shouldRecordObservation = makeObject.shouldRecordObservationOnOwnAndMissingKeys;
 		}
-		var proxyKeys = Object.create(makeArray.proxyKeys());
-		if(options.proxyKeys) {
-			canReflect.assign(proxyKeys, options.proxyKeys);
-		}
 		var meta = {
 			target: object,
-			proxyKeys: proxyKeys,
+			proxyKeys: options.proxyKeys !== undefined ? options.proxyKeys : Object.create(makeArray.proxyKeys()),
 			options: options,
 			preventSideEffects: 0
 		};
 		meta.handlers = makeObject.handlers(meta);
-		proxyKeys[symbols.metaSymbol] = meta;
+		meta.proxyKeys[symbols.metaSymbol] = meta;
 		return meta.proxy = new Proxy(object, {
 			get: makeObject.get.bind(meta),
 			set: makeArray.set.bind(meta),

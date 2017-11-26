@@ -1,26 +1,24 @@
-var canReflect = require("can-reflect");
+// ## can-observe/array/array
+//
 var canSymbol = require("can-symbol");
 var makeArray = require("../src/-make-array");
 var makeObserve = require("../src/-make-observe");
 var eventMixin = require("can-event-queue/map/map");
-var typeEventMixin = require("can-event-queue/type/type");
-var queues = require("can-queues");
 var helpers = require("../src/-helpers");
+var observableStore = require("../src/-observable-store");
+
+var getterHelpers = require("../src/-getter-helpers");
 
 var definitionsSymbol = canSymbol.for("can.typeDefinitions");
-var metaSymbol = canSymbol.for("can.meta");
+var computedDefinitionsSymbol = canSymbol.for("can.computedDefinitions");
 
-function ensureTypeDefinition(obj) {
-    var typeDefs = obj.prototype[definitionsSymbol];
-    if (!typeDefs) {
-        typeDefs = obj.prototype[definitionsSymbol] = Object.create(null);
-    }
-    return typeDefs;
-}
+// Setup proxyKeys to look for observations when doing onKeyValue and offKeyValue
+var proxyKeys = helpers.assignEverything({},makeArray.proxyKeys());
+getterHelpers.addMemoizedGetterBindings(proxyKeys);
 
 var ObserveArray;
 if ( /*helpers.supportsClass*/ false) {
-    ObserveArray = class ObserveArray extends Array {
+    /*ObserveArray = class ObserveArray extends Array {
         constructor(items) {
             super();
             var prototype = Object.getPrototypeOf(this);
@@ -39,11 +37,16 @@ if ( /*helpers.supportsClass*/ false) {
                 }
             });
         }
-    };
+    };*/
 } else {
+    
     var ObserveArray = function(items) {
         var prototype = Object.getPrototypeOf(this);
-        var constructor = this.constructor;
+        // Setup computed properties if they haven't been setup already.
+        if(prototype[computedDefinitionsSymbol] === undefined) {
+            prototype[computedDefinitionsSymbol] = getterHelpers.setupComputedProperties(prototype);
+        }
+        //
         var instance = this;
         var definitions = prototype[definitionsSymbol] || {};
         for (var key in definitions) {
@@ -51,32 +54,22 @@ if ( /*helpers.supportsClass*/ false) {
         }
         this.push.apply(this, items || []);
 
-        return makeArray.observable(instance, {
+        var localProxyKeys = Object.create(proxyKeys);
+        localProxyKeys.constructor = this.constructor;
+
+        var observable = makeArray.observable(instance, {
             observe: makeObserve.observe,
-            proxyKeys: {
-                constructor: constructor
-            }
+            proxyKeys: localProxyKeys,
+            shouldRecordObservation: getterHelpers.shouldRecordObservationOnAllKeysExceptFunctionsOnProto
         });
+        observableStore.proxiedObjects.set(instance, observable);
+        observableStore.proxies.add(observable);
+        return observable;
     };
     ObserveArray.prototype = Object.create(Array.prototype);
 }
 
-typeEventMixin(ObserveArray);
-
-canReflect.assignSymbols(ObserveArray, {
-    "can.defineInstanceKey": function(prop, value) {
-        ensureTypeDefinition(this)[prop] = value;
-    },
-    "can.dispatchInstanceBoundChange": function(obj, isBound) {
-        var meta = this[metaSymbol];
-        if (meta) {
-            var lifecycleHandlers = meta.lifecycleHandlers;
-            if (lifecycleHandlers) {
-                queues.enqueueByQueue(lifecycleHandlers.getNode([]), this, [obj, isBound]);
-            }
-        }
-    }
-});
+getterHelpers.addMethodsAndSymbols(ObserveArray);
 
 ObserveArray.extend = helpers.makeSimpleExtender(ObserveArray);
 

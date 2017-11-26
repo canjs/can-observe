@@ -2,130 +2,65 @@ var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 var makeObserve = require("../src/-make-observe");
 var eventMixin = require("can-event-queue/map/map");
-var typeEventMixin = require("can-event-queue/type/type");
-var queues = require("can-queues");
 var helpers = require("../src/-helpers");
 var makeObject = require("../src/-make-object");
-var memoizeGetter = require("../src/-memoize-getter");
 var observableStore = require("../src/-observable-store");
 var definitionsSymbol = canSymbol.for("can.typeDefinitions");
-var metaSymbol = canSymbol.for("can.meta");
-
-
-
-
-
-
-
-function ensureTypeDefinition(obj) {
-    var typeDefs = obj.prototype[definitionsSymbol];
-    if (!typeDefs) {
-        typeDefs = obj.prototype[definitionsSymbol] = Object.create(null);
-    }
-    return typeDefs;
-}
-
-function shouldRecordObservationOnAllKeysExceptFunctionsOnProto(keyInfo, meta){
-    return meta.preventSideEffects === 0 && !keyInfo.isAccessor &&
-		(
-			// it's on us
-			(keyInfo.targetHasOwnKey ) ||
-			// it's "missing", and we are not sealed
-			(!keyInfo.protoHasKey && !Object.isSealed(meta.target)) ||
-            // it's on our proto, but not a function
-            (keyInfo.protoHasKey && (typeof targetValue !== "function"))
-		);
-}
-
+var getterHelpers = require("../src/-getter-helpers");
 
 var computedDefinitionsSymbol = canSymbol.for("can.computedDefinitions");
 
-function setupComputedProperties(prototype){
-    var computed = {};
-    Object.getOwnPropertyNames(prototype).forEach(function(prop){
-        var descriptor = Object.getOwnPropertyDescriptor(prototype,prop);
 
-        if(descriptor.get !== undefined) {
-            var getObservationData = memoizeGetter.memoize(prototype,prop,descriptor);
-            // stick the `data.observationFor` method so
-            // proxyKeys's `onKeyValue` can get the observation, bind to it, and forward the
-            // event
-            // we will somehow need to know if this is "forwarded or not"
-            computed[prop] = getObservationData;
-        }
-
-    });
-    return computed;
-}
-
+// Setup proxyKeys to look for observations when doing onKeyValue and offKeyValue
 var proxyKeys = helpers.assignEverything({},makeObject.proxyKeys());
-canReflect.assignSymbols(proxyKeys, {
-    "can.onKeyValue": function(key, handler, queue) {
-        var getObservation = this[computedDefinitionsSymbol][key];
-        if(getObservation !== undefined) {
-            memoizeGetter.bind( getObservation(this) );
-        }
-        var handlers = this[metaSymbol].handlers;
-        handlers.add([key, queue || "notify", handler]);
-    },
-    "can.offKeyValue": function(key, handler, queue) {
-        var getObservation = this[computedDefinitionsSymbol][key];
-        if(getObservation !== undefined) {
-            memoizeGetter.unbind( getObservation(this) );
-        }
-        var handlers = this[metaSymbol].handlers;
-        handlers.delete([key, queue || "notify", handler]);
-    }
-});
+getterHelpers.addMemoizedGetterBindings(proxyKeys);
 
+// ## ObserveObject constructor function
+// Works by returning the proxy-wrapped instance.
 var ObserveObject = function(props) {
     var prototype = Object.getPrototypeOf(this);
+
+    // If the prototype hasn't been setup to build observations on getters, do that now.
     if(prototype[computedDefinitionsSymbol] === undefined) {
-        prototype[computedDefinitionsSymbol] = setupComputedProperties(prototype);
+        prototype[computedDefinitionsSymbol] = getterHelpers.setupComputedProperties(prototype);
     }
 
-    var constructor = this.constructor;
-    var instance = this;
+    // Define expando properties from `can.defienInstanceProperty`
+    var sourceInstance = this;
     var definitions = prototype[definitionsSymbol] || {};
     for (var key in definitions) {
-        Object.defineProperty(instance, key, definitions[key]);
+        Object.defineProperty(sourceInstance, key, definitions[key]);
     }
-    if (props) {
-        canReflect.assign(instance, props);
+    // Add properties passed to the constructor.
+    if (props !== undefined) {
+        canReflect.assign(sourceInstance, props);
     }
+    // Create a copy of the proxy keys
     var localProxyKeys = Object.create(proxyKeys);
-    localProxyKeys.constructor = constructor;
-    var observable = makeObject.observable(instance, {
+
+    // Make sure that the .constructor property isn't proxied.  If it was,
+    // `this.constructor` would not be the type.
+    localProxyKeys.constructor = this.constructor;
+
+    // Wrap the sourceInstance
+    var observable = makeObject.observable(sourceInstance, {
         observe: makeObserve.observe,
         proxyKeys: localProxyKeys,
-        shouldRecordObservation: shouldRecordObservationOnAllKeysExceptFunctionsOnProto
+        shouldRecordObservation: getterHelpers.shouldRecordObservationOnAllKeysExceptFunctionsOnProto
     });
-    observableStore.proxiedObjects.set(instance, observable);
+    // Add the proxy to the stores.
+    observableStore.proxiedObjects.set(sourceInstance, observable);
     observableStore.proxies.add(observable);
     return observable;
 };
 
+// Adds `defineInstanceKey` and other symbols on the Type.
+getterHelpers.addMethodsAndSymbols(ObserveObject);
 
-typeEventMixin(ObserveObject);
-
-
-canReflect.assignSymbols(ObserveObject, {
-    "can.defineInstanceKey": function(prop, value) {
-        ensureTypeDefinition(this)[prop] = value;
-    },
-    "can.dispatchInstanceBoundChange": function(obj, isBound) {
-        var meta = this[metaSymbol];
-        if (meta) {
-            var lifecycleHandlers = meta.lifecycleHandlers;
-            if (lifecycleHandlers) {
-                queues.enqueueByQueue(lifecycleHandlers.getNode([]), this, [obj, isBound]);
-            }
-        }
-    }
-});
-
+// Allows this to be extended w/o `class`
 ObserveObject.extend = helpers.makeSimpleExtender(ObserveObject);
 
+// Adds the remaining mixins
 eventMixin(ObserveObject.prototype);
 
 module.exports = ObserveObject;

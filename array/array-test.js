@@ -84,3 +84,34 @@ require("can-reflect-tests/observables/list-like/instance/serialize")("observe.A
     }
     return new MyExtendedType(values);
 });
+
+
+QUnit.test("getters work", function(){
+	var actions = [];
+	var People = ObserveArray.extend("People",{},{
+		get over21() {
+			actions.push("filter");
+			return this.filter(function(person){
+				return person.age > 21;
+			})
+		}
+	});
+
+	var people = new People([{id: 1, age: 22}, {id: 2, age: 21}, {id: 3, age: 23}]);
+
+	people.on("over21", function over21Callback(people){
+		actions.push("over21Callback "+people.length);
+	});
+
+	QUnit.equal(people.over21.length, 2, "got the right number");
+
+
+	people[0].age = 20;
+
+	QUnit.deepEqual(actions,[
+		"filter",
+		"filter",
+		"over21Callback 1"
+	],"behavior is right");
+
+});
