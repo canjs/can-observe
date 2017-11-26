@@ -7,9 +7,9 @@ var observableStore = require("./-observable-store");
 
 var helpers = require("./-helpers");
 
-var metaKeys = helpers.assignEverything(Object.create(null), makeObject.metaKeys());
+var proxyKeys = helpers.assignEverything(Object.create(null), makeObject.proxyKeys());
 
-canReflect.assignSymbols(metaKeys, {
+canReflect.assignSymbols(proxyKeys, {
 	"can.onInstanceBoundChange": function(handler, queueName) {
 		this[symbols.metaSymbol].lifecycleHandlers.add([queueName || "mutate", handler]);
 	},
@@ -39,7 +39,7 @@ var makeFunction = {
 		if(options.shouldRecordObservation === undefined) {
 			options.shouldRecordObservation = makeObject.shouldRecordObservationOnOwnAndMissingKeys;
 		}
-		var proxyKeys = Object.create(makeFunction.metaKeys());
+		var proxyKeys = Object.create(makeFunction.proxyKeys());
 
 		var meta = {
 			lifecycleHandlers: new KeyTree([Object, Array]),
@@ -75,8 +75,8 @@ var makeFunction = {
 		return meta.proxy;
 	},
 
-	metaKeys: function() {
-		return metaKeys;
+	proxyKeys: function() {
+		return proxyKeys;
 	},
 	construct: function(target, argumentsList, newTarget) {
 		// start by using the default `construct()` to get an instance

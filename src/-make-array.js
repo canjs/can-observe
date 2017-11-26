@@ -147,7 +147,7 @@ function didLengthChangeCauseDeletions(key, value, old, meta) {
 
 
 
-var metaKeys = helpers.assignEverything(Object.create(null), makeObject.metaKeys());
+var proxyKeys = helpers.assignEverything(Object.create(null), makeObject.proxyKeys());
 
 
 var makeArray = {
@@ -156,7 +156,7 @@ var makeArray = {
 		if(options.shouldRecordObservation === undefined) {
 			options.shouldRecordObservation = makeObject.shouldRecordObservationOnOwnAndMissingKeys;
 		}
-		var proxyKeys = Object.create(makeArray.metaKeys());
+		var proxyKeys = Object.create(makeArray.proxyKeys());
 		if(options.proxyKeys) {
 			canReflect.assign(proxyKeys, options.proxyKeys);
 		}
@@ -177,8 +177,8 @@ var makeArray = {
 		});
 	},
 
-	metaKeys: function() {
-		return metaKeys;
+	proxyKeys: function() {
+		return proxyKeys;
 	},
 	// a proxied function needs to have .constructor point to the proxy, while the underlying property points to
 	// what was there. Maybe

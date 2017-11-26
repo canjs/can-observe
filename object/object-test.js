@@ -125,3 +125,36 @@ require("can-reflect-tests/observables/map-like/instance/on-get-set-delete-key")
 	}
 	return new ExtendType({});
 });
+
+QUnit.test("getters work", function(){
+	var actions = [];
+	var Person = ObserveObject.extend("Person",{},{
+		get fullName() {
+			var res = this.first + " " + this.last;
+			actions.push("fullName");
+			return res;
+		}
+	});
+
+	var person = new Person({
+		first: "Justin",
+		last: "Meyer"
+	});
+
+	person.on("fullName", function fullNameCallback(newName){
+		actions.push("fullNameCallback "+newName);
+	})
+	actions.push("on('fullName')");
+
+	QUnit.equal(person.fullName,"Justin Meyer", "full name is right");
+
+	person.first = "Ramiya";
+
+	QUnit.deepEqual(actions,[
+		"fullName",
+		"on('fullName')",
+		"fullName",
+		"fullNameCallback Ramiya Meyer"
+	],"behavior is right");
+
+});

@@ -24,7 +24,7 @@ function shouldRecordObservationOnOwnAndMissingKeys(keyInfo, meta) {
 		);
 }
 
-var metaKeys = canReflect.assignSymbols(Object.create(null), {
+var proxyKeys = canReflect.assignSymbols(Object.create(null), {
 	"can.onKeyValue": function(key, handler, queue) {
 		var handlers = this[symbols.metaSymbol].handlers;
 		handlers.add([key, queue || "notify", handler]);
@@ -48,22 +48,18 @@ var metaKeys = canReflect.assignSymbols(Object.create(null), {
 var makeObject = {
 
 	observable: function(object, options) {
-		var proxyKeys = Object.create(makeObject.metaKeys());
-		if(options.proxyKeys !== undefined) {
-			canReflect.assign(proxyKeys, options.proxyKeys);
-		}
 		if(options.shouldRecordObservation === undefined) {
 			options.shouldRecordObservation = shouldRecordObservationOnOwnAndMissingKeys;
 		}
 		var meta = {
 			target: object,
-			proxyKeys: proxyKeys,
+			proxyKeys: options.proxyKeys !== undefined ? options.proxyKeys : Object.create(makeObject.proxyKeys()),
 			options: options,
 			preventSideEffects: 0,
 			getters: {}
 		};
 		meta.handlers = makeObject.handlers(meta);
-		proxyKeys[symbols.metaSymbol] = meta;
+		meta.proxyKeys[symbols.metaSymbol] = meta;
 		return meta.proxy = new Proxy(object, {
 			get: makeObject.get.bind(meta),
 			set: makeObject.set.bind(meta),
@@ -86,8 +82,8 @@ var makeObject = {
 			}
 		});
 	},
-	metaKeys: function() {
-		return metaKeys;
+	proxyKeys: function() {
+		return proxyKeys;
 	},
 
 	// At its core, this checks the target for un-proxied objects.
