@@ -35,7 +35,7 @@
     "can-key-tree": "<2.0.0",
     "can-namespace": "^1.0.0",
     "can-observation-recorder": "<2.0.0",
-    "can-queues": "^0.2.5",
+    "can-queues": "<2.0.0",
     "can-reflect": "^1.4.2",
     "can-symbol": "^1.2.0"
   },
