@@ -24,7 +24,7 @@ if(classSupport) {
 
 
 
-		todos.on("length", function(newVal){
+		todos.on("length", function(ev, newVal){
 			QUnit.equal(newVal, 4, "length is 4");
 		});
 
@@ -60,7 +60,7 @@ QUnit.test("observe.Array.extend basics", function(){
 
 
 
-    todos.on("length", function(newVal){
+    todos.on("length", function(ev, newVal){
         QUnit.equal(newVal, 4, "length is 4");
     });
 
@@ -99,7 +99,7 @@ QUnit.test("getters work", function(){
 
 	var people = new People([{id: 1, age: 22}, {id: 2, age: 21}, {id: 3, age: 23}]);
 
-	people.on("over21", function over21Callback(people){
+	people.on("over21", function over21Callback(ev, people){
 		actions.push("over21Callback "+people.length);
 	});
 

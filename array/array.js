@@ -39,7 +39,7 @@ if ( /*helpers.supportsClass*/ false) {
         }
     };*/
 } else {
-    
+
     var ObserveArray = function(items) {
         var prototype = Object.getPrototypeOf(this);
         // Setup computed properties if they haven't been setup already.
@@ -68,11 +68,12 @@ if ( /*helpers.supportsClass*/ false) {
     };
     ObserveArray.prototype = Object.create(Array.prototype);
 }
+eventMixin(ObserveArray.prototype);
 
 getterHelpers.addMethodsAndSymbols(ObserveArray);
 
 ObserveArray.extend = helpers.makeSimpleExtender(ObserveArray);
 
-eventMixin(ObserveArray.prototype);
+
 
 module.exports = ObserveArray;

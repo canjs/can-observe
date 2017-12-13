@@ -6,6 +6,8 @@ var symbols = require("./-symbols");
 var diffArray = require("can-util/js/diff-array/diff-array");
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
+var legacyMapBindings = require("can-event-queue/map/map");
+var canReflect = require("can-reflect");
 
 var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
 
@@ -85,22 +87,18 @@ var mutateMethods = {
 			var patches = mutateMethods[prop](meta.target, Array.from(arguments), old);
 
 			if (preventSideEffects === 0) {
-				queues.batch.start();
-				// dispatch all the associated change events and length
+				//!steal-remove-start
+				var reasonLog = [canReflect.getName(meta.proxy)+"."+prop+" called with", arguments];
+				//!steal-remove-end
 
-				queues.enqueueByQueue(meta.handlers.getNode(["length"]), meta.proxy, [meta.target.length, old.length]);
-				queues.enqueueByQueue(meta.handlers.getNode([symbols.patchesSymbol]), meta.proxy, [patches.concat([{
-					key: "length",
-					type: "set",
-					value: meta.target.length
-				}])]);
-
-				var constructor = meta.proxy.constructor,
-					dispatchPatches = constructor[dispatchInstanceOnPatchesSymbol];
-				if (dispatchPatches) {
-					dispatchPatches.call(constructor, meta.proxy, patches);
-				}
-				queues.batch.stop();
+				legacyMapBindings.dispatch.call( meta.proxy, {
+					// only fire patches
+					type: "length",
+					//!steal-remove-start
+					reasonLog: reasonLog,
+					//!steal-remove-end
+					patches: patches
+				}, [meta.target.length, old.length]);
 			}
 
 			meta.preventSideEffects--;
@@ -161,15 +159,16 @@ var makeArray = {
 			options: options,
 			preventSideEffects: 0
 		};
-		meta.handlers = makeObject.handlers(meta);
 		meta.proxyKeys[symbols.metaSymbol] = meta;
-		return meta.proxy = new Proxy(object, {
+		meta.proxy = new Proxy(object, {
 			get: makeObject.get.bind(meta),
 			set: makeArray.set.bind(meta),
 			ownKeys: makeObject.ownKeys.bind(meta),
 			deleteProperty: makeObject.deleteProperty.bind(meta),
 			meta: meta
 		});
+		legacyMapBindings.addHandlers(meta.proxy, meta);
+		return meta.proxy;
 	},
 
 	proxyKeys: function() {
@@ -186,7 +185,6 @@ var makeArray = {
 		// make a proxy for any non-observable objects being passed in as values
 		makeObject.setValueAndOnChange(key, value, this, function(key, value, meta, hadOwn, old) {
 			var integerIndex = isIntegerIndex(key);
-			queues.batch.start();
 
 			var patches = [{
 				key: key,
@@ -194,7 +192,7 @@ var makeArray = {
 				value: value
 			}];
 			// Normal object event code
-			queues.enqueueByQueue(meta.handlers.getNode([key]), meta.proxy, [value, old]);
+			//queues.enqueueByQueue(meta.handlers.getNode([key]), meta.proxy, [value, old]);
 
 
 			if (integerIndex) {
@@ -225,16 +223,22 @@ var makeArray = {
 					});
 				}
 			}
-			queues.enqueueByQueue(meta.handlers.getNode([symbols.patchesSymbol]), meta.proxy, [patches]);
+			//!steal-remove-start
+			var reasonLog = [canReflect.getName(meta.proxy)+" set", key,"to", value];
+			//!steal-remove-end
 
-			// might need to be .proxy
-			var constructor = meta.target.constructor,
-				dispatchPatches = constructor[dispatchInstanceOnPatchesSymbol];
-			if (dispatchPatches) {
-				dispatchPatches.call(constructor, meta.proxy, patches);
-			}
+			legacyMapBindings.dispatch.call( meta.proxy, {
+				type: key,
+				//!steal-remove-start
+				/* jshint laxcomma: true */
+				reasonLog: reasonLog,
+				/* jshint laxcomma: false */
+				//!steal-remove-end
+				patches: patches,
+				keyChanged: !hadOwn ? key : undefined
+			},[value, old]);
 
-			queues.batch.stop();
+
 		});
 
 

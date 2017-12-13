@@ -29,7 +29,7 @@ if(classSupport) {
 
         QUnit.equal(todo.complete, false, "default complete");
 
-		todo.on("name", function(newVal){
+		todo.on("name", function(ev, newVal){
 			QUnit.equal(newVal, "Ramiya", "can bound to names");
 		});
 
@@ -68,7 +68,7 @@ QUnit.test("Object.extend basics", function(){
 
 	QUnit.equal(todo.complete, false, "default complete");
 
-	todo.on("name", function(newVal){
+	todo.on("name", function(ev, newVal){
 		QUnit.equal(newVal, "Ramiya", "can bound to names");
 	});
 
@@ -91,7 +91,7 @@ QUnit.test("default values are observable", 3, function(){
 	QUnit.equal(val, 3, "got someValue");
 	QUnit.ok( record.keyDependencies.get(instance).has("someValue"), "bound to someValue" );
 
-	instance.on("someValue", function(newVal){
+	instance.on("someValue", function(ev, newVal){
 		QUnit.equal(newVal, 4, "got newVal");
 	});
 	instance.someValue = 4;
@@ -139,8 +139,8 @@ QUnit.test("getters work", function(){
 		first: "Justin",
 		last: "Meyer"
 	});
-
-	person.on("fullName", function fullNameCallback(newName){
+	
+	person.on("fullName", function fullNameCallback(ev, newName){
 		actions.push("fullNameCallback "+newName);
 	})
 	actions.push("on('fullName')");

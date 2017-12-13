@@ -4,6 +4,8 @@ var canSymbol = require("can-symbol");
 var KeyTree = require("can-key-tree");
 var ObservationRecorder = require("can-observation-recorder");
 
+var legacyMapBindings = require("can-event-queue/map/map");
+
 var symbols = require("./-symbols");
 
 var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
@@ -23,7 +25,7 @@ function shouldRecordObservationOnOwnAndMissingKeys(keyInfo, meta) {
 			(!keyInfo.protoHasKey && !Object.isSealed(meta.target))
 		);
 }
-
+/*
 var proxyKeys = canReflect.assignSymbols(Object.create(null), {
 	"can.onKeyValue": function(key, handler, queue) {
 		var handlers = this[symbols.metaSymbol].handlers;
@@ -44,7 +46,12 @@ var proxyKeys = canReflect.assignSymbols(Object.create(null), {
 	"can.isBound": function(){
 		return this[symbols.metaSymbol].handlers.size() > 0;
 	}
+});*/
+var proxyKeys = Object.create(null);
+Object.getOwnPropertySymbols(legacyMapBindings).forEach(function(symbol){
+	proxyKeys[symbol] = legacyMapBindings[symbol];
 });
+
 var makeObject = {
 
 	observable: function(object, options) {
@@ -58,29 +65,18 @@ var makeObject = {
 			preventSideEffects: 0,
 			getters: {}
 		};
-		meta.handlers = makeObject.handlers(meta);
+
+		//meta.handlers = makeObject.handlers(meta);
 		meta.proxyKeys[symbols.metaSymbol] = meta;
-		return meta.proxy = new Proxy(object, {
+		meta.proxy = new Proxy(object, {
 			get: makeObject.get.bind(meta),
 			set: makeObject.set.bind(meta),
 			ownKeys: makeObject.ownKeys.bind(meta),
 			deleteProperty: makeObject.deleteProperty.bind(meta),
 			meta: meta
 		});
-	},
-	handlers: function(meta) {
-		return new KeyTree([Object, Object, Array], {
-			onFirst: function() {
-				if (meta.proxy.constructor[dispatchBoundChangeSymbol]) {
-					meta.proxy.constructor[dispatchBoundChangeSymbol](meta.proxy, true);
-				}
-			},
-			onEmpty: function() {
-				if (meta.proxy.constructor[dispatchBoundChangeSymbol]) {
-					meta.proxy.constructor[dispatchBoundChangeSymbol](meta.proxy, false);
-				}
-			}
-		});
+		legacyMapBindings.addHandlers(meta.proxy, meta);
+		return meta.proxy;
 	},
 	proxyKeys: function() {
 		return proxyKeys;
@@ -128,46 +124,21 @@ var makeObject = {
 			var reasonLog = [canReflect.getName(meta.proxy)+" set", key,"to", value];
 			//!steal-remove-end
 
-			queues.batch.start();
-			queues.enqueueByQueue(meta.handlers.getNode([key]), meta.proxy, [value, old]
+			legacyMapBindings.dispatch.call( meta.proxy, {
+				type: key,
 				//!steal-remove-start
 				/* jshint laxcomma: true */
-				, undefined
-				, reasonLog
+				reasonLog: reasonLog,
 				/* jshint laxcomma: false */
 				//!steal-remove-end
-			);
-			var patches = [{
-				key: key,
-				type: hadOwn ? "set" : "add",
-				value: value
-			}];
-			queues.enqueueByQueue(meta.handlers.getNode([symbols.patchesSymbol]), meta.proxy, [patches]
-				//!steal-remove-start
-				/* jshint laxcomma: true */
-				, undefined
-				, reasonLog
-				/* jshint laxcomma: false */
-				//!steal-remove-end
-			);
-			if(!hadOwn) {
-				queues.enqueueByQueue(meta.handlers.getNode([symbols.keysSymbol]), meta.proxy, [key]
-					//!steal-remove-start
-					/* jshint laxcomma: true */
-					, undefined
-					, reasonLog
-					/* jshint laxcomma: false */
-					//!steal-remove-end
-				);
-			}
-			// might need to be .proxy
-			var constructor = meta.target.constructor,
-				dispatchPatches = constructor[dispatchInstanceOnPatchesSymbol];
-			if (dispatchPatches) {
-				dispatchPatches.call(constructor, meta.proxy, patches);
-			}
+				patches: [{
+					key: key,
+					type: hadOwn ? "set" : "add",
+					value: value
+				}],
+				keyChanged: !hadOwn ? key : undefined
+			},[value, old]);
 
-			queues.batch.stop();
 		});
 
 
@@ -226,43 +197,21 @@ var makeObject = {
 			//!steal-remove-start
 			var reasonLog = [canReflect.getName(this.proxy)+" deleted", key];
 			//!steal-remove-end
-			queues.batch.start();
-			queues.enqueueByQueue(this.handlers.getNode([key]), this.proxy, [undefined, old]
-				//!steal-remove-start
-				/* jshint laxcomma: true */
-				, undefined
-				, reasonLog
-				/* jshint laxcomma: false */
-				//!steal-remove-end
-			);
-			queues.enqueueByQueue(this.handlers.getNode([symbols.keysSymbol]), this.proxy, [undefined,key]
-				//!steal-remove-start
-				/* jshint laxcomma: true */
-				, undefined
-				, reasonLog
-				/* jshint laxcomma: false */
-				//!steal-remove-end
-			);
-			var patches = [{
-				key: key,
-				type: "delete"
-			}];
-			queues.enqueueByQueue(this.handlers.getNode([symbols.patchesSymbol]), this.proxy, [patches]
-				//!steal-remove-start
-				/* jshint laxcomma: true */
-				, undefined
-				, reasonLog
-				/* jshint laxcomma: false */
-				//!steal-remove-end
-			);
 
-			var constructor = this.target.constructor,
-				dispatchPatches = constructor[dispatchInstanceOnPatchesSymbol];
-			if (dispatchPatches) {
-				dispatchPatches.call(constructor, this.proxy, patches);
-			}
+			legacyMapBindings.dispatch.call( this.proxy, {
+				type: key,
+				//!steal-remove-start
+				/* jshint laxcomma: true */
+				reasonLog: reasonLog,
+				/* jshint laxcomma: false */
+				//!steal-remove-end
+				patches: [{
+					key: key,
+					type: "delete"
+				}],
+				keyChanged: key
+			},[undefined, old]);
 
-			queues.batch.stop();
 		}
 		return ret;
 	},

@@ -14,6 +14,7 @@ var memoizeGetter = {
                     observation: new Observation(definition.get, context, {isObservable: false}),
                     count: 0,
                     forward: function(newValue, oldValue){
+                        // TODO: it would be nice if we forwarded reasonLog
                         this.dispatch({
                             type: prop,
                             target: context
@@ -47,13 +48,13 @@ var memoizeGetter = {
     bind: function(observationData){
         observationData.count++;
         if(observationData.count === 1) {
-            observationData.observation.on(observationData.forward);
+            observationData.observation.on(observationData.forward, "notify");
         }
     },
     unbind: function(observationData){
         observationData.count--;
         if(observationData.count === 0) {
-            observationData.observation.off(observationData.forward);
+            observationData.observation.off(observationData.forward, "notify");
         }
     }
 };

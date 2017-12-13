@@ -4,6 +4,7 @@ var typeEventMixin = require("can-event-queue/type/type");
 var canReflect = require("can-reflect");
 var memoizeGetter = require("./-memoize-getter");
 var queues = require("can-queues");
+var eventMixin = require("can-event-queue/map/map");
 
 var computedDefinitionsSymbol = canSymbol.for("can.computedDefinitions");
 var metaSymbol = canSymbol.for("can.meta");
@@ -45,6 +46,21 @@ var getterHelpers = {
                 }
             }
         });
+
+        Type.prototype.addEventListener = function(key, handler, queue){
+            var getObservation = this[computedDefinitionsSymbol][key];
+            if(getObservation !== undefined) {
+                memoizeGetter.bind( getObservation(this) );
+            }
+            return eventMixin.addEventListener.call(this, key, handler, queue);
+        };
+        Type.prototype.removeEventListener = function(key, handler, queue){
+            var getObservation = this[computedDefinitionsSymbol][key];
+            if(getObservation !== undefined) {
+                memoizeGetter.unbind( getObservation(this) );
+            }
+            return eventMixin.removeEventListener.call(this, key, handler, queue);
+        };
     },
     setupComputedProperties: function(prototype){
         var computed = {};
@@ -71,7 +87,7 @@ var getterHelpers = {
                     memoizeGetter.bind( getObservation(this) );
                 }
                 var handlers = this[metaSymbol].handlers;
-                handlers.add([key, queue || "notify", handler]);
+                handlers.add([key, "onKeyValue", queue || "notify", handler]);
             },
             "can.offKeyValue": function(key, handler, queue) {
                 var getObservation = this[computedDefinitionsSymbol][key];
@@ -79,7 +95,7 @@ var getterHelpers = {
                     memoizeGetter.unbind( getObservation(this) );
                 }
                 var handlers = this[metaSymbol].handlers;
-                handlers.delete([key, queue || "notify", handler]);
+                handlers.delete([key, "onKeyValue", queue || "notify", handler]);
             }
         });
     }

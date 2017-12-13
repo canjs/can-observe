@@ -10,7 +10,6 @@ var getterHelpers = require("../src/-getter-helpers");
 
 var computedDefinitionsSymbol = canSymbol.for("can.computedDefinitions");
 
-
 // Setup proxyKeys to look for observations when doing onKeyValue and offKeyValue
 var proxyKeys = helpers.assignEverything({},makeObject.proxyKeys());
 getterHelpers.addMemoizedGetterBindings(proxyKeys);
@@ -54,13 +53,15 @@ var ObserveObject = function(props) {
     return observable;
 };
 
+// Adds event mixins
+eventMixin(ObserveObject.prototype);
+
 // Adds `defineInstanceKey` and other symbols on the Type.
 getterHelpers.addMethodsAndSymbols(ObserveObject);
 
 // Allows this to be extended w/o `class`
 ObserveObject.extend = helpers.makeSimpleExtender(ObserveObject);
 
-// Adds the remaining mixins
-eventMixin(ObserveObject.prototype);
+
 
 module.exports = ObserveObject;

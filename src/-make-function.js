@@ -4,7 +4,7 @@ var KeyTree = require("can-key-tree");
 var makeObject = require("./-make-object");
 var symbols = require("./-symbols");
 var observableStore = require("./-observable-store");
-
+var legacyMapBindings = require("can-event-queue/map/map");
 var helpers = require("./-helpers");
 
 var proxyKeys = helpers.assignEverything(Object.create(null), makeObject.proxyKeys());
@@ -52,7 +52,7 @@ var makeFunction = {
 			preventSideEffects: 0,
 			//inheritsFromArray: helpers.inheritsFromArray(object)
 		};
-		meta.handlers = makeObject.handlers(meta);
+
 		proxyKeys[symbols.metaSymbol] = meta;
 		meta.proxy = new Proxy(object, {
 			get: makeObject.get.bind(meta),
@@ -63,6 +63,7 @@ var makeFunction = {
 			apply: makeFunction.apply.bind(meta),
 			meta: meta
 		});
+		legacyMapBindings.addHandlers(meta.proxy, meta);
 		observableStore.proxiedObjects.set(object, meta.proxy);
 		observableStore.proxies.add(meta.proxy);
 		// Change prototype and its constructor

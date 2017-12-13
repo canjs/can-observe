@@ -14,11 +14,11 @@ var makeObserve = require("../src/-make-observe");
 QUnit.test("makeArray basics", function() {
 	var hobbies = makeArray.observable(["basketball", "programming"], makeObserve);
 
-	var hobbiesList = new Observation(function() {
+	var hobbiesList = new Observation(function hobbiesList() {
 		return hobbies.join(",");
 	});
 
-	canReflect.onValue(hobbiesList, function(newVal) {
+	canReflect.onValue(hobbiesList, function hobbiesChanged(newVal) {
 		QUnit.equal(newVal, "basketball");
 	});
 
@@ -40,7 +40,6 @@ QUnit.test("basics with array", function() {
 	// causes change event above
 	hobbies.pop();
 });
-
 
 QUnit.test("filter with an expando property", function() {
 	var arr = observe([{
@@ -110,7 +109,7 @@ QUnit.test("array events are automatically triggered (push)", function() {
 	var newThing = 3;
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.ok(patches.length > 1, "Patches generated");
+		QUnit.ok(patches.length > 0, "Patches generated");
 		patches.forEach(function(patch) {
 			if (patch.key) {
 				return;
@@ -129,7 +128,7 @@ QUnit.test("array events are automatically triggered (pop)", function() {
 	var list = observe([1, 2, 3]);
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.ok(patches.length > 1, "Patches generated");
+		QUnit.ok(patches.length > 0, "Patches generated");
 		patches.forEach(function(patch) {
 			if (patch.key) {
 				return;
@@ -148,7 +147,7 @@ QUnit.test("array events are automatically triggered (unshift)", function() {
 	var newThing = 3;
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.ok(patches.length > 1, "Patches generated");
+		QUnit.ok(patches.length > 0, "Patches generated");
 		patches.forEach(function(patch) {
 			if (patch.key) {
 				return;
@@ -167,7 +166,7 @@ QUnit.test("array events are automatically triggered (shift)", function() {
 	var list = observe([1, 2, 3]);
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.ok(patches.length > 1, "Patches generated");
+		QUnit.ok(patches.length > 0, "Patches generated");
 		patches.forEach(function(patch) {
 			if (patch.key) {
 				return;
@@ -186,7 +185,7 @@ QUnit.test("array events are automatically triggered (splice)", function() {
 	var newThing = 4;
 
 	list[canSymbol.for("can.onPatches")](function(patches) {
-		QUnit.ok(patches.length > 1, "Patches generated");
+		QUnit.ok(patches.length > 0, "Patches generated");
 		patches.forEach(function(patch) {
 			if (patch.key) {
 				return;
