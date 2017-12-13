@@ -1,15 +1,11 @@
 var canReflect = require("can-reflect");
-var queues = require("can-queues");
-var canSymbol = require("can-symbol");
-var KeyTree = require("can-key-tree");
+
 var ObservationRecorder = require("can-observation-recorder");
 
 var legacyMapBindings = require("can-event-queue/map/map");
 
 var symbols = require("./-symbols");
 
-var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
-var dispatchBoundChangeSymbol = canSymbol.for("can.dispatchInstanceBoundChange");
 var hasOwn = Object.prototype.hasOwnProperty;
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
@@ -25,28 +21,7 @@ function shouldRecordObservationOnOwnAndMissingKeys(keyInfo, meta) {
 			(!keyInfo.protoHasKey && !Object.isSealed(meta.target))
 		);
 }
-/*
-var proxyKeys = canReflect.assignSymbols(Object.create(null), {
-	"can.onKeyValue": function(key, handler, queue) {
-		var handlers = this[symbols.metaSymbol].handlers;
-		handlers.add([key, queue || "notify", handler]);
-	},
-	"can.offKeyValue": function(key, handler, queue) {
-		var handlers = this[symbols.metaSymbol].handlers;
-		handlers.delete([key, queue || "notify", handler]);
-	},
-	"can.onPatches": function(handler, queue) {
-		var handlers = this[symbols.metaSymbol].handlers;
-		handlers.add([symbols.patchesSymbol, queue || "notify", handler]);
-	},
-	"can.offPatches": function(handler, queue) {
-		var handlers = this[symbols.metaSymbol].handlers;
-		handlers.delete([symbols.patchesSymbol, queue || "notify", handler]);
-	},
-	"can.isBound": function(){
-		return this[symbols.metaSymbol].handlers.size() > 0;
-	}
-});*/
+
 var proxyKeys = Object.create(null);
 Object.getOwnPropertySymbols(legacyMapBindings).forEach(function(symbol){
 	proxyKeys[symbol] = legacyMapBindings[symbol];

@@ -1,5 +1,3 @@
-var queues = require("can-queues");
-var canSymbol = require("can-symbol");
 var ObservationRecorder = require("can-observation-recorder");
 var makeObject = require("./-make-object");
 var symbols = require("./-symbols");
@@ -9,7 +7,6 @@ var helpers = require("./-helpers");
 var legacyMapBindings = require("can-event-queue/map/map");
 var canReflect = require("can-reflect");
 
-var dispatchInstanceOnPatchesSymbol = canSymbol.for("can.dispatchInstanceOnPatches");
 
 function isIntegerIndex(prop) {
 	return prop && // empty string typecasts to 0
