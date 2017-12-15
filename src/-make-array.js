@@ -3,7 +3,6 @@
 // The other exports are not used elsewhere.
 // `.set` is the only proxy method that differs from `make-object`'s.
 var ObservationRecorder = require("can-observation-recorder");
-var diffArray = require("can-util/js/diff-array/diff-array");
 var mapBindings = require("can-event-queue/map/map");
 var canReflect = require("can-reflect");
 
