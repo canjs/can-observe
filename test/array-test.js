@@ -206,15 +206,12 @@ QUnit.test("array events are automatically triggered (sort)", function() {
 	list[canSymbol.for("can.onPatches")](function(patches) {
 		QUnit.deepEqual(patches.filter(function(p) {
 			return !p.key;
-		}), [{
-				"index": 1,
-				"deleteCount": 0,
-				"insert": ["b"]
-			},
+		}), [
 			{
-				"index": 3,
-				"deleteCount": 1,
-				"insert": []
+				"index": 0,
+				"deleteCount": 3,
+				"insert": ["a", "b", "c"],
+				type: "splice"
 			}
 		], "patches correct");
 	});
@@ -234,7 +231,8 @@ QUnit.test("array events are automatically triggered (reverse)", function() {
 		}), [{
 			"index": 0,
 			"deleteCount": 3,
-			"insert": expectedList
+			"insert": expectedList,
+			"type": "splice"
 		}], "patches replaces whole list");
 	});
 
@@ -312,37 +310,40 @@ QUnit.test("patches events for keyed properties on arrays", function() {
 });
 
 QUnit.test("patches events for set/deleted indexed properties on arrays", function() {
-	expect(10);
-	var setArrayObject = observe([]);
+	expect(2);
+	//var setArrayObject = observe([]);
+	var setArrayObject2 = observe([]);
 	var deleteArrayObject = observe(["a", "b"]);
 
-	setArrayObject[canSymbol.for("can.onPatches")](function(patches) {
-		patches.forEach(function(patch) {
-			if (patch.key === "length") {
-				QUnit.equal(patch.type, "set", "[0] = 'a', length");
-				QUnit.equal(patch.value, 1);
-			} else {
-				QUnit.equal(patch.key, "0", "[0] = 'a', patch");
-				QUnit.equal(patch.type, "add");
-				QUnit.equal(patch.value, "a");
-			}
-		});
+	setArrayObject2[canSymbol.for("can.onPatches")](function(patches) {
+		deepEqual(patches,[{
+		    "key": "2",
+		    "type": "add",
+		    "value": "a"
+		  },{
+			type: "splice",
+			index:0,
+			deleteCount: 0,
+			insert: [undefined, undefined,"a"]
+		}]);
+
 	});
-	setArrayObject[0] = "a";
+	setArrayObject2[2] = "a";
 
 	deleteArrayObject[canSymbol.for("can.onPatches")](function(patches) {
-		patches.forEach(function(patch) {
-			if (patch.key === "length") {
-				QUnit.equal(patch.type, "set", "length=1, length");
-				QUnit.equal(patch.value, 1);
-			} else {
-				QUnit.equal(patch.key, "1", "length=1, patch");
-				QUnit.equal(patch.type, "delete");
-				QUnit.ok(!patch.value);
-			}
-		});
+		deepEqual(patches,[{
+		    "key": "length",
+		    "type": "set",
+		    "value": 0
+		  },{
+			type: "splice",
+			index:0,
+			deleteCount: 2,
+			insert: []
+		}]);
 	});
-	deleteArrayObject.length = 1; // deleting object at index 1 is implicit in setting length
+	deleteArrayObject.length = 0; // deleting object at index 1 is implicit in setting length
+
 });
 
 QUnit.test("arrays don't listen on individual keys in comprehensions", function() {

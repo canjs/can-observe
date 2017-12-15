@@ -16,25 +16,36 @@ JavaScript objects, arrays, and functions.
 Create an observable object that acts as a [proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy) for a target object.
 
 ```js
-var stache = require("can-stache");
+import observe from "can-observe";
+import canReflect from "can-refect";
+
 var dog = observe({});
 
-var frag = stache("<p>dog's name is {{name}}</p>")(dog);
-document.body.appendChild(frag);
+// non-plain JS object behavior exposed through
+// symbols used by can-reflect
+canReflect.onKeyValue(dog, "name", function(newVal){
+    newVal //-> 'Wilbur'
+})
 
-dog.name = 'Wilbur'; // -> "<p>dog's name is Wilbur</p>" on the document body
+dog.name = 'Wilbur';
 ```
 
 @param {Object|Array|Function} target The object from which an observable
 instance is created. Depending on what type is passed, the proxy will behave slightly differently:
 
 - __Object__ - An observable proxy to the `target` will be returned. All properties
-  _not_ on the prototype will be observable. Any non-primitive and non-built-in property value will be converted
-  to an observable.
-- __Array__ - Behaves like __Object__, but supports providing list-like [can-symbol/types/Patch]es
-  to [can-symbol/symbols/onPatches].
-- __Function__ - Behaves like __Object__, but when called with `new`, makes the instance observable. Also,
-  makes the return value observable if it is already not observable.
+  _not_ on the prototype will be observable. Any non-primitive and non-built-in property value will be converted to an observable. The __Object Behaviors__ listed in the sidebar
+  are available to [can-reflect].
+
+- __Array__ - Behaves like __Object__, but supports providing list-like
+  [can-symbol/types/Patch]es to [can-symbol/symbols/onPatches].  The __Array Behaviors__
+  listed in the sidebar are overwritten to generate [can-observe/can.onPatches]
+  events. The __Object Behaviors__ listed in the sidebar
+  are available to [can-reflect].
+- __Function__ - Behaves like __Object__, but when called with `new`, makes the
+  instance observable. Also, makes the return value observable if
+  it is already not observable. The __Object Behaviors__ and __Function Behaviors__
+  listed in the sidebar are available to [can-reflect].
 
 @return {Proxy} A proxy for the target object.
 
@@ -42,10 +53,26 @@ instance is created. Depending on what type is passed, the proxy will behave sli
 
 ### Use Cases
 
-`can-observe` can be used to make data observable for use with CanJS. CanJS uses observables
-to communicate state changes in the application.
+`can-observe` can be used to make data observable for use with CanJS. CanJS uses observables to communicate state changes in the application. The following
+creates a `dog` observable object and uses it to render a [can-stache]
+template.  When `dog`'s `name` is set, the page will be updated.
 
-`can-observe` can also be used to make observable types. However, checkout [can-observe.Object], [can-observe.Array] or
+
+```js
+import observe from "can-observe";
+import stache from "can-stache";
+
+var dog = observe({});
+
+var frag = stache("<p>dog's name is {{name}}</p>")(dog);
+document.body.appendChild(frag);
+
+dog.name = 'Wilbur'
+
+document.body //-> <p>dog's name is Wilbur</p>
+```
+
+`can-observe` can also be used to make observable types. However, checkout [can-observe.Object observe.Object], [can-observe.Array observe.Array] or
 [can-define] for easier or more powerful ways of making observable types.
 
 ## Make data observable
@@ -173,7 +200,7 @@ person.address // -> this is a Proxy
 
 There are several ways to use `observe` to define observable types.  If you wish to
 have observable methods like `.on` and `.off` on your types, use
-[can-observe.Object] or [can-observe.Array] to create special types.
+[can-observe.Object observe.Object] or [can-observe.Array observe.Array] to create special types.
 
 However, `can-observe` can be used directly to create constructor functions that produce
 observables in two ways:
@@ -249,14 +276,14 @@ sponge.eat()
 > ```
 
 
-### ES6 Classes
+### Returning an `observe(instance)` wrapped instance.
 
-`can-observe` is specifically designed to work with ES6 classes.  To make view models for your [can-component can-components] from ES6 classes, only a few lines of constructor code are necessary:
+To make instances of an existing type observable, you can
+return the `observe`-wrapped proxy from the `constructor()` function
+as follows:
 
 ```js
-import observe from ("can-observe");
-import canComponent from ("can-component");
-import stache from ("can-stache")
+import observe from "can-observe";
 
 class WidgetViewModel {
 	constructor(obj) {
@@ -264,27 +291,27 @@ class WidgetViewModel {
 		Object.assign(this, obj);
 		return observe(this);
 	}
-	get fixedMessage() {
+	fixedMessage() {
 		return "Hello"
 	}
 	// ... more static and prototype functions.
 }
-
-canComponent.extend({
-	tag: "my-widget",
-	view: stache("<p>{{fixedMessage}}, {{messageFromParent}}</p>"),
-	ViewModel: WidgetViewModel
-});
 ```
 
-```html
-<my-widget messageFromParent:from="'world'" />
+## Browser support
 
-<!-- above tag will contain "<p>Hello, world!</p>" on render -->
+can-observe uses the Proxy feature of JavaScript to observe arbitrary properties. Proxies are available in [all modern browsers](http://caniuse.com/#feat=proxy).
+
+A [polyfill is available](https://github.com/GoogleChrome/proxy-polyfill) that brings Proxies back to IE9, with the caveat that only existing properties on the target object can be observed. This means this code:
+
+```js
+var person = observe({first: '', last: ''});
 ```
 
+The *first* and *last* properties are observable in older browsers, but any other property added would not be. To ensure maximum compatibility make sure to give all properties a default value.
 
-## Make
+
+## How it works
 
 
 Using `can-observe` allows you to create observable objects where any property added is immediately observable, including nested objects. This makes `can-observe` ideal for use-cases where the data may be dynamic, or where the more rigid approach of [can-define] is not needed.
@@ -325,19 +352,3 @@ fullName.on("change", function(ev, newVal){
 person.first = "Chasen";
 person.last = "Le Hara";
 ```
-
-
-
-
-
-## Browser support
-
-can-observe uses the Proxy feature of JavaScript to observe arbitrary properties. Proxies are available in [all modern browsers](http://caniuse.com/#feat=proxy).
-
-A [polyfill is available](https://github.com/GoogleChrome/proxy-polyfill) that brings Proxies back to IE9, with the caveat that only existing properties on the target object can be observed. This means this code:
-
-```js
-var person = observe({first: '', last: ''});
-```
-
-The *first* and *last* properties are observable in older browsers, but any other property added would not be. To ensure maximum compatibility make sure to give all properties a default value.

@@ -1,48 +1,51 @@
+// # -make-object.js
+// This module's `.observable` method proxies an object to make it observable.
+// The other exports are used by other make-TYPE modules.
 var canReflect = require("can-reflect");
-
 var ObservationRecorder = require("can-observation-recorder");
-
-var legacyMapBindings = require("can-event-queue/map/map");
+var mapBindings = require("can-event-queue/map/map");
 
 var symbols = require("./-symbols");
-
-var hasOwn = Object.prototype.hasOwnProperty;
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
 
+var hasOwn = Object.prototype.hasOwnProperty;
 var isSymbolLike = canReflect.isSymbolLike;
-function shouldRecordObservationOnOwnAndMissingKeys(keyInfo, meta) {
-	// it's not a getter
-	return meta.preventSideEffects === 0 && !keyInfo.isAccessor &&
-		(
-			// it's on us
-			(keyInfo.targetHasOwnKey ) ||
-			// it's "missing", and we are not sealed
-			(!keyInfo.protoHasKey && !Object.isSealed(meta.target))
-		);
-}
 
+// These are the "overwrites" for the proxy.
+// Copy the symbols from the map bindings mixin.
 var proxyKeys = Object.create(null);
-Object.getOwnPropertySymbols(legacyMapBindings).forEach(function(symbol){
-	proxyKeys[symbol] = legacyMapBindings[symbol];
+Object.getOwnPropertySymbols(mapBindings).forEach(function(symbol){
+	proxyKeys[symbol] = mapBindings[symbol];
 });
 
 var makeObject = {
 
+	// Returns a proxied version of the object.
+	// - `object` - An object to proxy.
+	// - `options` - Configurable behaviors.
+	//   - `proxyKeys` - Keys that will override any keys on `object`. Defaults to `makeObject.proxyKeys`.
+	//   - `observe(nonObservable)` - A function that converts a nested value to an observable.
+	//   - `shouldRecordObservation(keyInfo, meta)` - Returns if `ObservationRecorder`
+	//     should be called.  Defaults to `makeObject.shouldRecordObservationOnOwnAndMissingKeys`.
 	observable: function(object, options) {
 		if(options.shouldRecordObservation === undefined) {
-			options.shouldRecordObservation = shouldRecordObservationOnOwnAndMissingKeys;
+			options.shouldRecordObservation = makeObject.shouldRecordObservationOnOwnAndMissingKeys;
 		}
+
 		var meta = {
 			target: object,
 			proxyKeys: options.proxyKeys !== undefined ? options.proxyKeys : Object.create(makeObject.proxyKeys()),
 			options: options,
-			preventSideEffects: 0,
-			getters: {}
+			// `preventSideEffects` is a counter used to "turn off" the proxy.  This is incremented when some
+			// function (like `Array.splice`) wants to handle event dispatching and/or calling
+			// `ObservationRecorder` itself for performance reasons.
+			preventSideEffects: 0
 		};
 
-		//meta.handlers = makeObject.handlers(meta);
 		meta.proxyKeys[symbols.metaSymbol] = meta;
+
+		// We `bind` so the `meta` is immediately available as `this`.
 		meta.proxy = new Proxy(object, {
 			get: makeObject.get.bind(meta),
 			set: makeObject.set.bind(meta),
@@ -50,56 +53,71 @@ var makeObject = {
 			deleteProperty: makeObject.deleteProperty.bind(meta),
 			meta: meta
 		});
-		legacyMapBindings.addHandlers(meta.proxy, meta);
+		mapBindings.addHandlers(meta.proxy, meta);
 		return meta.proxy;
 	},
 	proxyKeys: function() {
 		return proxyKeys;
 	},
-
-	// At its core, this checks the target for un-proxied objects.
-	// If it finds one,
+	// `get` checks the target for un-proxied objects.
+	// If it finds an un-proxied object:
 	//   - it creates one (which registers itself in the observableStore) and
-	//   - returns that value without modifying the underlying target
+	//   - returns the proxied value without modifying the underlying target
 	get: function(target, key, receiver) {
+		// If getting a key for the proxy, return that value.
 		var proxyKey = this.proxyKeys[key];
 		if (proxyKey !== undefined) {
 			return proxyKey;
 		}
-		// Leave symbols alone
+
+		// Symbols are not observable and their values are not made observable.
 		if (isSymbolLike(key)) {
 			return target[key];
 		}
+
+		// Gets information about the key on `target` or on `target`'s prototype.
 		var keyInfo = makeObject.getKeyInfo(target, key, receiver, this);
 		var value = keyInfo.targetValue;
 
+		// If the return value can be changed ...
 		if (!keyInfo.valueIsInvariant) {
+			// Convert the value into an observable
+			// or get it if already converted from the store.
 			value = makeObject.getValueFromStore(key, value, this);
 		}
+
 		if (this.options.shouldRecordObservation(keyInfo, this)) {
 			ObservationRecorder.add(this.proxy, key.toString());
 		}
+
+		// if the parent object is observable, we need to observe there too.
 		if (keyInfo.parentObservableGetCalledOn) {
 			ObservationRecorder.add(keyInfo.parentObservableGetCalledOn, key.toString());
 		}
 		return value;
 	},
-	// a proxied function needs to have .constructor point to the proxy, while the underlying property points to
-	// what was there. Maybe
+	// `set` is called when a property is set on the proxy or an object
+	// that has the proxy on its prototype.
 	set: function(target, key, value, receiver) {
-		//
+		// If the receiver is not this observable (the observable might be on the proto chain),
+		// set the key on the reciever.
 		if (receiver !== this.proxy) {
-			// TODO: eliminate this code
-			return makeObject.setPrototypeKey(key, value, receiver, this);
+			return makeObject.setKey(receiver, key, value, this);
 		}
+
+		// Gets the observable value to set.
 		value = makeObject.getValueToSet(key, value, this);
-		// make a proxy for any non-observable objects being passed in as values
+
+		// Sets the value on the target.  If there
+		// is a change, calls the callback.
 		makeObject.setValueAndOnChange(key, value, this, function(key, value, meta, hadOwn, old) {
+
 			//!steal-remove-start
 			var reasonLog = [canReflect.getName(meta.proxy)+" set", key,"to", value];
 			//!steal-remove-end
 
-			legacyMapBindings.dispatch.call( meta.proxy, {
+			// Fire event handlers for this key change.
+			mapBindings.dispatch.call( meta.proxy, {
 				type: key,
 				//!steal-remove-start
 				/* jshint laxcomma: true */
@@ -116,30 +134,69 @@ var makeObject = {
 
 		});
 
-
 		return true;
 	},
+	// `deleteProperty` is called when a property is deleted on the proxy.
+	deleteProperty: function(target, key) {
+
+		var old = this.target[key],
+			deleteSuccessful = delete this.target[key];
+
+		// Fire event handlers if we were able to delete and the value changed.
+		if (deleteSuccessful && this.preventSideEffects === 0 && old !== undefined) {
+			//!steal-remove-start
+			var reasonLog = [canReflect.getName(this.proxy)+" deleted", key];
+			//!steal-remove-end
+
+			mapBindings.dispatch.call( this.proxy, {
+				type: key,
+				//!steal-remove-start
+				/* jshint laxcomma: true */
+				reasonLog: reasonLog,
+				/* jshint laxcomma: false */
+				//!steal-remove-end
+				patches: [{
+					key: key,
+					type: "delete"
+				}],
+				keyChanged: key
+			},[undefined, old]);
+
+		}
+		return deleteSuccessful;
+	},
+	// `ownKeys` returns the proxies keys.
+	// Proxies should return the keys and symbols from proxyOnly
+	// as well as from the target, so operators like `in` and
+	// functions like `hasOwnProperty` can be used to determine
+	// that the Proxy is observable.
 	ownKeys: function(target, key) {
 		ObservationRecorder.add(this.proxy, symbols.keysSymbol);
-		// Proxies should return the keys and symbols from proxyOnly
-		// as well as from the target, so operators like `in` and
-		// functions like `hasOwnProperty` can be used to determine
-		// that the Proxy is observable.
+
 		return Object.getOwnPropertyNames(this.target)
 			.concat(Object.getOwnPropertySymbols(this.target))
 			.concat(Object.getOwnPropertySymbols(this.proxyKeys));
 	},
+	// Returns a `keyInfo` object with useful information about the key
+	// and its value.  This function is _heavily_ optimized.
 	getKeyInfo: function(target, key, receiver, meta) {
-		// Optimized
 		var descriptor = Object.getOwnPropertyDescriptor(target, key);
 		var propertyInfo = {
+			// The key being read.
 			key: key,
+			// The property descriptor.
 			descriptor: descriptor,
+			// If the `target` has the key.
 			targetHasOwnKey: Boolean(descriptor),
+			// If the proxy is on the proto chain.
 			getCalledOnParent: receiver !== meta.proxy,
+			// If the prototype of the target has this key.
 			protoHasKey: false,
+			// If the property is sealed or not.
 			valueIsInvariant: false,
+			// The value of the key wherever it is found.
 			targetValue: undefined,
+			// If reading the key went through a getter.
 			isAccessor: false
 		};
 		if (propertyInfo.getCalledOnParent === true) {
@@ -160,37 +217,24 @@ var makeObject = {
 
 		return propertyInfo;
 	},
-	// This will record on own keys, and on "missing" keys
-	shouldRecordObservationOnOwnAndMissingKeys: shouldRecordObservationOnOwnAndMissingKeys,
-	deleteProperty: function(target, key) {
-		var old = this.target[key];
-		var ret = delete this.target[key];
-		// Don't trigger handlers on array indexes, as they will change with length.
-		//  Otherwise trigger that the property is now undefined.
-		// If the property is redefined, the handlers will fire again.
-		if (ret && this.preventSideEffects === 0 && old !== undefined) {
-			//!steal-remove-start
-			var reasonLog = [canReflect.getName(this.proxy)+" deleted", key];
-			//!steal-remove-end
-
-			legacyMapBindings.dispatch.call( this.proxy, {
-				type: key,
-				//!steal-remove-start
-				/* jshint laxcomma: true */
-				reasonLog: reasonLog,
-				/* jshint laxcomma: false */
-				//!steal-remove-end
-				patches: [{
-					key: key,
-					type: "delete"
-				}],
-				keyChanged: key
-			},[undefined, old]);
-
-		}
-		return ret;
+	// Returns `true` if `ObservationRecorder.add` should be called.
+	// This is the default `options.shouldRecordObservation` behavior.
+	// `observe.Object` changes this to record all keys except functions on the
+	// proto chain.
+	shouldRecordObservationOnOwnAndMissingKeys: function(keyInfo, meta) {
+		return meta.preventSideEffects === 0 &&
+			// The read is not a getter AND ...
+			!keyInfo.isAccessor &&
+			(
+				// (the read is on the proxy OR
+				(keyInfo.targetHasOwnKey ) ||
+				// it's not on the proto chain and we are not sealed).
+				(!keyInfo.protoHasKey && !Object.isSealed(meta.target))
+			);
 	},
-	setPrototypeKey: function(key, value, receiver, meta) {
+	// `setKey` sets a value on an object. Use `Object.defineProperty`
+	// because it won't try setting up the proto chain.
+	setKey: function(receiver, key, value) {
 		Object.defineProperty(receiver, key, {
 			value: value,
 			configurable: true,
@@ -199,40 +243,37 @@ var makeObject = {
 		});
 		return true;
 	},
-	getValueFromTarget: function(key, meta) {
-		var descriptor = Object.getOwnPropertyDescriptor(meta.target, key);
-		// If this is a getter, call the getter on the Proxy in order to observe
-		// what other values it reads.
-		if (descriptor && descriptor.get) {
-			return descriptor.get.call(meta.proxy);
-		} else {
-			return meta.target[key];
-		}
-	},
+	// `getValueToSet` gets the value we will set on the object.  It only
+	// converts set values to observables if we have actually bound.
 	getValueToSet: function(key, value, meta) {
 		if (!canReflect.isSymbolLike(key) && meta.handlers.getNode([key])) {
 			return makeObject.getValueFromStore(key, value, meta);
 		}
 		return value;
 	},
+	// Get a value from the store if we can.
 	getValueFromStore: function(key, value, meta) {
+		// We never convert primitives or things that are already observable.
+		// However, there are some builtIns that we premptively convert, namely
+		// Array.prototype methods.
 		if (!canReflect.isPrimitive(value) &&
 			!canReflect.isObservableLike(value) &&
-			// if it's already a proxy ...
+			// Do nothing if the value is already a converted proxy.
 			!observableStore.proxies.has(value)) {
 
-			// if it's already been made into a proxy
+			// If the `value` already been made into a proxy, use the value.
 			if (observableStore.proxiedObjects.has(value)) {
 				value = observableStore.proxiedObjects.get(value);
 			}
-			// if the value is something we should change
 			else if (!helpers.isBuiltInButNotArrayOrPlainObject(value)) {
-				// registers, but doesn't set
 				value = meta.options.observe(value);
 			}
 		}
 		return value;
 	},
+
+	// `setValueAndOnChange` sets the value.  If the value changed,
+	// calls the `onChange` callback.
 	setValueAndOnChange: function(key, value, data, onChange) {
 		var old, change;
 		var hadOwn = hasOwn.call(data.target, key);

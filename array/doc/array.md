@@ -8,9 +8,11 @@
 
 Create an instance of an observable array.
 
+```js
+import observe from "can-observe";
 
-
-
+var hobbies = new observe.Array(["JS","Reading"]);
+```
 
 @signature `class extends observe.Array {...}`
 
@@ -42,3 +44,38 @@ Instances of `observe.Array` have all methods and properties from
 
 {{#each (getChildren [can-event-queue/map/map])}}
 - [{{name}}] - {{description}}{{/each}}
+
+Example:
+
+```js
+class MyArray extends observe.Array {
+
+}
+
+var arrayInstance = new MyArray([]);
+
+canReflect.onPatches( arrayInstance, function(patches){ ... });
+```
+
+
+## Mixed-in type methods and properties
+
+Extended `observe.Array` constructor functions have all methods and properties from
+[can-event-queue/type/type]:
+
+{{#each (getChildren [can-event-queue/type/type])}}
+- [{{name}}] - {{description}}{{/each}}
+
+Example:
+
+```js
+class MyArray extends observe.Array {
+
+}
+
+canReflect.onInstancePatches(MyArray, function(instance, patches){ ... });
+```
+
+## Use Cases
+
+`observe.Array`

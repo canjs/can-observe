@@ -15,7 +15,8 @@
     "release:major": "npm version major && npm publish",
     "release:pre": "npm version prerelease && npm publish --tag pre",
     "build": "node build.js",
-    "detect-cycle": "detect-cyclic-packages --ignore done-serve"
+    "detect-cycle": "detect-cyclic-packages --ignore done-serve",
+    "docco": "docco src/*.js array/array.js object/object.js"
   },
   "repository": {
     "type": "git",
@@ -40,7 +41,7 @@
     "can-symbol": "^1.2.0"
   },
   "devDependencies": {
-    "bit-docs": "0.0.7",
+    "docco": "^0.7.0",
     "can-observation": "^4.0.0-pre.7",
     "can-reflect-tests": "0.2.0",
     "can-simple-map": "^4.0.0-pre.0",
