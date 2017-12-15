@@ -1,6 +1,6 @@
 {
   "name": "can-observe",
-  "version": "2.0.0-pre.17",
+  "version": "2.0.0-pre.18",
   "description": "Like can.Map, but without the .attr method.",
   "main": "can-observe.js",
   "scripts": {
@@ -32,7 +32,7 @@
   },
   "homepage": "https://github.com/canjs/can-observe",
   "dependencies": {
-    "can-event-queue": "file:../can-event-queue",
+    "can-event-queue": "<2.0.0",
     "can-key-tree": "<2.0.0",
     "can-namespace": "^1.0.0",
     "can-observation-recorder": "<2.0.0",
