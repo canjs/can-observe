@@ -16,7 +16,7 @@
     "release:pre": "npm version prerelease && npm publish --tag pre",
     "build": "node build.js",
     "detect-cycle": "detect-cyclic-packages --ignore done-serve",
-    "docco": "docco src/*.js array/array.js object/object.js"
+    "docco": "docco src/*.js array/array.js object/object.js can-observe.js"
   },
   "repository": {
     "type": "git",

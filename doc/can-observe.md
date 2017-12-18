@@ -72,8 +72,19 @@ dog.name = 'Wilbur'
 document.body //-> <p>dog's name is Wilbur</p>
 ```
 
-`can-observe` can also be used to make observable types. However, checkout [can-observe.Object observe.Object], [can-observe.Array observe.Array] or
-[can-define] for easier or more powerful ways of making observable types.
+`can-observe`'s exported `observe` function can also be used to make observable types useful as __Models__ and __ViewModels__. However, its [can-observe.Object observe.Object] and [can-observe.Array observe.Array] properties are designed specifically for this
+purpose.  [can-observe.Object observe.Object] and [can-observe.Array observe.Array] support "computed" getters. For example, once the following `fullName` property is bound, it only updates itself when one of its computed dependencies change:
+
+```js
+import observe from "can-observe";
+class Person extends observe.Object {
+    fullName(){
+        return this.first + " " + this.last;
+    }
+}
+```
+
+`can-observe` allows you to create observable objects where any property added is immediately observable, including nested objects. This makes `can-observe` ideal for use-cases where the data may be dynamic, or where the more rigid approach of [can-define] is not needed.
 
 ## Make data observable
 
@@ -310,26 +321,8 @@ var person = observe({first: '', last: ''});
 
 The *first* and *last* properties are observable in older browsers, but any other property added would not be. To ensure maximum compatibility make sure to give all properties a default value.
 
+## Use with other observables
 
-## How it works
-
-
-Using `can-observe` allows you to create observable objects where any property added is immediately observable, including nested objects. This makes `can-observe` ideal for use-cases where the data may be dynamic, or where the more rigid approach of [can-define] is not needed.
-
-To use `can-observe` call the `observe()` method with an object. This will return a [Proxy](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Proxy) object where any changes will reflect back on the target object. Nested objects will be observed lazily when they are accessed or set dynamically after initialization on a `can-observe` proxy object.
-
-To listen for changes on a property, use [can-reflect/observe.onKeyValue canReflect.onKeyValue]. Pass the handler as the third argument which will be triggered when a new value is set on the proxy. In the example below, updating `dog.name` to `"Wilbur"` will trigger the callback that will `console.log` the new value `"Wilbur"`.
-
-```js
-var canReflect = require("can-reflect");
-var dog = observe({});
-
-canReflect.onKeyValue(dog, 'name', function(newVal){
-	console.log(newVal); //-> "Wilbur"
-});
-
-dog.name = "Wilbur";
-```
 
 `can-observe` can be combined with any other CanJS observable type, like [can-define] or [can-compute]. In this example we create a compute that changes when a can-observe proxy changes. Note that with computes we use [can-reflect/observe.onValue canReflect.onValue] to set up the event listener and handler.
 
@@ -338,10 +331,13 @@ var compute = require("can-compute");
 var observe = require("can-observe");
 var canReflect = require("can-reflect");
 
-var person = observe({});
+var person = observe({
+    name: new DefineMap({first: "Justin", last: "Meyer"}),
+    age: 35
+});
 
 var fullName = compute(function(){
-	return person.first + " " + person.last;
+	return person.name.first + " " + person.name.last;
 });
 
 fullName.on("change", function(ev, newVal){
@@ -349,14 +345,38 @@ fullName.on("change", function(ev, newVal){
 });
 
 
-person.first = "Chasen";
-person.last = "Le Hara";
+person.name.first = "Chasen";
+person.name.last = "Le Hara";
 ```
+
+`can-observe` will __not__ convert nested property values it recognizes as:
+- Primitives
+- Built-ins (like `Date`)
+- Other CanJS observables (like `can-define`).
+
+
+## How it works
+
 
 `can-observe` works by:
 
-1. Creating base functions that make objects, arrays, and functions observable.
-2. A place that stores them.
-3. A makeObserve function that checks the type and calls the right observable function.
+1. Creating _base functions_ that make objects, arrays, and functions observable using proxies in:
+   [-make-object.js](http://canjs.github.io/can-observe/docs/-make-object.html), [-make-array.js](http://canjs.github.io/can-observe/docs/-make-array.html), and [-make-function.js](http://canjs.github.io/can-observe/docs/-make-function.html).
+   - These proxies call [can-observation-recorder] when observables are read.  They also support [can-reflect]'s observable symbols.
+2. A place that stores the observable proxies created for non-observable objects and a set that contains a list of proxies: [-observable-store.js](http://canjs.github.io/can-observe/docs/-observable-store.html)
+   - This prevents duplicating observables for the same non-observable object and a means for identifying something that is already a proxied observable.
+3. A `makeObserve` function that checks the type and calls the right observable function:
+  [-observable-store.js](http://canjs.github.io/can-observe/docs/-make-observe.html)
+   - This will be passed to all the _base functions_ so they are able to create the right observable with nested data.
+4. Finally, [can-observe.js](http://canjs.github.io/can-observe/docs/-can-observe.html) points the `makeObserve` function at all
+   the right __base functions__.
 
-Then `observe.Object` ...
+
+`can-observe.Object` and `can-observe.Array` mostly use their underlying _base function_ to setup their
+behavior. The primary exception is that they support "computed" getters.  This behavior works by:
+
+1. Creating a `memoize` function that overwrites a defined `getter` to use an observation: [-memoize-getter.js](http://canjs.github.io/can-observe/docs/-memoize-getter.js.html).
+2. When instances are created, we make sure a `can.computedDefinitions` property is added to the prototype.
+   `can.computedDefinitions` has functions provide access to the underlying observation.  When
+   a binding happens on an instance (`instance.on()`), the underlying observation is bound to and its
+   events forwarded to the instance: [-getter-helpers.js](http://canjs.github.io/can-observe/docs/-getter-helpers.js.html).

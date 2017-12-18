@@ -23,7 +23,7 @@ QUnit.test('basics', function(){
         }
     };
     var descriptor = Object.getOwnPropertyDescriptor(Type.prototype, "fullName");
-    var getObservationDataFor = memoizeGetter.memoize(Type.prototype,"fullName",descriptor);
+    var getObservationDataFor = memoizeGetter(Type.prototype,"fullName",descriptor);
 
     var me = new Type("Justin","Meyer");
 
@@ -68,7 +68,7 @@ QUnit.test('works with observations', function(){
 
 
     var descriptor = Object.getOwnPropertyDescriptor(Type.prototype, "fullName");
-    var getObservationDataFor = memoizeGetter.memoize(Type.prototype,"fullName",descriptor);
+    var getObservationDataFor = memoizeGetter(Type.prototype,"fullName",descriptor);
 
     Type.prototype[canSymbol.for("can.onKeyValue")] = function(key, handler, queue){
         var context = this;

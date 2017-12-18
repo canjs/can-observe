@@ -1,3 +1,5 @@
+// # can-observe.js
+// Assembles the final observe export.
 var makeObject = require("./src/-make-object");
 var makeArray = require("./src/-make-array");
 var makeFunction = require("./src/-make-function");

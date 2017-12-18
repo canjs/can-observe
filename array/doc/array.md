@@ -78,4 +78,57 @@ canReflect.onInstancePatches(MyArray, function(instance, patches){ ... });
 
 ## Use Cases
 
-`observe.Array`
+`observe.Array` is used to make observable arrays commonly used by the __model__ layer.
+
+
+## Models
+
+Use `observe.Array` to create observable arrays for use
+with [can-connect]. The following creates a simple `TodoList` type:
+
+```js
+import observe from "can-observe";
+import baseMap from "can-connect/can/base-map/base-map";
+
+class Todo extends observe.Object { ... }
+
+class TodoList extends observe.Array {
+    get active() {
+        return this.filter(function(todo) {
+            return todo.complete === false;
+        });
+    }
+    get complete() {
+        return this.filter(function(todo) {
+            return todo.complete === true;
+        });
+    }
+    get allComplete() {
+        return this.length === this.complete.length;
+    }
+    get saving() {
+        return this.filter(function(todo) {
+            return todo.isSaving();
+        });
+    }
+    updateCompleteTo(value) {
+        this.forEach(function(todo) {
+            todo.complete = value;
+            todo.save();
+        });
+    }
+    destroyComplete() {
+        this.complete.forEach(function(todo) {
+            todo.destroy();
+        });
+    }
+}
+
+baseMap({
+    url: "/api/todos",
+    Map: Todo
+})
+```
+
+Note that `active`, `complete`, `allComplete`, and `saving` are made into [can-observation]-backed
+properties.  Once bound, they will only update their value once one of their dependencies has updated.

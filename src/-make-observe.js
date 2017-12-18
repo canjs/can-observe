@@ -27,7 +27,16 @@ var makeObserve = {
 		observables.proxiedObjects.set(value, observable);
 		observables.proxies.add(observable);
 		return observable;
-	}
+	},
+	// Set to a function that converts non-observable
+	// objects to observable objects
+	"object": null,
+	// Set to a function that converts non-observable
+	// arrays to observable arrays
+	"array": null,
+	// Set to a function that converts non-observable
+	// functions to observable functions
+	"function": null
 };
 
 module.exports = makeObserve;

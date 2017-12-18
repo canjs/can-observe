@@ -1,63 +1,84 @@
+// # -memoize-getter.js
+// Exports a function that rewrites a getter to use an Observation
+// under-the-hood.  This makes it so getters are cached.
+// The observations are created lazily for each instance.
+
 var Observation = require("can-observation");
 var ObservationRecorder = require("can-observation-recorder");
 var observableStore = require("./-observable-store");
 
-var memoizeGetter = {
-    memoize: function(obj, prop, definition){
+// ## MemoizedGetterObservationData
+// Instances of this are created to wrap the observation.
+// The `.bind` and `.unbind` methods should be called when the
+// instance's key is bound or unbound.
+function MemoizedGetterObservationData(instance, prop, getter){
+    this.prop = prop;
+    this.instance = instance;
+    this.forward = this.forward.bind(this);
+    this.observation = new Observation(getter, instance, {isObservable: false});
+}
 
-        var contextCache = new WeakMap();
+MemoizedGetterObservationData.prototype.bind = function(observationData){
+    this.bindingCount++;
+    if(this.bindingCount === 1) {
+        this.observation.on(this.forward, "notify");
+    }
+};
+MemoizedGetterObservationData.prototype.unbind = function(observationData){
+    this.bindingCount--;
+    if(this.bindingCount === 0) {
+        this.observation.off(this.forward, "notify");
+    }
+};
+MemoizedGetterObservationData.prototype.forward = function(newValue, oldValue){
+    this.instance.dispatch({
+        type: this.prop,
+        target: this.instance
+    }, [newValue, oldValue]);
+};
+MemoizedGetterObservationData.prototype.bindingCount = 0;
 
-        function getObservationDataFor(context){
-            var observationData = contextCache.get(context);
-            if(!observationData) {
-                observationData = {
-                    observation: new Observation(definition.get, context, {isObservable: false}),
-                    count: 0,
-                    forward: function(newValue, oldValue){
-                        // TODO: it would be nice if we forwarded reasonLog
-                        this.dispatch({
-                            type: prop,
-                            target: context
-                        }, [newValue, oldValue]);
-                    }.bind(context)
-                };
-                contextCache.set(context, observationData);
-            }
-            return observationData;
+
+
+// ## memoize
+// Changes a `getter` to use an observation.
+//
+// - Type - A constructor function.
+// - prop - A property name.
+// - definition - A property definition that includes a `.get`.
+//
+// Returns a `getObservationDataFor(instance)` that will return or create an instance
+// of `MemoizedGetterObservationData` for the instance passed in. 
+module.exports = function memoize(Type, prop, definition){
+
+    // Store the observation data for each instance.
+    var instanceToObservationData = new WeakMap();
+
+    // Returns or creates the observation data for the instance.
+    function getObservationDataFor(instance){
+        var observationData = instanceToObservationData.get(instance);
+        if(!observationData) {
+            observationData = new MemoizedGetterObservationData(instance, prop, definition.get);
+            instanceToObservationData.set(instance, observationData);
         }
+        return observationData;
+    }
 
+    // Overwrite the getter to read from the observation.
+    Object.defineProperty(Type, prop,{
+        enumerable: definition.enumerable,
+        get: function memoized(){
+            // Get the instance and its observation data.
+            var instance = observableStore.proxiedObjects.get(this) || this;
+            var observationData = getObservationDataFor(instance);
 
-        function memoized(){
-            // try to find observation
-            var proxy = observableStore.proxiedObjects.get(this) || this;
-            var observationData = getObservationDataFor(proxy);
-            ObservationRecorder.add(proxy,prop.toString());
+            ObservationRecorder.add(instance,prop.toString());
             if( !observationData.observation.bound && ObservationRecorder.isRecording() ) {
                 Observation.temporarilyBind(observationData.observation);
             }
             return observationData.observation.get();
         }
+    });
 
-        Object.defineProperty(obj, prop,{
-            enumerable: definition.enumerable,
-            get: memoized
-        });
-
-        return getObservationDataFor;
-    },
-    bind: function(observationData){
-        observationData.count++;
-        if(observationData.count === 1) {
-            observationData.observation.on(observationData.forward, "notify");
-        }
-    },
-    unbind: function(observationData){
-        observationData.count--;
-        if(observationData.count === 0) {
-            observationData.observation.off(observationData.forward, "notify");
-        }
-    }
+    return getObservationDataFor;
 };
-
-
-module.exports = memoizeGetter;

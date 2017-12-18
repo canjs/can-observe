@@ -50,14 +50,14 @@ var getterHelpers = {
         Type.prototype.addEventListener = function(key, handler, queue){
             var getObservation = this[computedDefinitionsSymbol][key];
             if(getObservation !== undefined) {
-                memoizeGetter.bind( getObservation(this) );
+                getObservation(this).bind();
             }
             return eventMixin.addEventListener.call(this, key, handler, queue);
         };
         Type.prototype.removeEventListener = function(key, handler, queue){
             var getObservation = this[computedDefinitionsSymbol][key];
             if(getObservation !== undefined) {
-                memoizeGetter.unbind( getObservation(this) );
+                getObservation(this).unbind();
             }
             return eventMixin.removeEventListener.call(this, key, handler, queue);
         };
@@ -68,23 +68,21 @@ var getterHelpers = {
             var descriptor = Object.getOwnPropertyDescriptor(prototype,prop);
 
             if(descriptor.get !== undefined) {
-                var getObservationData = memoizeGetter.memoize(prototype,prop,descriptor);
-                // stick the `data.observationFor` method so
-                // proxyKeys's `onKeyValue` can get the observation, bind to it, and forward the
-                // event
-                // we will somehow need to know if this is "forwarded or not"
+                var getObservationData = memoizeGetter(prototype,prop,descriptor);
                 computed[prop] = getObservationData;
             }
 
         });
         return computed;
     },
+    // Adds special binding symbols to the `proxyKeys` that will
+    // setup observations correctly.
     addMemoizedGetterBindings: function(proxyKeys){
         return canReflect.assignSymbols(proxyKeys, {
             "can.onKeyValue": function(key, handler, queue) {
                 var getObservation = this[computedDefinitionsSymbol][key];
                 if(getObservation !== undefined) {
-                    memoizeGetter.bind( getObservation(this) );
+                    getObservation(this).bind();
                 }
                 var handlers = this[metaSymbol].handlers;
                 handlers.add([key, "onKeyValue", queue || "notify", handler]);
@@ -92,7 +90,7 @@ var getterHelpers = {
             "can.offKeyValue": function(key, handler, queue) {
                 var getObservation = this[computedDefinitionsSymbol][key];
                 if(getObservation !== undefined) {
-                    memoizeGetter.unbind( getObservation(this) );
+                    getObservation(this).unbind();
                 }
                 var handlers = this[metaSymbol].handlers;
                 handlers.delete([key, "onKeyValue", queue || "notify", handler]);
