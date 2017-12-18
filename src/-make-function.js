@@ -61,7 +61,6 @@ var makeFunction = {
 
 		// Change prototype and its constructor
 		if (meta.target.prototype && meta.target.prototype.constructor === meta.target) {
-			// we must store right away, so we don't proxy the proxy
 			var prototype = meta.proxy.prototype;
 			prototype.constructor = meta.proxy;
 		}

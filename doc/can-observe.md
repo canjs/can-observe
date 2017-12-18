@@ -352,3 +352,11 @@ fullName.on("change", function(ev, newVal){
 person.first = "Chasen";
 person.last = "Le Hara";
 ```
+
+`can-observe` works by:
+
+1. Creating base functions that make objects, arrays, and functions observable.
+2. A place that stores them.
+3. A makeObserve function that checks the type and calls the right observable function.
+
+Then `observe.Object` ...
