@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>-make-simple-function.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="array.html">
+                  array.js
+                </a>
+              
+                
+                <a class="source" href="can-observe.html">
+                  can-observe.js
+                </a>
+              
+                
+                <a class="source" href="object.html">
+                  object.js
+                </a>
+              
+                
+                <a class="source" href="-getter-helpers.html">
+                  -getter-helpers.js
+                </a>
+              
+                
+                <a class="source" href="-helpers.html">
+                  -helpers.js
+                </a>
+              
+                
+                <a class="source" href="-make-array.html">
+                  -make-array.js
+                </a>
+              
+                
+                <a class="source" href="-make-function.html">
+                  -make-function.js
+                </a>
+              
+                
+                <a class="source" href="-make-object.html">
+                  -make-object.js
+                </a>
+              
+                
+                <a class="source" href="-make-observe.html">
+                  -make-observe.js
+                </a>
+              
+                
+                <a class="source" href="-make-simple-function.html">
+                  -make-simple-function.js
+                </a>
+              
+                
+                <a class="source" href="-memoize-getter-test.html">
+                  -memoize-getter-test.js
+                </a>
+              
+                
+                <a class="source" href="-memoize-getter.html">
+                  -memoize-getter.js
+                </a>
+              
+                
+                <a class="source" href="-observable-store.html">
+                  -observable-store.js
+                </a>
+              
+                
+                <a class="source" href="-symbols.html">
+                  -symbols.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>-make-simple-function.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">module</span>.exports = {
+	<span class="hljs-attr">observable</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">fn, options</span>) </span>{
+		<span class="hljs-keyword">return</span> <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+			<span class="hljs-keyword">var</span> ret = fn.apply(<span class="hljs-keyword">this</span>, <span class="hljs-built_in">arguments</span>);
+			<span class="hljs-keyword">if</span> (ret &amp;&amp; <span class="hljs-keyword">typeof</span> ret === <span class="hljs-string">"object"</span>) {
+				ret = options.observe(ret);
+			}
+			<span class="hljs-keyword">return</span> ret;
+		};
+	}
+};</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

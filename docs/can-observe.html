@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>can-observe.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="array.html">
+                  array.js
+                </a>
+              
+                
+                <a class="source" href="can-observe.html">
+                  can-observe.js
+                </a>
+              
+                
+                <a class="source" href="object.html">
+                  object.js
+                </a>
+              
+                
+                <a class="source" href="-getter-helpers.html">
+                  -getter-helpers.js
+                </a>
+              
+                
+                <a class="source" href="-helpers.html">
+                  -helpers.js
+                </a>
+              
+                
+                <a class="source" href="-make-array.html">
+                  -make-array.js
+                </a>
+              
+                
+                <a class="source" href="-make-function.html">
+                  -make-function.js
+                </a>
+              
+                
+                <a class="source" href="-make-object.html">
+                  -make-object.js
+                </a>
+              
+                
+                <a class="source" href="-make-observe.html">
+                  -make-observe.js
+                </a>
+              
+                
+                <a class="source" href="-make-simple-function.html">
+                  -make-simple-function.js
+                </a>
+              
+                
+                <a class="source" href="-memoize-getter-test.html">
+                  -memoize-getter-test.js
+                </a>
+              
+                
+                <a class="source" href="-memoize-getter.html">
+                  -memoize-getter.js
+                </a>
+              
+                
+                <a class="source" href="-observable-store.html">
+                  -observable-store.js
+                </a>
+              
+                
+                <a class="source" href="-symbols.html">
+                  -symbols.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="can-observe-js">can-observe.js</h1>
+<p>Assembles the final observe export.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> makeObject = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./src/-make-object"</span>);
+<span class="hljs-keyword">var</span> makeArray = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./src/-make-array"</span>);
+<span class="hljs-keyword">var</span> makeFunction = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./src/-make-function"</span>);
+<span class="hljs-keyword">var</span> makeObserve = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./src/-make-observe"</span>);
+<span class="hljs-keyword">var</span> ObserveObject = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./object/object"</span>);
+<span class="hljs-keyword">var</span> ObserveArray = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./array/array"</span>);
+
+makeObserve.object = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">object</span>) </span>{
+	<span class="hljs-keyword">return</span> makeObject.observable(object, makeObserve);
+};
+makeObserve.array = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">array</span>) </span>{
+	<span class="hljs-keyword">return</span> makeArray.observable(array, makeObserve);
+};
+makeObserve.function = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">array</span>) </span>{
+	<span class="hljs-keyword">return</span> makeFunction.observable(array, makeObserve);
+};
+makeObserve.observe.Object = ObserveObject;
+makeObserve.observe.Array = ObserveArray;
+
+<span class="hljs-built_in">module</span>.exports = makeObserve.observe;</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>

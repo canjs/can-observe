@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>-make-array.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+      <ul id="jump_to">
+        <li>
+          <a class="large" href="javascript:void(0);">Jump To &hellip;</a>
+          <a class="small" href="javascript:void(0);">+</a>
+          <div id="jump_wrapper">
+          <div id="jump_page_wrapper">
+            <div id="jump_page">
+              
+                
+                <a class="source" href="array.html">
+                  array.js
+                </a>
+              
+                
+                <a class="source" href="can-observe.html">
+                  can-observe.js
+                </a>
+              
+                
+                <a class="source" href="object.html">
+                  object.js
+                </a>
+              
+                
+                <a class="source" href="-getter-helpers.html">
+                  -getter-helpers.js
+                </a>
+              
+                
+                <a class="source" href="-helpers.html">
+                  -helpers.js
+                </a>
+              
+                
+                <a class="source" href="-make-array.html">
+                  -make-array.js
+                </a>
+              
+                
+                <a class="source" href="-make-function.html">
+                  -make-function.js
+                </a>
+              
+                
+                <a class="source" href="-make-object.html">
+                  -make-object.js
+                </a>
+              
+                
+                <a class="source" href="-make-observe.html">
+                  -make-observe.js
+                </a>
+              
+                
+                <a class="source" href="-make-simple-function.html">
+                  -make-simple-function.js
+                </a>
+              
+                
+                <a class="source" href="-memoize-getter-test.html">
+                  -memoize-getter-test.js
+                </a>
+              
+                
+                <a class="source" href="-memoize-getter.html">
+                  -memoize-getter.js
+                </a>
+              
+                
+                <a class="source" href="-observable-store.html">
+                  -observable-store.js
+                </a>
+              
+                
+                <a class="source" href="-symbols.html">
+                  -symbols.js
+                </a>
+              
+            </div>
+          </div>
+        </li>
+      </ul>
+    
+    <ul class="sections">
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <h1 id="-make-array-js">-make-array.js</h1>
+<p>This module’s <code>.observable</code> method proxies an Array to make it observable.
+The other exports are not used elsewhere.
+<code>.set</code> is the only proxy method that differs from <code>make-object</code>‘s.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> ObservationRecorder = <span class="hljs-built_in">require</span>(<span class="hljs-string">"can-observation-recorder"</span>);
+<span class="hljs-keyword">var</span> mapBindings = <span class="hljs-built_in">require</span>(<span class="hljs-string">"can-event-queue/map/map"</span>);
+<span class="hljs-keyword">var</span> canReflect = <span class="hljs-built_in">require</span>(<span class="hljs-string">"can-reflect"</span>);
+
+<span class="hljs-keyword">var</span> makeObject = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./-make-object"</span>);
+<span class="hljs-keyword">var</span> symbols = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./-symbols"</span>);
+<span class="hljs-keyword">var</span> observableStore = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./-observable-store"</span>);
+<span class="hljs-keyword">var</span> helpers = <span class="hljs-built_in">require</span>(<span class="hljs-string">"./-helpers"</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Returns if prop is an integer</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> isInteger = <span class="hljs-built_in">Number</span>.isInteger || <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">value</span>) </span>{
+  <span class="hljs-keyword">return</span> <span class="hljs-keyword">typeof</span> value === <span class="hljs-string">'number'</span> &amp;&amp;
+    <span class="hljs-built_in">isFinite</span>(value) &amp;&amp;
+    <span class="hljs-built_in">Math</span>.floor(value) === value;
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Returns <code>true</code> if the length was set and it deleted indexed
+properties.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">didLengthChangeCauseDeletions</span>(<span class="hljs-params">key, value, old</span>) </span>{
+	<span class="hljs-keyword">return</span> key === <span class="hljs-string">"length"</span> &amp;&amp; value &lt; old;
+}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <h2 id="rewrite-array-methods">Rewrite array methods</h2>
+<p>The following rewrites array methods to generate events and
+for performance reasons.</p>
+<p>Array’s methods that mutate are rewritten to generate patch events.
+Other methods on array are rewritten to:</p>
+<ul>
+<li>Avoid calling <code>ObservationRecorder.add</code> on every property.</li>
+<li>Make the returned result observable.</li>
+</ul>
+<h3 id="rewrite-mutating-methods">Rewrite mutating methods</h3>
+<p>The following defines a relationship between an array
+mutation method and the patch events that should be dispatched
+for that mutation.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> mutateMethods = {
+	<span class="hljs-string">"push"</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">arr, args</span>) </span>{
+		<span class="hljs-keyword">return</span> [{
+			<span class="hljs-attr">index</span>: arr.length - args.length,
+			<span class="hljs-attr">deleteCount</span>: <span class="hljs-number">0</span>,
+			<span class="hljs-attr">insert</span>: args,
+			<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+		}];
+	},
+	<span class="hljs-string">"pop"</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">arr</span>) </span>{
+		<span class="hljs-keyword">return</span> [{
+			<span class="hljs-attr">index</span>: arr.length,
+			<span class="hljs-attr">deleteCount</span>: <span class="hljs-number">1</span>,
+			<span class="hljs-attr">insert</span>: [],
+			<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+		}];
+	},
+	<span class="hljs-string">"shift"</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+		<span class="hljs-keyword">return</span> [{
+			<span class="hljs-attr">index</span>: <span class="hljs-number">0</span>,
+			<span class="hljs-attr">deleteCount</span>: <span class="hljs-number">1</span>,
+			<span class="hljs-attr">insert</span>: [],
+			<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+		}];
+	},
+	<span class="hljs-string">"unshift"</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">arr, args</span>) </span>{
+		<span class="hljs-keyword">return</span> [{
+			<span class="hljs-attr">index</span>: <span class="hljs-number">0</span>,
+			<span class="hljs-attr">deleteCount</span>: <span class="hljs-number">0</span>,
+			<span class="hljs-attr">insert</span>: args,
+			<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+		}];
+	},
+	<span class="hljs-string">"splice"</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">arr, args</span>) </span>{
+		<span class="hljs-keyword">return</span> [{
+			<span class="hljs-attr">index</span>: args[<span class="hljs-number">0</span>],
+			<span class="hljs-attr">deleteCount</span>: args[<span class="hljs-number">1</span>],
+			<span class="hljs-attr">insert</span>: args.slice(<span class="hljs-number">2</span>),
+			<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+		}];
+	},
+	<span class="hljs-string">"sort"</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">arr</span>) </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>The array replaced everything.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">return</span> [{
+			<span class="hljs-attr">index</span>: <span class="hljs-number">0</span>,
+			<span class="hljs-attr">deleteCount</span>: arr.length,
+			<span class="hljs-attr">insert</span>: arr,
+			<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+		}];
+	},
+	<span class="hljs-string">"reverse"</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">arr, args, old</span>) </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>The array replaced everything.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">return</span> [{
+			<span class="hljs-attr">index</span>: <span class="hljs-number">0</span>,
+			<span class="hljs-attr">deleteCount</span>: arr.length,
+			<span class="hljs-attr">insert</span>: arr,
+			<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+		}];
+	}
+};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>Overwrite Array’s methods that mutate to:</p>
+<ul>
+<li>prevent other events from being fired off (index events and length events.)</li>
+<li>dispatch patches events.</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>canReflect.eachKey(mutateMethods, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">makePatches, prop</span>)</span>{
+	<span class="hljs-keyword">var</span> protoFn = <span class="hljs-built_in">Array</span>.prototype[prop];
+	<span class="hljs-keyword">var</span> mutateMethod = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+		<span class="hljs-keyword">var</span> meta = <span class="hljs-keyword">this</span>[symbols.metaSymbol],</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Capture if this function should be making sideEffects</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			makeSideEffects = meta.preventSideEffects === <span class="hljs-number">0</span>,
+			oldLength = meta.target.length;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>Prevent proxy from calling ObservationRecorder and sending events.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		meta.preventSideEffects++;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Call the function – note that <em>this</em> is the Proxy here, so
+accesses in the function still go through <code>get()</code> and <code>set()</code>.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">var</span> ret = protoFn.apply(meta.target, <span class="hljs-built_in">arguments</span>);
+		<span class="hljs-keyword">var</span> patches = makePatches(meta.target, <span class="hljs-built_in">Array</span>.from(<span class="hljs-built_in">arguments</span>), oldLength);
+
+		<span class="hljs-keyword">if</span> (makeSideEffects === <span class="hljs-literal">true</span>) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>!steal-remove-start</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">var</span> reasonLog = [canReflect.getName(meta.proxy)+<span class="hljs-string">"."</span>+prop+<span class="hljs-string">" called with"</span>, <span class="hljs-built_in">arguments</span>];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>!steal-remove-end</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+			mapBindings.dispatch.call( meta.proxy, {
+				<span class="hljs-attr">type</span>: <span class="hljs-string">"length"</span>,</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>!steal-remove-start</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				reasonLog: reasonLog,</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>!steal-remove-end</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				patches: patches
+			}, [meta.target.length, oldLength]);
+		}
+
+		meta.preventSideEffects--;
+		<span class="hljs-keyword">return</span> ret;
+	};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>!steal-remove-start</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	<span class="hljs-built_in">Object</span>.defineProperty(mutateMethod, <span class="hljs-string">"name"</span>, {
+		<span class="hljs-attr">value</span>: prop
+	});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>!steal-remove-end</p>
+
+            </div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>Store the proxied method so it will be used instead of the
+prototype method.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	observableStore.proxiedObjects.set(protoFn, mutateMethod);
+	observableStore.proxies.add(mutateMethod);
+});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <h3 id="rewrite-non-mutating-methods">Rewrite non-mutating methods</h3>
+<p>The following rewrites the Array methods to signal
+to <code>ObservationRecorder</code> to bind on patches events.
+It also prevents the proxy handlers calling <code>ObservationRecorder</code>
+themselves.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-built_in">Object</span>.getOwnPropertyNames(<span class="hljs-built_in">Array</span>.prototype).forEach(<span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">prop</span>) </span>{
+	<span class="hljs-keyword">var</span> protoFn = <span class="hljs-built_in">Array</span>.prototype[prop];
+	<span class="hljs-keyword">if</span> (observableStore.proxiedObjects.has(protoFn)) {
+		<span class="hljs-keyword">return</span>;
+	}
+
+	<span class="hljs-keyword">if</span> (prop !== <span class="hljs-string">"constructor"</span> &amp;&amp; <span class="hljs-keyword">typeof</span> protoFn === <span class="hljs-string">"function"</span>) {
+		<span class="hljs-keyword">var</span> arrayMethod = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+			ObservationRecorder.add(<span class="hljs-keyword">this</span>, symbols.patchesSymbol);
+			<span class="hljs-keyword">var</span> meta = <span class="hljs-keyword">this</span>[symbols.metaSymbol];
+			meta.preventSideEffects++;
+			<span class="hljs-keyword">var</span> ret = protoFn.apply(<span class="hljs-keyword">this</span>, <span class="hljs-built_in">arguments</span>);
+			meta.preventSideEffects--;
+			<span class="hljs-keyword">return</span> meta.options.observe(ret);
+		};</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>!steal-remove-start</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-built_in">Object</span>.defineProperty(arrayMethod, <span class="hljs-string">"name"</span>, {
+			<span class="hljs-attr">value</span>: prop
+		});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>!steal-remove-end</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		observableStore.proxiedObjects.set(protoFn, arrayMethod);
+		observableStore.proxies.add(arrayMethod);
+	}
+});</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>Array’s have the same proxy keys as objects.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre><span class="hljs-keyword">var</span> proxyKeys = helpers.assignEverything(<span class="hljs-built_in">Object</span>.create(<span class="hljs-literal">null</span>), makeObject.proxyKeys());
+
+
+<span class="hljs-keyword">var</span> makeArray = {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>Returns a proxied version of the array.</p>
+<ul>
+<li><code>array</code> - An array to proxy.</li>
+<li><code>options</code> - Configurable behaviors.<ul>
+<li><code>proxyKeys</code> - Keys that will override any keys on <code>array</code>. Defaults to <code>makeObject.proxyKeys</code>.</li>
+<li><code>observe(nonObservable)</code> - A function that converts a nested value to an observable.</li>
+<li><code>shouldRecordObservation(keyInfo, meta)</code> - Returns if <code>ObservationRecorder</code>
+should be called.  Defaults to <code>makeObject.shouldRecordObservationOnOwnAndMissingKeys</code>.</li>
+</ul>
+</li>
+</ul>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	observable: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">array, options</span>) </span>{
+		<span class="hljs-keyword">if</span>(options.shouldRecordObservation === <span class="hljs-literal">undefined</span>) {
+			options.shouldRecordObservation = makeObject.shouldRecordObservationOnOwnAndMissingKeys;
+		}
+		<span class="hljs-keyword">var</span> meta = {
+			<span class="hljs-attr">target</span>: array,
+			<span class="hljs-attr">proxyKeys</span>: options.proxyKeys !== <span class="hljs-literal">undefined</span> ? options.proxyKeys : <span class="hljs-built_in">Object</span>.create(makeArray.proxyKeys()),
+			<span class="hljs-attr">options</span>: options,</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-23">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-23">&#182;</a>
+              </div>
+              <p><code>preventSideEffects</code> is a counter used to “turn off” the proxy.  This is incremented when some
+function (like <code>Array.splice</code>) wants to handle event dispatching and/or calling
+<code>ObservationRecorder</code> itself for performance reasons.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			preventSideEffects: <span class="hljs-number">0</span>
+		};
+		meta.proxyKeys[symbols.metaSymbol] = meta;
+		meta.proxy = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Proxy</span>(array, {
+			<span class="hljs-attr">get</span>: makeObject.get.bind(meta),
+			<span class="hljs-attr">set</span>: makeArray.set.bind(meta),
+			<span class="hljs-attr">ownKeys</span>: makeObject.ownKeys.bind(meta),
+			<span class="hljs-attr">deleteProperty</span>: makeObject.deleteProperty.bind(meta),
+			<span class="hljs-attr">meta</span>: meta
+		});
+		mapBindings.addHandlers(meta.proxy, meta);
+		<span class="hljs-keyword">return</span> meta.proxy;
+	},
+	<span class="hljs-attr">proxyKeys</span>: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+		<span class="hljs-keyword">return</span> proxyKeys;
+	},</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-24">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-24">&#182;</a>
+              </div>
+              <p><code>set</code> is called when a property is set on the proxy or an object
+that has the proxy on its prototype.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>	set: <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">target, key, value, receiver</span>) </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p>If the receiver is not this observable (the observable might be on the proto chain),
+set the key on the reciever.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		<span class="hljs-keyword">if</span> (receiver !== <span class="hljs-keyword">this</span>.proxy) {
+			<span class="hljs-keyword">return</span> makeObject.setKey(receiver, key, value, <span class="hljs-keyword">this</span>);
+		}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-26">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-26">&#182;</a>
+              </div>
+              <p>Gets the observable value to set.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		value = makeObject.getValueToSet(key, value, <span class="hljs-keyword">this</span>);
+		<span class="hljs-keyword">var</span> startingLength = target.length;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-27">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-27">&#182;</a>
+              </div>
+              <p>Sets the value on the target.  If there
+is a change, calls the callback.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>		makeObject.setValueAndOnChange(key, value, <span class="hljs-keyword">this</span>, <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">key, value, meta, hadOwn, old</span>) </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-28">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-28">&#182;</a>
+              </div>
+              <p>Determine the patches this change should dispatch</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">var</span> patches = [{
+				<span class="hljs-attr">key</span>: key,
+				<span class="hljs-attr">type</span>: hadOwn ? <span class="hljs-string">"set"</span> : <span class="hljs-string">"add"</span>,
+				<span class="hljs-attr">value</span>: value
+			}];
+
+			<span class="hljs-keyword">var</span> numberKey = +key;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-29">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-29">&#182;</a>
+              </div>
+              <p>If we are adding an indexed value like <code>arr[5] =value</code> …</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">if</span> ( isInteger(numberKey) ) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-30">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-30">&#182;</a>
+              </div>
+              <p>If we set an enumerable property after the length …</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				<span class="hljs-keyword">if</span> (!hadOwn &amp;&amp; numberKey &gt; startingLength) {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-31">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-31">&#182;</a>
+              </div>
+              <p>… add patches for those values.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>					patches.push({
+						<span class="hljs-attr">index</span>: startingLength,
+						<span class="hljs-attr">deleteCount</span>: <span class="hljs-number">0</span>,
+						<span class="hljs-attr">insert</span>: target.slice(startingLength),
+						<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+					});
+				} <span class="hljs-keyword">else</span> {</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-32">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-32">&#182;</a>
+              </div>
+              <p>Otherwise, splice the value into the array.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>					patches.push.apply(patches, mutateMethods.splice(target, [numberKey, <span class="hljs-number">1</span>, value]));
+				}
+			}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-33">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-33">&#182;</a>
+              </div>
+              <p>In the case of deleting items by setting the length of the array,
+add patches that splice the items removed.
+(deleting individual items from an array doesn’t change the length; it just creates holes)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">if</span> (didLengthChangeCauseDeletions(key, value, old, meta)) {
+				patches.push({
+					<span class="hljs-attr">index</span>: value,
+					<span class="hljs-attr">deleteCount</span>: old - value,
+					<span class="hljs-attr">insert</span>: [],
+					<span class="hljs-attr">type</span>: <span class="hljs-string">"splice"</span>
+				});
+			}</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-34">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-34">&#182;</a>
+              </div>
+              <p>!steal-remove-start</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>			<span class="hljs-keyword">var</span> reasonLog = [canReflect.getName(meta.proxy)+<span class="hljs-string">" set"</span>, key,<span class="hljs-string">"to"</span>, value];</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-35">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-35">&#182;</a>
+              </div>
+              <p>!steal-remove-end</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+			mapBindings.dispatch.call( meta.proxy, {
+				<span class="hljs-attr">type</span>: key,</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-36">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-36">&#182;</a>
+              </div>
+              <p>!steal-remove-start</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				<span class="hljs-comment">/* jshint laxcomma: true */</span>
+				reasonLog: reasonLog,
+				<span class="hljs-comment">/* jshint laxcomma: false */</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-37">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-37">&#182;</a>
+              </div>
+              <p>!steal-remove-end</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>				patches: patches,
+				<span class="hljs-attr">keyChanged</span>: !hadOwn ? key : <span class="hljs-literal">undefined</span>
+			},[value, old]);
+
+		});
+
+		<span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+	}
+};
+
+
+<span class="hljs-built_in">module</span>.exports = makeArray;</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
