@@ -380,3 +380,7 @@ behavior. The primary exception is that they support "computed" getters.  This b
    `can.computedDefinitions` has functions provide access to the underlying observation.  When
    a binding happens on an instance (`instance.on()`), the underlying observation is bound to and its
    events forwarded to the instance: [-getter-helpers.js](http://canjs.github.io/can-observe/docs/-getter-helpers.js.html).
+
+
+
+<iframe width="560" height="315" src="https://www.youtube.com/embed/otTT5_zat0I" frameborder="0" gesture="media" allow="encrypted-media" allowfullscreen></iframe>
