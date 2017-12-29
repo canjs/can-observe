@@ -1,7 +1,8 @@
-var ObserveArray = require("./array");
-var ObserveObject = require("../object/object");
 var QUnit = require("steal-qunit");
-var metaSymbol = require("can-symbol").for("can.meta");
+var ObserveArray = require("./array");
+var canReflect = require("can-reflect");
+var ObserveObject = require("../object/object");
+
 QUnit.module("can-observe/array");
 
 var classSupport = (function() {
@@ -93,7 +94,7 @@ QUnit.test("getters work", function(){
 			actions.push("filter");
 			return this.filter(function(person){
 				return person.age > 21;
-			})
+			});
 		}
 	});
 
@@ -114,4 +115,28 @@ QUnit.test("getters work", function(){
 		"over21Callback 1"
 	],"behavior is right");
 
+});
+
+QUnit.test("getters getKeyDependencies", function(assert) {
+	var People = ObserveArray.extend("People", {}, {
+		get over21() {
+			return this.filter(function(person) {
+				return person.age > 21;
+			});
+		}
+	});
+
+	var people = new People([
+		{id: 1, age: 22},
+		{id: 2, age: 21},
+		{id: 3, age: 23}
+	]);
+
+	people.on("over21", function over21Callback() {});
+	assert.equal(people.over21.length, 2, "got the right number");
+
+	assert.ok(
+		canReflect.getKeyDependencies(people, "over21").valueDependencies,
+		"should return internal observation"
+	);
 });
