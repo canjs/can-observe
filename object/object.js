@@ -24,7 +24,7 @@ var ObserveObject = function(props) {
         prototype[computedDefinitionsSymbol] = getterHelpers.setupComputedProperties(prototype);
     }
 
-    // Define expando properties from `can.defienInstanceProperty`
+    // Define expando properties from `can.defineInstanceProperty`
     var sourceInstance = this;
     var definitions = prototype[definitionsSymbol] || {};
     for (var key in definitions) {

@@ -1,8 +1,9 @@
 var ObserveObject = require("./object");
 var QUnit = require("steal-qunit");
 var ObservationRecorder = require("can-observation-recorder");
-QUnit.module("can-observe/object");
+var canReflect = require("can-reflect");
 
+QUnit.module("can-observe/object");
 
 var classSupport = (function() {
 	try {
@@ -42,6 +43,23 @@ if(classSupport) {
 
 
     });
+
+	QUnit.test("computed getters getKeyDependencies", function(assert) {
+		class Person extends ObserveObject {
+			get fullName() {
+				return this.first + " " + this.last;
+			}
+		}
+
+		var me = new Person();
+		me.first = "John";
+		me.last = "Doe";
+
+		assert.ok(
+			canReflect.getKeyDependencies(me, "fullName").valueDependencies,
+			"should return the internal observation"
+		);
+	});
 
 	require("can-reflect-tests/observables/map-like/type/type")("class Type extends observe.Object", function() {
 		return class Type extends ObserveObject {};
@@ -139,10 +157,10 @@ QUnit.test("getters work", function(){
 		first: "Justin",
 		last: "Meyer"
 	});
-	
+
 	person.on("fullName", function fullNameCallback(ev, newName){
 		actions.push("fullNameCallback "+newName);
-	})
+	});
 	actions.push("on('fullName')");
 
 	QUnit.equal(person.fullName,"Justin Meyer", "full name is right");

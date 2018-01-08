@@ -45,7 +45,7 @@ var getterHelpers = {
                     }
                 }
             }
-        });
+		});
 
         Type.prototype.addEventListener = function(key, handler, queue){
             var getObservation = this[computedDefinitionsSymbol][key];
