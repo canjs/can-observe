@@ -10,6 +10,9 @@ var makeObject = require("./-make-object");
 var symbols = require("./-symbols");
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
+var computedHelpers = require("./-computed-helpers");
+
+var isSymbolLike = canReflect.isSymbolLike;
 
 // Returns if prop is an integer
 var isInteger = Number.isInteger || function(value) {
@@ -196,6 +199,7 @@ var makeArray = {
 		var meta = {
 			target: array,
 			proxyKeys: options.proxyKeys !== undefined ? options.proxyKeys : Object.create(makeArray.proxyKeys()),
+			computedKeys: Object.create(null),
 			options: options,
 			// `preventSideEffects` is a counter used to "turn off" the proxy.  This is incremented when some
 			// function (like `Array.splice`) wants to handle event dispatching and/or calling
@@ -225,6 +229,12 @@ var makeArray = {
 			return makeObject.setKey(receiver, key, value, this);
 		}
 
+		// If it has a defined property definiition
+		var computedValue = computedHelpers.set(receiver, key, value);
+		if(computedValue === true ) {
+			return true;
+		}
+
 		// Gets the observable value to set.
 		value = makeObject.getValueToSet(key, value, this);
 		var startingLength = target.length;
@@ -240,7 +250,7 @@ var makeArray = {
 				value: value
 			}];
 
-			var numberKey = +key;
+			var numberKey = !isSymbolLike(key) && +key;
 
 			// If we are adding an indexed value like `arr[5] =value` ...
 			if ( isInteger(numberKey) ) {

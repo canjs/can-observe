@@ -34,6 +34,7 @@ var makeFunction = {
 		var meta = {
 			target: object,
 			proxyKeys: proxyKeys,
+			computedKeys: Object.create(null),
 			options: options,
 			definitions: {},
 			isClass: helpers.isClass(object),
