@@ -4,10 +4,11 @@ var mapBindings = require("can-event-queue/map/map");
 
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
+var canMeta = canSymbol.for("can.meta");
+var computedPropertyDefinitionSymbol = canSymbol.for("can.computedPropertyDefinitions");
 var onKeyValueSymbol = canSymbol.for("can.onKeyValue");
 var offKeyValueSymbol = canSymbol.for("can.offKeyValue");
-var computedPropertyDefinitionSymbol = canSymbol.for("can.computedPropertyDefinitions");
-var canMeta = canSymbol.for("can.meta");
+// var getKeyDependenciesSymbol = canSymbol.for("can.getKeyDependencies");
 
 // ## ComputedObjectObservationData
 // Instances of this are created to wrap the observation.
@@ -95,9 +96,9 @@ var computedHelpers = module.exports = {
 			return false;
 		}
 
-		//!steal-remove-start //
+		//!steal-remove-start
 		if (computedObj.observation[canSymbol.for("can.setValue")] === undefined) {
-			// TODO: throw `key` canReflect.getName() cannot be set
+			throw new Error("Cannot set \"" + key + "\" on " + canReflect.getName(instance));
 		}
 		//!steal-remove-end
 
@@ -123,18 +124,69 @@ var computedHelpers = module.exports = {
 	addKeyDependencies: function(proxyKeys) {
 		var onKeyValue = proxyKeys[onKeyValueSymbol];
 		var offKeyValue = proxyKeys[offKeyValueSymbol];
+		// var getKeyDependencies = proxyKeys[getKeyDependenciesSymbol];
 
 		canReflect.assignSymbols(proxyKeys, {
 			"can.onKeyValue": function(key, handler, queue) {
 				computedHelpers.bind(this, key);
+
+				// var handlers = this[canMeta].handlers;
+				// handlers.add([ key, "onKeyValue", queue || "notify", handler ]);
 
 				return onKeyValue.apply(this, arguments);
 			},
 			"can.offKeyValue": function(key, handler, queue) {
 				computedHelpers.unbind(this, key);
 
+				// var handlers = this[canMeta].handlers;
+				// handlers.delete([ key, "onKeyValue", queue || "notify", handler ]);
+
 				return offKeyValue.apply(this, arguments);
-			}
+			},
+			"can.getKeyDependencies": function(key) {
+				var computedObj = findComputed(this, key);
+				if (computedObj === undefined) {
+					return;
+				}
+
+				return {
+					valueDependencies: new Set([ computedObj.observation ])
+				};
+			},
 		});
-	}
+	},
+	addMethodsAndSymbols: function(Type) {
+		Type.prototype.addEventListener = function(key, handler, queue) {
+			computedHelpers.bind(this, key);
+			return mapBindings.addEventListener.call(this, key, handler, queue);
+		};
+
+		Type.prototype.removeEventListener = function(key, handler, queue) {
+			computedHelpers.unbind(this, key);
+			return mapBindings.removeEventListener.call(this, key, handler, queue);
+		};
+	},
+	ensureDefinition: function(prototype) {
+		if (!prototype.hasOwnProperty(computedPropertyDefinitionSymbol)) {
+			var parent = prototype[computedPropertyDefinitionSymbol];
+			var definitions = prototype[computedPropertyDefinitionSymbol] = Object.create(parent || null);
+
+			Object.getOwnPropertyNames(prototype).forEach(function(prop) {
+				if (prop === "constructor") {
+					return;
+				}
+
+				var descriptor = Object.getOwnPropertyDescriptor(prototype, prop);
+
+				// auto-binding for getters
+				if(descriptor.get !== undefined) {
+					definitions[prop] = function(instance, property) {
+						return new Observation(descriptor.value || descriptor.get, instance);
+					};
+				}
+			});
+		}
+
+		return prototype[computedPropertyDefinitionSymbol];
+	},
 };

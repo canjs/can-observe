@@ -8,7 +8,6 @@ var mapBindings = require("can-event-queue/map/map");
 var symbols = require("./-symbols");
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
-var addGetterKeyDependencies = require("./-add-get-key-dependencies");
 var computedHelpers = require("./-computed-helpers");
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -23,11 +22,7 @@ Object.getOwnPropertySymbols(mapBindings).forEach(function(symbol){
 
 computedHelpers.addKeyDependencies(proxyKeys);
 
-// implement getKeyDependencies for computed getters
-addGetterKeyDependencies(proxyKeys);
-
 var makeObject = {
-
 	// Returns a proxied version of the object.
 	// - `object` - An object to proxy.
 	// - `options` - Configurable behaviors.
