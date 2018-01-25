@@ -1,7 +1,6 @@
 
 var canSymbol = require("can-symbol");
 var metaSymbol = canSymbol.for("can.meta");
-var definitionsSymbol = canSymbol.for("can.typeDefinitions");
 var classTest = /^\s*class\s+/;
 
 var helpers = {
@@ -50,7 +49,7 @@ var helpers = {
 		}
 	})(),
 	makeSimpleExtender: function(BaseType){
-		return function etend(name, staticProps, prototypeProps){
+		return function extend(name, staticProps, prototypeProps){
 		    var Type = function(){
 		        var source = this;
 				var instance = BaseType.apply(this, arguments);
@@ -66,10 +65,10 @@ var helpers = {
 
 			helpers.assignEverything(Type,BaseType);
 			helpers.assignEverything(Type, staticProps || {});
+			Type.extend = helpers.makeSimpleExtender(Type);
 			Type.prototype = Object.create( BaseType.prototype );
 			helpers.assignEverything(Type.prototype, prototypeProps || {});
 			Type.prototype.constructor = Type;
-			Type.prototype[definitionsSymbol] = Object.create(BaseType.prototype[definitionsSymbol] || null);
 
 			//!steal-remove-start
 			Object.defineProperty(Type, "name", {
