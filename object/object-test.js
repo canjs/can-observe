@@ -1,7 +1,11 @@
 var ObserveObject = require("./object");
+var observeObjectHelpers = require("./helpers");
 var QUnit = require("steal-qunit");
 var ObservationRecorder = require("can-observation-recorder");
+var Observation = require("can-observation");
 var canReflect = require("can-reflect");
+var canSymbol = require("can-symbol");
+var computedPropertyDefinitionSymbol = canSymbol.for("can.computedPropertyDefinitions");
 
 QUnit.module("can-observe/object");
 
@@ -64,6 +68,7 @@ if(classSupport) {
 	require("can-reflect-tests/observables/map-like/type/type")("class Type extends observe.Object", function() {
 		return class Type extends ObserveObject {};
 	});
+
 	var Type;
 	require("can-reflect-tests/observables/map-like/instance/on-get-set-delete-key")("class Type extends observe.Object", function() {
 		if(!Type) {
@@ -94,6 +99,302 @@ QUnit.test("Object.extend basics", function(){
 
 	todo.name = "Ramiya";
 
+});
+
+if(classSupport) {
+	QUnit.test("class Object basics, with property definitions on prototype", function() {
+		function observeDecorator(target, key, descriptor) {
+			observeObjectHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+				return new Observation(descriptor.value || descriptor.get, instance);
+			});
+		}
+
+		let fullNameCount = 0;
+		let formalNameCount = 0;
+
+		var fullNameHandler = function(newVal) {
+			QUnit.equal(newVal, "Yetti Baker", "handler newVal is correct");
+		};
+		var formalNameHandler = function(newVal) {
+			QUnit.equal(newVal, "Baker, Yetti", "handler newVal is correct");
+		};
+
+		class Person extends ObserveObject {
+			fullName() {
+				fullNameCount++;
+				return this.first + " " + this.last;
+			}
+			get formalName() {
+				formalNameCount++;
+				return this.last + ", " + this.first;
+			}
+		}
+		observeDecorator(Person.prototype, "fullName", Object.getOwnPropertyDescriptor(Person.prototype, "fullName"));
+		observeDecorator(Person.prototype, "formalName", Object.getOwnPropertyDescriptor(Person.prototype, "formalName"));
+
+		QUnit.equal(fullNameCount, 0, "fullName has run 0 times");
+		QUnit.equal(formalNameCount, 0, "formalName has run 0 times");
+
+		var person = new Person({ first: "Christopher", last: "Baker" });
+
+		canReflect.onKeyValue(person, "fullName", fullNameHandler);
+		QUnit.equal(fullNameCount, 1, "fullName observation getter was called (onKeyValue)");
+		QUnit.equal(person.fullName, "Christopher Baker", "person.fullName has correct value");
+		QUnit.equal(person.fullName, "Christopher Baker", "person.fullName has correct value, again");
+		QUnit.equal(fullNameCount, 1, "fullName observation getter was not called again");
+
+		canReflect.onKeyValue(person, "formalName", formalNameHandler);
+		QUnit.equal(formalNameCount, 1, "formalName observation getter was called (onKeyValue)");
+		QUnit.equal(person.formalName, "Baker, Christopher", "person.formalName has correct value");
+		QUnit.equal(person.formalName, "Baker, Christopher", "person.formalName has correct value, again");
+		QUnit.equal(formalNameCount, 1, "formalName observation getter was not called again");
+
+		var onFullName = false;
+		person.on("fullName", function(){
+			onFullName = true;
+
+			QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+			QUnit.equal(person.formalName, "Baker, Yetti", "person.formalName has correct value");
+			QUnit.equal(person.formalName, "Baker, Yetti", "person.formalName has correct value, again");
+			QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+		});
+
+		var onFormalName = false;
+		person.on("formalName", function(){
+			onFormalName = true;
+
+			QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+			QUnit.equal(person.formalName, "Baker, Yetti", "person.formalName has correct value");
+			QUnit.equal(person.formalName, "Baker, Yetti", "person.formalName has correct value, again");
+			QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+		});
+
+		person.first = "Yetti";
+		QUnit.equal(onFullName, true, "person.on(fullName) was run");
+		QUnit.equal(onFormalName, true, "person.on(formalName) was run");
+	});
+
+	QUnit.test("class Object basics, with property definitions on extended prototype", function() {
+		function observeDecorator(target, key, descriptor) {
+			observeObjectHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+				return new Observation(descriptor.value || descriptor.get, instance);
+			});
+		}
+
+		let fullNameCount = 0;
+		let formalNameCount = 0;
+
+		var fullNameHandler = function(newVal) {
+			QUnit.equal(newVal, "Kal-el Kent", "handler newVal is correct");
+		};
+		var formalNameHandler = function(newVal) {
+			QUnit.equal(newVal, "Kent, Kal-el", "handler newVal is correct");
+		};
+
+		class Person extends ObserveObject {
+			fullName() {
+				fullNameCount++;
+				return this.first + " " + this.last;
+			}
+		}
+		observeDecorator(Person.prototype, "fullName", Object.getOwnPropertyDescriptor(Person.prototype, "fullName"));
+
+		class Superhero extends Person {
+			get formalName() {
+				formalNameCount++;
+				return this.last + ", " + this.first;
+			}
+		}
+		observeDecorator(Superhero.prototype, "formalName", Object.getOwnPropertyDescriptor(Superhero.prototype, "formalName"));
+
+		QUnit.equal(fullNameCount, 0, "fullName has run 0 times");
+		QUnit.equal(formalNameCount, 0, "formalName has run 0 times");
+
+		var superhero = new Superhero({ first: "Clark", last: "Kent" });
+
+		canReflect.onKeyValue(superhero, "fullName", fullNameHandler);
+		QUnit.equal(fullNameCount, 1, "fullName observation getter was called (onKeyValue)");
+		QUnit.equal(superhero.fullName, "Clark Kent", "superhero.fullName has correct value");
+		QUnit.equal(superhero.fullName, "Clark Kent", "superhero.fullName has correct value, again");
+		QUnit.equal(fullNameCount, 1, "fullName observation getter was not called again");
+
+		canReflect.onKeyValue(superhero, "formalName", formalNameHandler);
+		QUnit.equal(formalNameCount, 1, "formalName observation getter was called (onKeyValue)");
+		QUnit.equal(superhero.formalName, "Kent, Clark", "superhero.formalName has correct value");
+		QUnit.equal(superhero.formalName, "Kent, Clark", "superhero.formalName has correct value, again");
+		QUnit.equal(formalNameCount, 1, "formalName observation getter was not called again");
+
+		var onFullName = false;
+		superhero.on("fullName", function(){
+			onFullName = true;
+
+			QUnit.equal(fullNameCount, 2, "fullName observation getter was run again (first changed)");
+			QUnit.equal(superhero.fullName, "Kal-el Kent", "superhero.fullName has correct value");
+			QUnit.equal(superhero.fullName, "Kal-el Kent", "superhero.fullName has correct value, again");
+			QUnit.equal(fullNameCount, 2, "fullName observation getter was run again (first changed)");
+		});
+
+		var onFormalName = false;
+		superhero.on("formalName", function(){
+			onFormalName = true;
+
+			QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+			QUnit.equal(superhero.formalName, "Kent, Kal-el", "superhero.formalName has correct value");
+			QUnit.equal(superhero.formalName, "Kent, Kal-el", "superhero.formalName has correct value, again");
+			QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+		});
+
+		superhero.first = "Kal-el";
+		QUnit.equal(onFullName, true, "superhero.on(fullName) was run");
+		QUnit.equal(onFormalName, true, "superhero.on(formalName) was run");
+	});
+}
+
+QUnit.test("Object.extend basics, with property definitions on prototype", function() {
+	function observeDecorator(target, key, descriptor) {
+		observeObjectHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+			return new Observation(descriptor.value || descriptor.get, instance);
+		});
+	}
+
+	let fullNameCount = 0;
+	let formalNameCount = 0;
+
+	var fullNameHandler = function(newVal) {
+		QUnit.equal(newVal, "Yetti Baker", "handler newVal is correct");
+	};
+	var formalNameHandler = function(newVal) {
+		QUnit.equal(newVal, "Baker, Yetti", "handler newVal is correct");
+	};
+
+	var Person = ObserveObject.extend("Person", {}, {
+		fullName() {
+			fullNameCount++;
+			return this.first + " " + this.last;
+		},
+		get formalName() {
+			formalNameCount++;
+			return this.last + ", " + this.first;
+		}
+	});
+	observeDecorator(Person.prototype, "fullName", Object.getOwnPropertyDescriptor(Person.prototype, "fullName"));
+	observeDecorator(Person.prototype, "formalName", Object.getOwnPropertyDescriptor(Person.prototype, "formalName"));
+
+	QUnit.equal(fullNameCount, 0, "fullName has run 0 times");
+	QUnit.equal(formalNameCount, 0, "formalName has run 0 times");
+
+	var person = new Person({ first: "Christopher", last: "Baker" });
+
+	canReflect.onKeyValue(person, "fullName", fullNameHandler);
+	QUnit.equal(fullNameCount, 1, "fullName observation getter was called (onKeyValue)");
+	QUnit.equal(person.fullName, "Christopher Baker", "person.fullName has correct value");
+	QUnit.equal(person.fullName, "Christopher Baker", "person.fullName has correct value, again");
+	QUnit.equal(fullNameCount, 1, "fullName observation getter was not called again");
+
+	canReflect.onKeyValue(person, "formalName", formalNameHandler);
+	QUnit.equal(formalNameCount, 1, "formalName observation getter was called (onKeyValue)");
+	QUnit.equal(person.formalName, "Baker, Christopher", "person.formalName has correct value");
+	QUnit.equal(person.formalName, "Baker, Christopher", "person.formalName has correct value, again");
+	QUnit.equal(formalNameCount, 1, "formalName observation getter was not called again");
+
+	var onFullName = false;
+	person.on("fullName", function(){
+		onFullName = true;
+
+		QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+		QUnit.equal(person.formalName, "Baker, Yetti", "person.formalName has correct value");
+		QUnit.equal(person.formalName, "Baker, Yetti", "person.formalName has correct value, again");
+		QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+	});
+
+	var onFormalName = false;
+	person.on("formalName", function(){
+		onFormalName = true;
+
+		QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+		QUnit.equal(person.formalName, "Baker, Yetti", "person.formalName has correct value");
+		QUnit.equal(person.formalName, "Baker, Yetti", "person.formalName has correct value, again");
+		QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+	});
+
+	person.first = "Yetti";
+	QUnit.equal(onFullName, true, "person.on(fullName) was run");
+	QUnit.equal(onFormalName, true, "person.on(formalName) was run");
+});
+
+QUnit.test("Object.extend basics, with property definitions on extended prototype", function() {
+	function observeDecorator(target, key, descriptor) {
+		observeObjectHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+			return new Observation(descriptor.value || descriptor.get, instance);
+		});
+	}
+
+	let fullNameCount = 0;
+	let formalNameCount = 0;
+
+	var fullNameHandler = function(newVal) {
+		QUnit.equal(newVal, "Kal-el Kent", "handler newVal is correct");
+	};
+	var formalNameHandler = function(newVal) {
+		QUnit.equal(newVal, "Kent, Kal-el", "handler newVal is correct");
+	};
+
+	var Person = ObserveObject.extend("Person", {}, {
+		fullName() {
+			fullNameCount++;
+			return this.first + " " + this.last;
+		},
+	});
+	observeDecorator(Person.prototype, "fullName", Object.getOwnPropertyDescriptor(Person.prototype, "fullName"));
+
+	var Superhero = Person.extend("Superhero", {}, {
+		get formalName() {
+			formalNameCount++;
+			return this.last + ", " + this.first;
+		}
+	});
+	observeDecorator(Superhero.prototype, "formalName", Object.getOwnPropertyDescriptor(Superhero.prototype, "formalName"));
+
+	QUnit.equal(fullNameCount, 0, "fullName has run 0 times");
+	QUnit.equal(formalNameCount, 0, "formalName has run 0 times");
+
+	var superhero = new Superhero({ first: "Clark", last: "Kent" });
+
+	canReflect.onKeyValue(superhero, "fullName", fullNameHandler);
+	QUnit.equal(fullNameCount, 1, "fullName observation getter was called (onKeyValue)");
+	QUnit.equal(superhero.fullName, "Clark Kent", "superhero.fullName has correct value");
+	QUnit.equal(superhero.fullName, "Clark Kent", "superhero.fullName has correct value, again");
+	QUnit.equal(fullNameCount, 1, "fullName observation getter was not called again");
+
+	canReflect.onKeyValue(superhero, "formalName", formalNameHandler);
+	QUnit.equal(formalNameCount, 1, "formalName observation getter was called (onKeyValue)");
+	QUnit.equal(superhero.formalName, "Kent, Clark", "superhero.formalName has correct value");
+	QUnit.equal(superhero.formalName, "Kent, Clark", "superhero.formalName has correct value, again");
+	QUnit.equal(formalNameCount, 1, "formalName observation getter was not called again");
+
+	var onFullName = false;
+	superhero.on("fullName", function(){
+		onFullName = true;
+
+		QUnit.equal(fullNameCount, 2, "fullName observation getter was run again (first changed)");
+		QUnit.equal(superhero.fullName, "Kal-el Kent", "superhero.fullName has correct value");
+		QUnit.equal(superhero.fullName, "Kal-el Kent", "superhero.fullName has correct value, again");
+		QUnit.equal(fullNameCount, 2, "fullName observation getter was run again (first changed)");
+	});
+
+	var onFormalName = false;
+	superhero.on("formalName", function(){
+		onFormalName = true;
+
+		QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+		QUnit.equal(superhero.formalName, "Kent, Kal-el", "superhero.formalName has correct value");
+		QUnit.equal(superhero.formalName, "Kent, Kal-el", "superhero.formalName has correct value, again");
+		QUnit.equal(formalNameCount, 2, "formalName observation getter was run again (first changed)");
+	});
+
+	superhero.first = "Kal-el";
+	QUnit.equal(onFullName, true, "superhero.on(fullName) was run");
+	QUnit.equal(onFormalName, true, "superhero.on(formalName) was run");
 });
 
 QUnit.test("default values are observable", 3, function(){
@@ -135,6 +436,7 @@ QUnit.test("Don't observe functions", function(){
 require("can-reflect-tests/observables/map-like/type/type")("observe.Object.extend", function() {
 	return ObserveObject.extend("Todo",{},{});
 });
+
 var ExtendType;
 require("can-reflect-tests/observables/map-like/instance/on-get-set-delete-key")("observe.Object.extend", function() {
 	if(!ExtendType) {
