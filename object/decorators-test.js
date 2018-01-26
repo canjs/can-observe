@@ -41,6 +41,58 @@ testDecorator("simple getter", function simpleDecorator(target, key, descriptor)
 	QUnit.equal(didRun, true, "on(fullName) was run");
 });
 
+testDecoratorMethod("asyncGetter", asyncGetter, "fullName", function (resolve) {
+	setTimeout(function() {
+		resolve(this.first + " " + this.last);
+	}.bind(this), 0);
+}, function(Person) {
+	var person = new Person({ first: "Christopher", last: "Baker" });
+
+	QUnit.equal(person.fullName, undefined, "has correct initial value");
+
+	var didRun = false;
+	person.on("fullName", function(){
+		if (didRun) {
+			QUnit.equal(person.fullName, "Yetti Baker", "has correct value after change");
+			QUnit.start();
+			return;
+		}
+
+		didRun = true;
+		QUnit.equal(person.fullName, "Christopher Baker", "has correct value after timeout");
+		person.first = "Yetti";
+	});
+
+	QUnit.stop();
+});
+
+testDecoratorGetter("asyncGetter", asyncGetter, "fullName", function () {
+	return new Promise(function(resolve) {
+		setTimeout(function() {
+			resolve(this.first + " " + this.last);
+		}.bind(this), 0);
+	}.bind(this));
+}, function(Person) {
+	var person = new Person({ first: "Christopher", last: "Baker" });
+
+	QUnit.equal(person.fullName, undefined, "has correct initial value");
+
+	var didRun = false;
+	person.on("fullName", function(){
+		if (didRun) {
+			QUnit.equal(person.fullName, "Yetti Baker", "has correct value after change");
+			QUnit.start();
+			return;
+		}
+
+		didRun = true;
+		QUnit.equal(person.fullName, "Christopher Baker", "has correct value after timeout");
+		person.first = "Yetti";
+	});
+
+	QUnit.stop();
+});
+
 
 
 function testDecoratorGetter(decoratorName, decorator, propName, getter, tester) {
