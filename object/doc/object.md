@@ -172,6 +172,96 @@ class AppVM extends observe.Object {
 }
 ```
 
+## Observable Decorators
+
+can-observe ships with two decorators meant to be used when extending can-observe.Object: asyncGetter and resolver.
+
+### @asyncGetter
+
+The `@asyncGetter` decorator sets up the value to be connected to the result of an asynchronous call, such as an API request or a promise.
+
+When attached to a method, it passes a `resolve` argument, which you call to set the value. When attached to a getter, it expects the return value to be a promise (specifically, a thenable) or undefined (for no changes);
+
+```javascript
+var generators = require("can-observe/object/generators");
+var asyncGetter = generators.asyncGetter;
+
+class Person extends ObserveObject {
+	@asyncGetter
+	fullName(resolve) {
+		setTimeout(function() {
+			resolve(this.first + " " + this.last);
+		}.bind(this), 0);
+	}
+
+	@asyncGetter
+	get formalName() {
+		return new Promise((resolve) => {
+			setTimeout(function() {
+				resolve(this.last + ", " + this.first);
+			}.bind(this), 0);
+		});
+	}
+}
+```
+
+This decorator also supports an optional config argument with a `default` value, which will be the value while it is waiting for the resolution.
+
+```javascript
+var generators = require("can-observe/object/generators");
+var asyncGetter = generators.asyncGetter;
+
+class Person extends ObserveObject {
+	@asyncGetter({ defaut: "loading" })
+	fullName(resolve) {
+		setTimeout(() => {
+			resolve(this.first + " " + this.last);
+		}.bind(this), 0);
+	}
+
+	@asyncGetter({ defaut: "loading" })
+	get formalName() {
+		return new Promise((resolve) => {
+			setTimeout(function() {
+				resolve(this.last + ", " + this.first);
+			}.bind(this), 0);
+		});
+	}
+}
+```
+
+### @resolver
+
+The `@resolver` decorator provides a powerful and generic interface for providing custom functionality without having to deal with the underlying observation. The resolved value is accessed on the instance as a getter.
+
+When attached to a method, it passes an argument with several properties:
+* *resolve* - Update the value to be the passed argument (much like the `@asyncGetter` method).
+* *listenTo* - Listen for changes to this key on the instance, calling a callback when it changes.
+* *stopListening* - Stop listening for changes to this key.
+* *lastSet* - The last value that was set.
+
+This example will return a value that counts how many times the `value` property was changed. The resolved value would be accessed as `thing.count` (as a getter).
+
+```javascript
+var generators = require("can-observe/object/generators");
+var resolver = generators.resolver;
+
+class Thing extends ObserveObject {
+	@resolver
+	count({ resolve, listenTo }) {
+		var count = 0;
+		resolve(count);
+
+		listenTo("value", () => {
+			resolve(++count);
+		});
+	}
+}
+```
+
+## Extending can-observe.Object with Observables
+
+can-observe.Object recognizes a `can.computedPropertyDefinitions` property. Details of this can be found at [can-observe#Extendingcan-observewithObservables].
 
 ## Models
 

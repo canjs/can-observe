@@ -311,6 +311,54 @@ class WidgetViewModel {
 }
 ```
 
+## Extending can-observe with Observables
+
+can-observe recognizes a `can.computedPropertyDefinitions` property; getting or setting a key on the object that matches a key in the `can.computedPropertyDefinitions` object will use this functionality. Specifically, the values in this object are functions which return an observation (typically with [can-observation]). The first time one of these properties is accessed, the function is run, and the observation is cached, to be used for all future use on _that instance_.
+
+### Defining Your Own
+
+We have tried to make it as easy as possible to define your own extensions. To that end, there is a `addComputedPropertyDefinition` helper; it accepts the target object, the property name, and the observation generator function.
+
+> _Note_: this `target` can be an instance (such as the output of `observe({})`) *or* a class (such as `class extends ObserveObject`). If target is a class, it will put this method on the prototype, so all instances get this new behavior.
+
+```javascript
+var helpers = require("can-observe/object/helpers");
+var Observation = require("can-observation");
+
+helpers.addComputedPropertyDefinition(target, "name", function(instance, property) {
+	return new Observation(function() {
+		return this.first + " " + this.last;
+	}, instance);
+});
+```
+
+### Using Decorators
+
+One of the features provided by the latest-and-greatest (and bleeding edge) ECMA is decorators; in this case, they allow for a very concise way to insert computed properties into a class definition. In addition to being able to create your own, we have also provided a few [built-in decorators](https://canjs.github.io/next/doc/can-observe.Object.html#ObservableDecorators).
+
+```javascript
+var helpers = require("can-observe/object/helpers");
+var Observation = require("can-observation");
+
+// generally, this function would come from a different file
+function decorate(target, key, descriptor) {
+	var method = descriptor.value;
+	helpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+		return new Observation(method, instance);
+	};
+}
+
+class Person extends ObserveObject {
+	@decorate
+	fullName() {
+		return this.first + " " + this.last;
+	}
+}
+```
+
+> _Note_: the specific example above is equivalent to our built-in automatic observability of getters on classes: simply defining `fullName` as a getter would give the functionality that the example decorator is providing.
+
+
 ## Browser support
 
 can-observe uses the Proxy feature of JavaScript to observe arbitrary properties. Proxies are available in [all modern browsers](http://caniuse.com/#feat=proxy).
@@ -377,12 +425,8 @@ person.name.last = "Le Hara";
 `can-observe.Object` and `can-observe.Array` mostly use their underlying _base function_ to setup their
 behavior. The primary exception is that they support "computed" getters.  This behavior works by:
 
-1. Creating a `memoize` function that overwrites a defined `getter` to use an observation: [-memoize-getter.js](http://canjs.github.io/can-observe/docs/-memoize-getter.js.html).
-2. When instances are created, we make sure a `can.computedDefinitions` property is added to the prototype.
-   `can.computedDefinitions` has functions provide access to the underlying observation.  When
-   a binding happens on an instance (`instance.on()`), the underlying observation is bound to and its
-   events forwarded to the instance: [-getter-helpers.js](http://canjs.github.io/can-observe/docs/-getter-helpers.js.html).
-
+1. We make sure a `can.computedPropertyDefinitions` symbol is added to the prototype (see above for details on `can.computedPropertyDefinitions`).
+2. We create definitions, which return observations derived from the getter function: [-computed-helpers.js](http://canjs.github.io/can-observe/docs/-computed-helpers.html)
 
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/otTT5_zat0I" frameborder="0" gesture="media" allow="encrypted-media" allowfullscreen></iframe>
