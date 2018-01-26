@@ -1,4 +1,5 @@
 var AsyncObservable = require("can-simple-observable/async/async");
+var ResolverObservable = require("can-simple-observable/resolver/resolver");
 var observeObjectHelpers = require("./helpers");
 var addComputedPropertyDefinition = observeObjectHelpers.addComputedPropertyDefinition;
 
@@ -54,6 +55,27 @@ function asyncGetter(config) {
 	};
 }
 
+function resolver(config) {
+	return function(target, key, descriptor) {
+		if (descriptor.value !== undefined) {
+			var method = descriptor.value;
+			//!steal-remove-start
+			if (method.length !== 1) {
+				throw new Error("resolver decorator: methods should take 1 argument (value).");
+			}
+			//!steal-remove-end
+
+			return addComputedPropertyDefinition(target, key, function(instance, property) {
+				return new ResolverObservable(method, instance);
+			});
+		}
+
+		//!steal-remove-start
+		throw new Error("resolver decorator: Unrecognized descriptor.");
+		//!steal-remove-end
+	};
+}
+
 
 function optionalConfig(decorator) {
 	function wrapper() {
@@ -73,4 +95,5 @@ function optionalConfig(decorator) {
 
 module.exports = {
 	asyncGetter: optionalConfig(asyncGetter),
+	resolver: optionalConfig(resolver),
 };

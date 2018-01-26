@@ -6,6 +6,7 @@ var canReflect = require("can-reflect");
 
 var decorators = require("./decorators");
 var asyncGetter = decorators.asyncGetter;
+var resolver = decorators.resolver;
 
 var classSupport = (function() {
 	try {
@@ -91,6 +92,34 @@ testDecoratorGetter("asyncGetter", asyncGetter, "fullName", function () {
 	});
 
 	QUnit.stop();
+});
+
+testDecoratorMethod("resolver", resolver, "count", function (value) {
+	var count = 0;
+	value.resolve(count);
+
+	value.listenTo("value", function() {
+		value.resolve(++count);
+	});
+}, function(Type) {
+	var person = new Type({ value: "initial" });
+
+	var count = 0;
+	var didRun = false;
+	person.on("count", function() {
+		didRun = true;
+
+		QUnit.equal(person.count, count, "has correct value after change " + count);
+	});
+
+	QUnit.equal(person.count, 0, "has correct initial value");
+
+	count++;
+	person.value = "changed";
+	count++;
+	person.value = "again";
+
+	QUnit.equal(didRun, true, "on(count) was run");
 });
 
 
