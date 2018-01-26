@@ -5,3 +5,4 @@ require("./array-test");
 require("./function-test");
 require("../object/object-test");
 require("../array/array-test");
+require("../object/decorators-test");
