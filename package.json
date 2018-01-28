@@ -41,7 +41,7 @@
   "devDependencies": {
     "bit-docs": "0.0.7",
     "can-compute": "^3.0.5",
-    "can-stache": "^3.0.19",
+    "can-stache": "^4.0.0",
     "can-util": "^3.2.2",
     "detect-cyclic-packages": "^1.1.0",
     "jshint": "^2.9.1",
