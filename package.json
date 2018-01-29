@@ -1,6 +1,6 @@
 {
   "name": "can-observe",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Like can.Map, but without the .attr method.",
   "main": "can-observe.js",
   "scripts": {
