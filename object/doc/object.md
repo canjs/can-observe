@@ -259,9 +259,9 @@ class Thing extends ObserveObject {
 }
 ```
 
-## Extending can-observe.Object with Observables
+## Extending can-observe.Object with Rich Property Behaviors
 
-can-observe.Object recognizes a `can.computedPropertyDefinitions` property. Details of this can be found at [can-observe#Extendingcan-observewithObservables].
+can-observe.Object recognizes a `can.computedPropertyDefinitions` property. Details of this can be found at [can-observe#Extendingcan-observewithRichPropertyBehaviors].
 
 ## Models
 
