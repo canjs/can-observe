@@ -311,9 +311,11 @@ class WidgetViewModel {
 }
 ```
 
-## Extending can-observe with Observables
+## Extending can-observe with Rich Property Behaviors
 
-can-observe recognizes a `can.computedPropertyDefinitions` property; getting or setting a key on the object that matches a key in the `can.computedPropertyDefinitions` object will use this functionality. Specifically, the values in this object are functions which return an observation (typically with [can-observation]). The first time one of these properties is accessed, the function is run, and the observation is cached, to be used for all future use on _that instance_.
+Like [can-define], we wanted can-observe to support a number of rich behaviors: async getters, type coercion, streams, etc. Further, rather than baking these behaviors into the library directly, we wanted to build a mechanism to extend can-observe with custom rich behaviors.
+
+To that end, can-observe recognizes a `can.computedPropertyDefinitions` property; getting or setting a key on the proxy-wrapped object that matches a key in the `can.computedPropertyDefinitions` object will use this functionality. Specifically, the values in this object are functions which return an observation (typically with [can-observation]). The first time one of these properties is accessed, the function is run, and the observation is cached, to be used for all future use on _that instance_.
 
 ### Defining Your Own
 
