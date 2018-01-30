@@ -324,10 +324,10 @@ We have tried to make it as easy as possible to define your own extensions. To t
 > _Note_: this `target` can be an instance (such as the output of `observe({})`) *or* a class (such as `class extends ObserveObject`). If target is a class, it will put this method on the prototype, so all instances get this new behavior.
 
 ```javascript
-var helpers = require("can-observe/object/helpers");
+var observeHelpers = require("can-observe/helpers");
 var Observation = require("can-observation");
 
-helpers.addComputedPropertyDefinition(target, "name", function(instance, property) {
+observeHelpers.addComputedPropertyDefinition(target, "name", function(instance, property) {
 	return new Observation(function() {
 		return this.first + " " + this.last;
 	}, instance);
@@ -339,13 +339,13 @@ helpers.addComputedPropertyDefinition(target, "name", function(instance, propert
 One of the features provided by the latest-and-greatest (and bleeding edge) ECMA is decorators; in this case, they allow for a very concise way to insert computed properties into a class definition. In addition to being able to create your own, we have also provided a few [built-in decorators](https://canjs.github.io/next/doc/can-observe.Object.html#ObservableDecorators).
 
 ```javascript
-var helpers = require("can-observe/object/helpers");
+var observeHelpers = require("can-observe/helpers");
 var Observation = require("can-observation");
 
 // generally, this function would come from a different file
 function decorate(target, key, descriptor) {
 	var method = descriptor.value;
-	helpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+	observeHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
 		return new Observation(method, instance);
 	};
 }

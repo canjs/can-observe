@@ -1,6 +1,6 @@
 var QUnit = require("steal-qunit");
 var ObserveObject = require("./object");
-var observeObjectHelpers = require("./helpers");
+var observeHelpers = require("./helpers");
 var Observation = require("can-observation");
 var canReflect = require("can-reflect");
 
@@ -21,7 +21,7 @@ var classSupport = (function() {
 QUnit.module("can-observe/object");
 
 testDecorator("simple getter", function simpleDecorator(target, key, descriptor) {
-	observeObjectHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+	observeHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
 		return new Observation(descriptor.value || descriptor.get, instance);
 	});
 }, "fullName", function () {

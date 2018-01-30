@@ -176,12 +176,12 @@ var computedHelpers = module.exports = {
 					return;
 				}
 
-				var descriptor = Object.getOwnPropertyDescriptor(prototype, prop);
-
 				// auto-binding for getters
+				var descriptor = Object.getOwnPropertyDescriptor(prototype, prop);
 				if(descriptor.get !== undefined) {
+					var getter = descriptor.get;
 					definitions[prop] = function(instance, property) {
-						return new Observation(descriptor.value || descriptor.get, instance);
+						return new Observation(getter, instance);
 					};
 				}
 			});
