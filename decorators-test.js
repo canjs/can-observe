@@ -1,5 +1,5 @@
 var QUnit = require("steal-qunit");
-var ObserveObject = require("./object");
+var ObserveObject = require("./object/object");
 var observeHelpers = require("./helpers");
 var Observation = require("can-observation");
 var canReflect = require("can-reflect");

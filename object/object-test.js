@@ -4,8 +4,6 @@ var QUnit = require("steal-qunit");
 var ObservationRecorder = require("can-observation-recorder");
 var Observation = require("can-observation");
 var canReflect = require("can-reflect");
-var canSymbol = require("can-symbol");
-var computedPropertyDefinitionSymbol = canSymbol.for("can.computedPropertyDefinitions");
 
 QUnit.module("can-observe/object");
 

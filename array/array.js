@@ -11,7 +11,6 @@ var computedHelpers = require("../src/-computed-helpers");
 var typeHelpers = require("../src/-type-helpers");
 
 var definitionsSymbol = canSymbol.for("can.typeDefinitions");
-var computedDefinitionsSymbol = canSymbol.for("can.computedDefinitions");
 
 // Setup proxyKeys to look for observations when doing onKeyValue and offKeyValue
 var proxyKeys = helpers.assignEverything({},makeArray.proxyKeys());

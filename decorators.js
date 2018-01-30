@@ -78,7 +78,7 @@ function resolver(config) {
 
 
 function optionalConfig(decorator) {
-	function wrapper() {
+	function wrapper(config) {
 		if (arguments.length === 3) {
 			return decorator({}).apply(null, arguments);
 		}
