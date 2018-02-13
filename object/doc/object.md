@@ -8,7 +8,7 @@
 
 Create an instance of an observable object.
 
-```javascript
+```js
 import observe from "can-observe";
 
 const person = new observe.Object({name: "Frank Castle"});
@@ -24,13 +24,13 @@ have [mixed-in methods and properties](#Mixedinmethodsandproperties) like `.on` 
 
 Extend and create your own `Object` type:
 
-```javascript
+```js
 import observe from "can-observe";
 
 class Person extends observe.Object {
-    get fullName() {
-        return this.first + " " + this.last;
-    }
+	get fullName() {
+		return this.first + " " + this.last;
+	}
 }
 ```
 
@@ -53,7 +53,7 @@ Instances of `observe.Object` have all methods and properties from
 
 Example:
 
-```javascript
+```js
 class MyObject extends observe.Object {
 
 }
@@ -74,7 +74,7 @@ Extended `observe.Object` constructor functions have all methods and properties 
 
 Example:
 
-```javascript
+```js
 class MyObject extends observe.Object {
 
 }
@@ -93,31 +93,31 @@ canReflect.onInstancePatches(MyObject, function(instance, patches){ /* ... */ })
 Use `observe.Object` to create __view-models__ for use with [can-component].  The following
 creates a `TodoListVM` and and uses it with the `todo-list` component:
 
-```javascript
+```js
 class TodoListVM extends observe.Object {
-    isEditing(todo) {
-        return todo === this.editing;
-    }
-    edit(todo) {
-        this.backupName = todo.name;
-        this.editing = todo;
-    }
-    cancelEdit() {
-        if (this.editing) {
-            this.editing.name = this.backupName;
-        }
-        this.editing = null;
-    }
-    updateName() {
-        this.editing.save();
-        this.editing = null;
-    }
+	isEditing(todo) {
+		return todo === this.editing;
+	}
+	edit(todo) {
+		this.backupName = todo.name;
+		this.editing = todo;
+	}
+	cancelEdit() {
+		if (this.editing) {
+			this.editing.name = this.backupName;
+		}
+		this.editing = null;
+	}
+	updateName() {
+		this.editing.save();
+		this.editing = null;
+	}
 }
 
 Component.extend({
-    tag: "todo-list",
-    view,
-    ViewModel: TodoListVM
+	tag: "todo-list",
+	view,
+	ViewModel: TodoListVM
 });
 ```
 
@@ -129,28 +129,28 @@ to add this behavior manually.
 When simple `getters` can be used, use [can-component/connectedCallback] to update properties based on other
 values. The following keeps `todosList` updated with changes in `todosPromise`:
 
-```javascript
+```js
 class AppVM extends observe.Object {
-    get todosPromise() {
-        if (!this.filter) {
-            return Todo.getList({});
-        } else {
-            return Todo.getList({
-                complete: this.filter === "complete"
-            });
-        }
-    }
-    connectedCallback() {
-        this.listenTo("todosPromise", (promise) => {
-            promise.then((todos) => {
-                this.todosList = todos;
-            });
-        });
-        this.todosPromise.then((todos) => {
-            this.todosList = todos;
-        });
-        return this.stopListening.bind(this);
-    }
+	get todosPromise() {
+		if (!this.filter) {
+			return Todo.getList({});
+		} else {
+			return Todo.getList({
+				complete: this.filter === "complete"
+			});
+		}
+	}
+	connectedCallback() {
+		this.listenTo("todosPromise", (promise) => {
+			promise.then((todos) => {
+				this.todosList = todos;
+			});
+		});
+		this.todosPromise.then((todos) => {
+			this.todosList = todos;
+		});
+		return this.stopListening.bind(this);
+	}
 }
 ```
 
@@ -158,17 +158,17 @@ If you'd like a property to be non-enumerable, you need to define this during
 initialization of your instance within `constructor`.  The following makes  
 `todosList` non-enumerable:
 
-```javascript
+```js
 class AppVM extends observe.Object {
-    constructor(props) {
-        super(props);
-        Object.defineProperty(this, "todosList", {
-            enumerable: false,
-            value: null,
-            configurable: true,
-            writable: true
-        });
-    }
+	constructor(props) {
+		super(props);
+		Object.defineProperty(this, "todosList", {
+			enumerable: false,
+			value: null,
+			configurable: true,
+			writable: true
+		});
+	}
 }
 ```
 
@@ -178,19 +178,19 @@ class AppVM extends observe.Object {
 Use `observe.Object` to create observable view-models for use
 with [can-connect]. The following creates a simple `Todo` type:
 
-```javascript
+```js
 import observe from "can-observe";
 import baseMap from "can-connect/can/base-map/base-map";
 
 class Todo extends observe.Object {
-    updateName(newName) {
-        this.name = newName;
-        this.updatedAt = new Date().getTime();
-    }
+	updateName(newName) {
+		this.name = newName;
+		this.updatedAt = new Date().getTime();
+	}
 }
 
 baseMap({
-    url: "/api/todos",
-    Map: Todo
+	url: "/api/todos",
+	Map: Todo
 })
 ```

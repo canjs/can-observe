@@ -8,7 +8,7 @@
 
 Create an instance of an observable array.
 
-```javascript
+```js
 import observe from "can-observe";
 
 const hobbies = new observe.Array(["JS","Reading"]);
@@ -18,15 +18,15 @@ const hobbies = new observe.Array(["JS","Reading"]);
 
 Extend and create your own `Array` type:
 
-```javascript
+```js
 import observe from "can-observe";
 
 class TodoList extends observe.Array {
-    get active() {
-        return this.filter(function(todo) {
-            return todo.complete === false;
-        });
-    }
+	get active() {
+		return this.filter(function(todo) {
+			return todo.complete === false;
+		});
+	}
 }
 ```
 
@@ -47,7 +47,7 @@ Instances of `observe.Array` have all methods and properties from
 
 Example:
 
-```javascript
+```js
 class MyArray extends observe.Array {
 
 }
@@ -68,7 +68,7 @@ Extended `observe.Array` constructor functions have all methods and properties f
 
 Example:
 
-```javascript
+```js
 class MyArray extends observe.Array {
 
 }
@@ -86,47 +86,47 @@ canReflect.onInstancePatches(MyArray, function(instance, patches){ /* ... */ });
 Use `observe.Array` to create observable arrays for use
 with [can-connect]. The following creates a simple `TodoList` type:
 
-```javascript
+```js
 import observe from "can-observe";
 import baseMap from "can-connect/can/base-map/base-map";
 
 class Todo extends observe.Object { /* ... */ }
 
 class TodoList extends observe.Array {
-    get active() {
-        return this.filter(function(todo) {
-            return todo.complete === false;
-        });
-    }
-    get complete() {
-        return this.filter(function(todo) {
-            return todo.complete === true;
-        });
-    }
-    get allComplete() {
-        return this.length === this.complete.length;
-    }
-    get saving() {
-        return this.filter(function(todo) {
-            return todo.isSaving();
-        });
-    }
-    updateCompleteTo(value) {
-        this.forEach(function(todo) {
-            todo.complete = value;
-            todo.save();
-        });
-    }
-    destroyComplete() {
-        this.complete.forEach(function(todo) {
-            todo.destroy();
-        });
-    }
+	get active() {
+		return this.filter(function(todo) {
+			return todo.complete === false;
+		});
+	}
+	get complete() {
+		return this.filter(function(todo) {
+			return todo.complete === true;
+		});
+	}
+	get allComplete() {
+		return this.length === this.complete.length;
+	}
+	get saving() {
+		return this.filter(function(todo) {
+			return todo.isSaving();
+		});
+	}
+	updateCompleteTo(value) {
+		this.forEach(function(todo) {
+			todo.complete = value;
+			todo.save();
+		});
+	}
+	destroyComplete() {
+		this.complete.forEach(function(todo) {
+			todo.destroy();
+		});
+	}
 }
 
 baseMap({
-    url: "/api/todos",
-    Map: Todo
+	url: "/api/todos",
+	Map: Todo
 })
 ```
 
