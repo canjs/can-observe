@@ -101,7 +101,7 @@ var superWoman = observe({
 		first: "Luma",
 		last: "Lynai"
 	},
-	hobbies: ["justice", "soaking up rays (orange sun-only)"]
+	hobbies: ["justice", "soaking up rays (orange sun-only)"],
 	age: 33
 });
 ```
@@ -271,20 +271,20 @@ sponge.eat()
 > function passed to `observe` are created, they will not be observable.
 >
 > ```js
-> class Animal {
-> 	constructor(name) {
-> 		this.name = name;
-> 		this.calories = 100;
-> 	}
-> 	eat() {
-> 		this.calories++;
-> 	}
-> }
-> var ObservableAnimal = observe(Animal);
->
-> var sponge1 = new Animal("Bob")           // NOT OBSERVABLE
-> var sponge2 = new ObservableAnimal("Bob") // OBSERVABLE
-> ```
+class Animal {
+	constructor(name) {
+		this.name = name;
+		this.calories = 100;
+	}
+	eat() {
+		this.calories++;
+	}
+}
+var ObservableAnimal = observe(Animal);
+
+var sponge1 = new Animal("Bob")           // NOT OBSERVABLE
+var sponge2 = new ObservableAnimal("Bob") // OBSERVABLE
+```
 
 
 ### Returning an `observe(instance)` wrapped instance.

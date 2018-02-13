@@ -29,7 +29,7 @@ import observe from "can-observe";
 
 class Person extends observe.Object {
     get fullName() {
-        return this.first " " this.last;
+        return this.first + " " + this.last;
     }
 }
 ```
