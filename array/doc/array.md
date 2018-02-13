@@ -8,17 +8,17 @@
 
 Create an instance of an observable array.
 
-```js
+```javascript
 import observe from "can-observe";
 
-var hobbies = new observe.Array(["JS","Reading"]);
+const hobbies = new observe.Array(["JS","Reading"]);
 ```
 
 @signature `class extends observe.Array {...}`
 
 Extend and create your own `Array` type:
 
-```js
+```javascript
 import observe from "can-observe";
 
 class TodoList extends observe.Array {
@@ -47,14 +47,14 @@ Instances of `observe.Array` have all methods and properties from
 
 Example:
 
-```js
+```javascript
 class MyArray extends observe.Array {
 
 }
 
-var arrayInstance = new MyArray([]);
+const arrayInstance = new MyArray([]);
 
-canReflect.onPatches( arrayInstance, function(patches){ ... });
+canReflect.onPatches( arrayInstance, function(patches){ /* ... */ });
 ```
 
 
@@ -68,12 +68,12 @@ Extended `observe.Array` constructor functions have all methods and properties f
 
 Example:
 
-```js
+```javascript
 class MyArray extends observe.Array {
 
 }
 
-canReflect.onInstancePatches(MyArray, function(instance, patches){ ... });
+canReflect.onInstancePatches(MyArray, function(instance, patches){ /* ... */ });
 ```
 
 ## Use Cases
@@ -86,11 +86,11 @@ canReflect.onInstancePatches(MyArray, function(instance, patches){ ... });
 Use `observe.Array` to create observable arrays for use
 with [can-connect]. The following creates a simple `TodoList` type:
 
-```js
+```javascript
 import observe from "can-observe";
 import baseMap from "can-connect/can/base-map/base-map";
 
-class Todo extends observe.Object { ... }
+class Todo extends observe.Object { /* ... */ }
 
 class TodoList extends observe.Array {
     get active() {

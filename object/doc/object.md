@@ -8,10 +8,10 @@
 
 Create an instance of an observable object.
 
-```js
+```javascript
 import observe from "can-observe";
 
-var person = new observe.Object({name: "Frank Castle"});
+const person = new observe.Object({name: "Frank Castle"});
 ```
 
 Unlike `observe({name: "Frank Castle"})`, `person` will
@@ -24,7 +24,7 @@ have [mixed-in methods and properties](#Mixedinmethodsandproperties) like `.on` 
 
 Extend and create your own `Object` type:
 
-```js
+```javascript
 import observe from "can-observe";
 
 class Person extends observe.Object {
@@ -53,14 +53,14 @@ Instances of `observe.Object` have all methods and properties from
 
 Example:
 
-```js
+```javascript
 class MyObject extends observe.Object {
 
 }
 
-var instance = new MyObject({});
+const instance = new MyObject({});
 
-canReflect.onPatches( instance, function(patches){ ... });
+canReflect.onPatches( instance, function(patches){ /* ... */ });
 ```
 
 
@@ -74,12 +74,12 @@ Extended `observe.Object` constructor functions have all methods and properties 
 
 Example:
 
-```js
+```javascript
 class MyObject extends observe.Object {
 
 }
 
-canReflect.onInstancePatches(MyObject, function(instance, patches){ ... });
+canReflect.onInstancePatches(MyObject, function(instance, patches){ /* ... */ });
 ```
 
 ## Use Cases
@@ -93,7 +93,7 @@ canReflect.onInstancePatches(MyObject, function(instance, patches){ ... });
 Use `observe.Object` to create __view-models__ for use with [can-component].  The following
 creates a `TodoListVM` and and uses it with the `todo-list` component:
 
-```js
+```javascript
 class TodoListVM extends observe.Object {
     isEditing(todo) {
         return todo === this.editing;
@@ -129,7 +129,7 @@ to add this behavior manually.
 When simple `getters` can be used, use [can-component/connectedCallback] to update properties based on other
 values. The following keeps `todosList` updated with changes in `todosPromise`:
 
-```js
+```javascript
 class AppVM extends observe.Object {
     get todosPromise() {
         if (!this.filter) {
@@ -158,7 +158,7 @@ If you'd like a property to be non-enumerable, you need to define this during
 initialization of your instance within `constructor`.  The following makes  
 `todosList` non-enumerable:
 
-```js
+```javascript
 class AppVM extends observe.Object {
     constructor(props) {
         super(props);
@@ -178,7 +178,7 @@ class AppVM extends observe.Object {
 Use `observe.Object` to create observable view-models for use
 with [can-connect]. The following creates a simple `Todo` type:
 
-```js
+```javascript
 import observe from "can-observe";
 import baseMap from "can-connect/can/base-map/base-map";
 
