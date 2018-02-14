@@ -11,7 +11,7 @@ Create an instance of an observable object.
 ```js
 import observe from "can-observe";
 
-const person = new observe.Object({name: "Frank Castle"});
+const person = new observe.Object( { name: "Frank Castle" } );
 ```
 
 Unlike `observe({name: "Frank Castle"})`, `person` will
@@ -58,9 +58,9 @@ class MyObject extends observe.Object {
 
 }
 
-const instance = new MyObject({});
+const instance = new MyObject( {} );
 
-canReflect.onPatches( instance, function(patches){ /* ... */ });
+canReflect.onPatches( instance, function( patches ) { /* ... */ } );
 ```
 
 
@@ -79,7 +79,7 @@ class MyObject extends observe.Object {
 
 }
 
-canReflect.onInstancePatches(MyObject, function(instance, patches){ /* ... */ });
+canReflect.onInstancePatches( MyObject, function( instance, patches ) { /* ... */ } );
 ```
 
 ## Use Cases
@@ -95,15 +95,15 @@ creates a `TodoListVM` and and uses it with the `todo-list` component:
 
 ```js
 class TodoListVM extends observe.Object {
-	isEditing(todo) {
+	isEditing( todo ) {
 		return todo === this.editing;
 	}
-	edit(todo) {
+	edit( todo ) {
 		this.backupName = todo.name;
 		this.editing = todo;
 	}
 	cancelEdit() {
-		if (this.editing) {
+		if ( this.editing ) {
 			this.editing.name = this.backupName;
 		}
 		this.editing = null;
@@ -114,11 +114,11 @@ class TodoListVM extends observe.Object {
 	}
 }
 
-Component.extend({
+Component.extend( {
 	tag: "todo-list",
 	view,
 	ViewModel: TodoListVM
-});
+} );
 ```
 
 ### Special behaviors
@@ -132,24 +132,24 @@ values. The following keeps `todosList` updated with changes in `todosPromise`:
 ```js
 class AppVM extends observe.Object {
 	get todosPromise() {
-		if (!this.filter) {
-			return Todo.getList({});
+		if ( !this.filter ) {
+			return Todo.getList( {} );
 		} else {
-			return Todo.getList({
+			return Todo.getList( {
 				complete: this.filter === "complete"
-			});
+			} );
 		}
 	}
 	connectedCallback() {
-		this.listenTo("todosPromise", (promise) => {
-			promise.then((todos) => {
+		this.listenTo( "todosPromise", ( promise ) => {
+			promise.then( ( todos ) => {
 				this.todosList = todos;
-			});
-		});
-		this.todosPromise.then((todos) => {
+			} );
+		} );
+		this.todosPromise.then( ( todos ) => {
 			this.todosList = todos;
-		});
-		return this.stopListening.bind(this);
+		} );
+		return this.stopListening.bind( this );
 	}
 }
 ```
@@ -160,14 +160,14 @@ initialization of your instance within `constructor`.  The following makes
 
 ```js
 class AppVM extends observe.Object {
-	constructor(props) {
-		super(props);
-		Object.defineProperty(this, "todosList", {
+	constructor( props ) {
+		super( props );
+		Object.defineProperty( this, "todosList", {
 			enumerable: false,
 			value: null,
 			configurable: true,
 			writable: true
-		});
+		} );
 	}
 }
 ```
@@ -183,14 +183,14 @@ import observe from "can-observe";
 import baseMap from "can-connect/can/base-map/base-map";
 
 class Todo extends observe.Object {
-	updateName(newName) {
+	updateName( newName ) {
 		this.name = newName;
 		this.updatedAt = new Date().getTime();
 	}
 }
 
-baseMap({
+baseMap( {
 	url: "/api/todos",
 	Map: Todo
-})
+} );
 ```

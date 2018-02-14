@@ -11,7 +11,7 @@ Create an instance of an observable array.
 ```js
 import observe from "can-observe";
 
-const hobbies = new observe.Array(["JS","Reading"]);
+const hobbies = new observe.Array( [ "JS", "Reading" ] );
 ```
 
 @signature `class extends observe.Array {...}`
@@ -23,9 +23,9 @@ import observe from "can-observe";
 
 class TodoList extends observe.Array {
 	get active() {
-		return this.filter(function(todo) {
+		return this.filter( function( todo ) {
 			return todo.complete === false;
-		});
+		} );
 	}
 }
 ```
@@ -52,9 +52,9 @@ class MyArray extends observe.Array {
 
 }
 
-const arrayInstance = new MyArray([]);
+const arrayInstance = new MyArray( [] );
 
-canReflect.onPatches( arrayInstance, function(patches){ /* ... */ });
+canReflect.onPatches( arrayInstance, function( patches ) { /* ... */ } );
 ```
 
 
@@ -73,7 +73,7 @@ class MyArray extends observe.Array {
 
 }
 
-canReflect.onInstancePatches(MyArray, function(instance, patches){ /* ... */ });
+canReflect.onInstancePatches( MyArray, function( instance, patches ) { /* ... */ } );
 ```
 
 ## Use Cases
@@ -94,40 +94,40 @@ class Todo extends observe.Object { /* ... */ }
 
 class TodoList extends observe.Array {
 	get active() {
-		return this.filter(function(todo) {
+		return this.filter( function( todo ) {
 			return todo.complete === false;
-		});
+		} );
 	}
 	get complete() {
-		return this.filter(function(todo) {
+		return this.filter( function( todo ) {
 			return todo.complete === true;
-		});
+		} );
 	}
 	get allComplete() {
 		return this.length === this.complete.length;
 	}
 	get saving() {
-		return this.filter(function(todo) {
+		return this.filter( function( todo ) {
 			return todo.isSaving();
-		});
+		} );
 	}
-	updateCompleteTo(value) {
-		this.forEach(function(todo) {
+	updateCompleteTo( value ) {
+		this.forEach( function( todo ) {
 			todo.complete = value;
 			todo.save();
-		});
+		} );
 	}
 	destroyComplete() {
-		this.complete.forEach(function(todo) {
+		this.complete.forEach( function( todo ) {
 			todo.destroy();
-		});
+		} );
 	}
 }
 
-baseMap({
+baseMap( {
 	url: "/api/todos",
 	Map: Todo
-})
+} );
 ```
 
 Note that `active`, `complete`, `allComplete`, and `saving` are made into [can-observation]-backed
