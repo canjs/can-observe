@@ -11,7 +11,7 @@ Create an instance of an observable object.
 ```js
 import observe from "can-observe";
 
-var person = new observe.Object({name: "Frank Castle"});
+const person = new observe.Object( { name: "Frank Castle" } );
 ```
 
 Unlike `observe({name: "Frank Castle"})`, `person` will
@@ -28,9 +28,9 @@ Extend and create your own `Object` type:
 import observe from "can-observe";
 
 class Person extends observe.Object {
-    get fullName() {
-        return this.first " " this.last;
-    }
+	get fullName() {
+		return this.first + " " + this.last;
+	}
 }
 ```
 
@@ -58,9 +58,9 @@ class MyObject extends observe.Object {
 
 }
 
-var instance = new MyObject({});
+const instance = new MyObject( {} );
 
-canReflect.onPatches( instance, function(patches){ ... });
+canReflect.onPatches( instance, function( patches ) { /* ... */ } );
 ```
 
 
@@ -79,7 +79,7 @@ class MyObject extends observe.Object {
 
 }
 
-canReflect.onInstancePatches(MyObject, function(instance, patches){ ... });
+canReflect.onInstancePatches( MyObject, function( instance, patches ) { /* ... */ } );
 ```
 
 ## Use Cases
@@ -95,30 +95,30 @@ creates a `TodoListVM` and and uses it with the `todo-list` component:
 
 ```js
 class TodoListVM extends observe.Object {
-    isEditing(todo) {
-        return todo === this.editing;
-    }
-    edit(todo) {
-        this.backupName = todo.name;
-        this.editing = todo;
-    }
-    cancelEdit() {
-        if (this.editing) {
-            this.editing.name = this.backupName;
-        }
-        this.editing = null;
-    }
-    updateName() {
-        this.editing.save();
-        this.editing = null;
-    }
+	isEditing( todo ) {
+		return todo === this.editing;
+	}
+	edit( todo ) {
+		this.backupName = todo.name;
+		this.editing = todo;
+	}
+	cancelEdit() {
+		if ( this.editing ) {
+			this.editing.name = this.backupName;
+		}
+		this.editing = null;
+	}
+	updateName() {
+		this.editing.save();
+		this.editing = null;
+	}
 }
 
-Component.extend({
-    tag: "todo-list",
-    view,
-    ViewModel: TodoListVM
-});
+Component.extend( {
+	tag: "todo-list",
+	view,
+	ViewModel: TodoListVM
+} );
 ```
 
 ### Special behaviors
@@ -131,26 +131,26 @@ values. The following keeps `todosList` updated with changes in `todosPromise`:
 
 ```js
 class AppVM extends observe.Object {
-    get todosPromise() {
-        if (!this.filter) {
-            return Todo.getList({});
-        } else {
-            return Todo.getList({
-                complete: this.filter === "complete"
-            });
-        }
-    }
-    connectedCallback() {
-        this.listenTo("todosPromise", (promise) => {
-            promise.then((todos) => {
-                this.todosList = todos;
-            });
-        });
-        this.todosPromise.then((todos) => {
-            this.todosList = todos;
-        });
-        return this.stopListening.bind(this);
-    }
+	get todosPromise() {
+		if ( !this.filter ) {
+			return Todo.getList( {} );
+		} else {
+			return Todo.getList( {
+				complete: this.filter === "complete"
+			} );
+		}
+	}
+	connectedCallback() {
+		this.listenTo( "todosPromise", ( promise ) => {
+			promise.then( ( todos ) => {
+				this.todosList = todos;
+			} );
+		} );
+		this.todosPromise.then( ( todos ) => {
+			this.todosList = todos;
+		} );
+		return this.stopListening.bind( this );
+	}
 }
 ```
 
@@ -160,15 +160,15 @@ initialization of your instance within `constructor`.  The following makes
 
 ```js
 class AppVM extends observe.Object {
-    constructor(props) {
-        super(props);
-        Object.defineProperty(this, "todosList", {
-            enumerable: false,
-            value: null,
-            configurable: true,
-            writable: true
-        });
-    }
+	constructor( props ) {
+		super( props );
+		Object.defineProperty( this, "todosList", {
+			enumerable: false,
+			value: null,
+			configurable: true,
+			writable: true
+		} );
+	}
 }
 ```
 
@@ -183,14 +183,14 @@ import observe from "can-observe";
 import baseMap from "can-connect/can/base-map/base-map";
 
 class Todo extends observe.Object {
-    updateName(newName) {
-        this.name = newName;
-        this.updatedAt = new Date().getTime();
-    }
+	updateName( newName ) {
+		this.name = newName;
+		this.updatedAt = new Date().getTime();
+	}
 }
 
-baseMap({
-    url: "/api/todos",
-    Map: Todo
-})
+baseMap( {
+	url: "/api/todos",
+	Map: Todo
+} );
 ```

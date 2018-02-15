@@ -19,15 +19,15 @@ Create an observable object that acts as a [proxy](https://developer.mozilla.org
 import observe from "can-observe";
 import canReflect from "can-refect";
 
-var dog = observe({});
+const dog = observe( {} );
 
 // non-plain JS object behavior exposed through
 // symbols used by can-reflect
-canReflect.onKeyValue(dog, "name", function(newVal){
-    newVal //-> 'Wilbur'
-})
+canReflect.onKeyValue( dog, "name", function( newVal ) {
+	newVal; //-> 'Wilbur'
+} );
 
-dog.name = 'Wilbur';
+dog.name = "Wilbur";
 ```
 
 @param {Object|Array|Function} target The object from which an observable
@@ -62,14 +62,14 @@ template.  When `dog`'s `name` is set, the page will be updated.
 import observe from "can-observe";
 import stache from "can-stache";
 
-var dog = observe({});
+const dog = observe( {} );
 
-var frag = stache("<p>dog's name is {{name}}</p>")(dog);
-document.body.appendChild(frag);
+const frag = stache( "<p>dog's name is {{name}}</p>" )( dog );
+document.body.appendChild( frag );
 
-dog.name = 'Wilbur'
+dog.name = "Wilbur";
 
-document.body //-> <p>dog's name is Wilbur</p>
+document.body; //-> <p>dog's name is Wilbur</p>
 ```
 
 `can-observe`'s exported `observe` function can also be used to make observable types useful as __Models__ and __ViewModels__. However, its [can-observe.Object observe.Object] and [can-observe.Array observe.Array] properties are designed specifically for this
@@ -78,9 +78,9 @@ purpose.  [can-observe.Object observe.Object] and [can-observe.Array observe.Arr
 ```js
 import observe from "can-observe";
 class Person extends observe.Object {
-    fullName(){
-        return this.first + " " + this.last;
-    }
+	fullName() {
+		return this.first + " " + this.last;
+	}
 }
 ```
 
@@ -96,14 +96,14 @@ The following example uses `can-observe` to create an observable `superWoman`:
 ```js
 import observe from "can-observe";
 
-var superWoman = observe({
+const superWoman = observe( {
 	name: {
 		first: "Luma",
 		last: "Lynai"
 	},
-	hobbies: ["justice", "soaking up rays (orange sun-only)"]
+	hobbies: [ "justice", "soaking up rays (orange sun-only)" ],
 	age: 33
-});
+} );
 ```
 
 You can now add, delete, and set `superWoman`'s properties like you would a normal JavaScript object:
@@ -117,8 +117,8 @@ delete superWoman.age;
 And you can mutate arrays and call all of their methods available to the browser:
 
 ```js
-superWoman.hobbies.push("Protecting Staryl");
-superWoman.hobbies.includes("Justice") //-> true
+superWoman.hobbies.push( "Protecting Staryl" );
+superWoman.hobbies.includes( "Justice" ); //-> true
 ```
 
 All of these changes publish events observable by the rest of CanJS. For example, [can-observation]
@@ -127,13 +127,13 @@ is able create a computed value for superWoman's `fullName` like:
 ```js
 import Observation from "can-observation";
 
-var fullName = new Observation(function(){
+const fullName = new Observation( function() {
 	return superWoman.name.first + " " + superWoman.name.last;
-});
+} );
 
-fullName.on(function(newVal){
-	console.log(newVal); // -> "Lana Lang"
-});
+fullName.on( function( newVal ) {
+	console.log( newVal ); // -> "Lana Lang"
+} );
 
 superWoman.name.first = "Lana";
 ```
@@ -142,27 +142,27 @@ If you wish to observe changes in an observable made with `observe` for yourself
 
  - Use [can-reflect]:
    ```js
-   import canReflect from "can-reflect";
+import canReflect from "can-reflect";
 
-   canReflect.onKeyValue(superWoman, 'age', function(newVal){
-       console.log(newVal); //-> 34
-   });
+canReflect.onKeyValue( superWoman, "age", function( newVal ) {
+	console.log( newVal ); //-> 34
+} );
 
-   superWoman.age = 34;
-   ```
+superWoman.age = 34;
+```
  - Use [can-observe.Object] or [can-observe.Array] that include methods for
    binding directly on the object:
    ```js
-   var superWoman = new observe.Object({
-	   	name: { first: "Luma", last: "Lynai" },
-	   	age: 33
-   });
-   superWoman.on('age', function(newVal){
-       console.log(newVal); //-> 34
-   });
+const superWoman = new observe.Object( {
+	name: { first: "Luma", last: "Lynai" },
+	age: 33
+} );
+superWoman.on( "age", function( newVal ) {
+	console.log( newVal ); //-> 34
+} );
 
-   superWoman.age = 34;
-   ```
+superWoman.age = 34;
+```
 
 Using `observe` directly isn't extremely common in larger CanJS apps that use
 [can-observe.Object] or [can-observe.Array] to create special types. However, it can be useful for simple
@@ -174,16 +174,16 @@ For example, the following creates a simple counter application:
 import stache from "can-stache";
 import observe from "can-observe";
 
-var counter = observe({
+const counter = observe( {
 	count: 0,
-	add: function(){
+	add: function() {
 		this.count++;
 	}
-});
+} );
 
-var view = stache(`<button on:click='add()'>+1</button>  Count: {{count}}`);
+const view = stache( "<button on:click='add()'>+1</button>  Count: {{count}}" );
 
-document.body.appendChild(view(counter));
+document.body.appendChild( view( counter ) );
 ```
 
 ## Nested Objects
@@ -191,20 +191,20 @@ document.body.appendChild(view(counter));
 Any Object property in a `can-observe` will be replaced with a `can-observe` observed Proxy on read or write.  This allows deep path traversal in objects, with observable changes all along the way.
 
 ```js
-var observe = require("can-observe");
+import observe from "can-observe";
 
-var name = { first: "Justin", last: "Meyer" };
-var person = {
+const name = { first: "Justin", last: "Meyer" };
+const person = {
 	name: name
 };
 
-var observed = observe(person);
+const observed = observe( person );
 observed;       // -> observed is a Proxy;
 observed.name;  // -> also a Proxy
 person.name;    // -> this is a plain object instead
 
 observed.address = { city: "Chicago" };  // this gets proxified on set, so...
-person.address // -> this is a Proxy
+person.address; // -> this is a Proxy
 ```
 
 ## Defining Observable Types
@@ -224,67 +224,67 @@ observables in two ways:
 If `observe` is called with a constructor function as follows:
 
 ```js
-var Animal = observe(function Animal(name){
+const Animal = observe( function Animal( name ) {
 	this.name = name;
 	this.calories = 100;
-});
-Animal.prototype.eat = function(){
+} );
+Animal.prototype.eat = function() {
 	this.calories++;
-}
+};
 ```
 
 All instances of `Animal` will be observable:
 
 ```js
-var sponge = new Animal("Bob");
-canReflect.onKeyValue(sponge,"calories", function(newVal){
-	console.log(newVal) //-> 101
-});
-sponge.eat()
+const sponge = new Animal( "Bob" );
+canReflect.onKeyValue( sponge, "calories", function( newVal ) {
+	console.log( newVal ); //-> 101
+} );
+sponge.eat();
 ```
 
 Similarly, if `observe` is called on a `Class` function as follows:
 
 ```js
-Animal = observe(class Animal {
-	constructor(name) {
+Animal = observe( class Animal {
+	constructor( name ) {
 		this.name = name;
 		this.calories = 100;
 	}
 	eat() {
 		this.calories++;
 	}
-})
+} );
 ```
 
 All instances of `Animal` will be observable:
 
 ```js
-var sponge = new Animal("Bob");
-canReflect.onKeyValue(sponge,"calories", function(newVal){
-	console.log(newVal) //-> 101
-});
-sponge.eat()
+const sponge = new Animal( "Bob" );
+canReflect.onKeyValue( sponge, "calories", function( newVal ) {
+	console.log( newVal ); //-> 101
+} );
+sponge.eat();
 ```
 
 > NOTE: `observe` does not change the function passed into it.  If instances of the
 > function passed to `observe` are created, they will not be observable.
 >
 > ```js
-> class Animal {
-> 	constructor(name) {
-> 		this.name = name;
-> 		this.calories = 100;
-> 	}
-> 	eat() {
-> 		this.calories++;
-> 	}
-> }
-> var ObservableAnimal = observe(Animal);
->
-> var sponge1 = new Animal("Bob")           // NOT OBSERVABLE
-> var sponge2 = new ObservableAnimal("Bob") // OBSERVABLE
-> ```
+class Animal {
+	constructor( name ) {
+		this.name = name;
+		this.calories = 100;
+	}
+	eat() {
+		this.calories++;
+	}
+}
+const ObservableAnimal = observe( Animal );
+
+const sponge1 = new Animal( "Bob" );           // NOT OBSERVABLE
+const sponge2 = new ObservableAnimal( "Bob" ); // OBSERVABLE
+```
 
 
 ### Returning an `observe(instance)` wrapped instance.
@@ -297,15 +297,17 @@ as follows:
 import observe from "can-observe";
 
 class WidgetViewModel {
-	constructor(obj) {
+	constructor( obj ) {
+
 		// view model instances receive properties as an object on instantiation
-		Object.assign(this, obj);
-		return observe(this);
+		Object.assign( this, obj );
+		return observe( this );
 	}
 	fixedMessage() {
-		return "Hello"
+		return "Hello";
 	}
-	// ... more static and prototype functions.
+
+	// ...more static and prototype functions.
 }
 ```
 
@@ -316,7 +318,7 @@ can-observe uses the Proxy feature of JavaScript to observe arbitrary properties
 A [polyfill is available](https://github.com/GoogleChrome/proxy-polyfill) that brings Proxies back to IE9, with the caveat that only existing properties on the target object can be observed. This means this code:
 
 ```js
-var person = observe({first: '', last: ''});
+const person = observe( { first: "", last: "" } );
 ```
 
 The *first* and *last* properties are observable in older browsers, but any other property added would not be. To ensure maximum compatibility make sure to give all properties a default value.
@@ -327,22 +329,22 @@ The *first* and *last* properties are observable in older browsers, but any othe
 `can-observe` can be combined with any other CanJS observable type, like [can-define] or [can-compute]. In this example we create a compute that changes when a can-observe proxy changes. Note that with computes we use [can-reflect/observe.onValue canReflect.onValue] to set up the event listener and handler.
 
 ```js
-var compute = require("can-compute");
-var observe = require("can-observe");
-var canReflect = require("can-reflect");
+import compute from "can-compute";
+import observe from "can-observe";
+import canReflect from "can-reflect";
 
-var person = observe({
-    name: new DefineMap({first: "Justin", last: "Meyer"}),
-    age: 35
-});
+const person = observe( {
+	name: new DefineMap( { first: "Justin", last: "Meyer" } ),
+	age: 35
+} );
 
-var fullName = compute(function(){
+const fullName = compute( function() {
 	return person.name.first + " " + person.name.last;
-});
+} );
 
-fullName.on("change", function(ev, newVal){
-	console.log(newVal); // -> Chasen Le Hara
-});
+fullName.on( "change", function( ev, newVal ) {
+	console.log( newVal ); // -> Chasen Le Hara
+} );
 
 
 person.name.first = "Chasen";

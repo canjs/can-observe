@@ -11,7 +11,7 @@ Create an instance of an observable array.
 ```js
 import observe from "can-observe";
 
-var hobbies = new observe.Array(["JS","Reading"]);
+const hobbies = new observe.Array( [ "JS", "Reading" ] );
 ```
 
 @signature `class extends observe.Array {...}`
@@ -22,11 +22,11 @@ Extend and create your own `Array` type:
 import observe from "can-observe";
 
 class TodoList extends observe.Array {
-    get active() {
-        return this.filter(function(todo) {
-            return todo.complete === false;
-        });
-    }
+	get active() {
+		return this.filter( function( todo ) {
+			return todo.complete === false;
+		} );
+	}
 }
 ```
 
@@ -52,9 +52,9 @@ class MyArray extends observe.Array {
 
 }
 
-var arrayInstance = new MyArray([]);
+const arrayInstance = new MyArray( [] );
 
-canReflect.onPatches( arrayInstance, function(patches){ ... });
+canReflect.onPatches( arrayInstance, function( patches ) { /* ... */ } );
 ```
 
 
@@ -73,7 +73,7 @@ class MyArray extends observe.Array {
 
 }
 
-canReflect.onInstancePatches(MyArray, function(instance, patches){ ... });
+canReflect.onInstancePatches( MyArray, function( instance, patches ) { /* ... */ } );
 ```
 
 ## Use Cases
@@ -90,44 +90,44 @@ with [can-connect]. The following creates a simple `TodoList` type:
 import observe from "can-observe";
 import baseMap from "can-connect/can/base-map/base-map";
 
-class Todo extends observe.Object { ... }
+class Todo extends observe.Object { /* ... */ }
 
 class TodoList extends observe.Array {
-    get active() {
-        return this.filter(function(todo) {
-            return todo.complete === false;
-        });
-    }
-    get complete() {
-        return this.filter(function(todo) {
-            return todo.complete === true;
-        });
-    }
-    get allComplete() {
-        return this.length === this.complete.length;
-    }
-    get saving() {
-        return this.filter(function(todo) {
-            return todo.isSaving();
-        });
-    }
-    updateCompleteTo(value) {
-        this.forEach(function(todo) {
-            todo.complete = value;
-            todo.save();
-        });
-    }
-    destroyComplete() {
-        this.complete.forEach(function(todo) {
-            todo.destroy();
-        });
-    }
+	get active() {
+		return this.filter( function( todo ) {
+			return todo.complete === false;
+		} );
+	}
+	get complete() {
+		return this.filter( function( todo ) {
+			return todo.complete === true;
+		} );
+	}
+	get allComplete() {
+		return this.length === this.complete.length;
+	}
+	get saving() {
+		return this.filter( function( todo ) {
+			return todo.isSaving();
+		} );
+	}
+	updateCompleteTo( value ) {
+		this.forEach( function( todo ) {
+			todo.complete = value;
+			todo.save();
+		} );
+	}
+	destroyComplete() {
+		this.complete.forEach( function( todo ) {
+			todo.destroy();
+		} );
+	}
 }
 
-baseMap({
-    url: "/api/todos",
-    Map: Todo
-})
+baseMap( {
+	url: "/api/todos",
+	Map: Todo
+} );
 ```
 
 Note that `active`, `complete`, `allComplete`, and `saving` are made into [can-observation]-backed
