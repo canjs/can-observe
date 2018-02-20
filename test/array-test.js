@@ -5,6 +5,7 @@ var canSymbol = require("can-symbol");
 var Observation = require("can-observation");
 
 var metaSymbol = canSymbol.for("can.meta");
+var computedPropertyDefinitionSymbol = canSymbol.for("can.computedPropertyDefinitions");
 
 QUnit.module("can-observe with Array");
 
@@ -24,6 +25,31 @@ QUnit.test("makeArray basics", function() {
 
 	// causes change event above
 	hobbies.pop();
+});
+
+QUnit.test("makeArray basics, with property definitions", function() {
+	var hobbies = makeArray.observable(["d&d", "programming"], makeObserve);
+
+	hobbies[computedPropertyDefinitionSymbol] = Object.create(null);
+	hobbies[computedPropertyDefinitionSymbol].list = function(instance) {
+		return new Observation(function() {
+			return this.join(", ");
+		}, instance);
+	};
+
+	var handler = function(newVal) {
+		QUnit.equal(newVal, "d&d, arduino");
+	};
+
+	QUnit.equal(hobbies.list, "d&d, programming");
+
+	canReflect.onKeyValue(hobbies, "list", handler);
+	hobbies[1] = "arduino";
+	QUnit.equal(hobbies.list, "d&d, arduino");
+
+	canReflect.offKeyValue(hobbies, "list", handler);
+	hobbies[0] = "cooking";
+	QUnit.equal(hobbies.list, "cooking, arduino");
 });
 
 QUnit.test("basics with array", function() {

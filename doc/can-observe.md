@@ -2,9 +2,10 @@
 @parent can-observables
 @collection can-ecosystem
 @group can-observe/properties 0 Properties
-@group can-observe/object 1 Object Behaviors
-@group can-observe/array 2 Array Behaviors
-@group can-observe/function 3 Function Behaviors
+@group can-observe/decorators 1 Decorators
+@group can-observe/object 2 Object Behaviors
+@group can-observe/array 3 Array Behaviors
+@group can-observe/function 4 Function Behaviors
 
 @description Create observable objects, arrays, and functions that work like plain
 JavaScript objects, arrays, and functions.
@@ -311,6 +312,15 @@ class WidgetViewModel {
 }
 ```
 
+## Extending can-observe with rich property behaviors
+
+Like [can-define.types.get#get_lastSetValue_resolve_value__ async getters], [can-define.types type coercion], [can-define-stream streams], etc from [can-define], can-observe supports a number of rich behaviors. However, rather than baking these behaviors into the library directly, can-observe provides mechanism to extend proxy-wrapped objects with custom rich behaviors.
+
+To that end, can-observe recognizes a `can.computedPropertyDefinitions` property: an object whose values are functions which return a single-value observable; getting or setting a key on the proxy-wrapped object that matches a key in the `can.computedPropertyDefinitions` object will use those observations. The first time one of these properties is accessed, the function is run, and the observation is cached, to be used for all future use on _that instance_.
+
+See [can-observe/defineProperty] for details about defining your own behaviors.
+
+
 ## Browser support
 
 can-observe uses the Proxy feature of JavaScript to observe arbitrary properties. Proxies are available in [all modern browsers](http://caniuse.com/#feat=proxy).
@@ -377,12 +387,8 @@ person.name.last = "Le Hara";
 `can-observe.Object` and `can-observe.Array` mostly use their underlying _base function_ to setup their
 behavior. The primary exception is that they support "computed" getters.  This behavior works by:
 
-1. Creating a `memoize` function that overwrites a defined `getter` to use an observation: [-memoize-getter.js](http://canjs.github.io/can-observe/docs/-memoize-getter.js.html).
-2. When instances are created, we make sure a `can.computedDefinitions` property is added to the prototype.
-   `can.computedDefinitions` has functions provide access to the underlying observation.  When
-   a binding happens on an instance (`instance.on()`), the underlying observation is bound to and its
-   events forwarded to the instance: [-getter-helpers.js](http://canjs.github.io/can-observe/docs/-getter-helpers.js.html).
-
+1. We make sure a `can.computedPropertyDefinitions` symbol is added to the prototype (see above for details on `can.computedPropertyDefinitions`).
+2. We create definitions, which return observations derived from the getter function: [-computed-helpers.js](http://canjs.github.io/can-observe/docs/-computed-helpers.html)
 
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/otTT5_zat0I" frameborder="0" gesture="media" allow="encrypted-media" allowfullscreen></iframe>

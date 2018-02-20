@@ -9,7 +9,7 @@
     "postversion": "git push --tags && git checkout master && git branch -D release && git push",
     "testee": "testee test.html --browsers firefox",
     "test": "npm run detect-cycle && npm run jshint && npm run testee",
-    "jshint": "jshint src/*.js *.js test/*.js --config",
+    "jshint": "jshint *.js src/*.js object/*.js array/*.js test/*.js --exclude=decorators-test.js --config",
     "release:patch": "npm version patch && npm publish",
     "release:minor": "npm version minor && npm publish",
     "release:major": "npm version major && npm publish",
@@ -38,6 +38,7 @@
     "can-observation-recorder": "<2.0.0",
     "can-queues": "<2.0.0",
     "can-reflect": "^1.4.2",
+    "can-simple-observable": "^2.0.0-pre.7",
     "can-symbol": "^1.2.0"
   },
   "devDependencies": {

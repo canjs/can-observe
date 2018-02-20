@@ -123,8 +123,8 @@ Component.extend( {
 
 ### Special behaviors
 
-`observe.Object` lacks many of the extended features of [can-define]. This means you often need
-to add this behavior manually.  
+`observe.Object` lacks many of the extended features of [can-define]. This means you often need to
+add this behavior manually.
 
 When simple `getters` can be used, use [can-component/connectedCallback] to update properties based on other
 values. The following keeps `todosList` updated with changes in `todosPromise`:
@@ -171,7 +171,6 @@ class AppVM extends observe.Object {
 	}
 }
 ```
-
 
 ## Models
 

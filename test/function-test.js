@@ -2,10 +2,12 @@ var QUnit = require("steal-qunit");
 var observe = require("can-observe");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
+var Observation = require("can-observation");
 var makeFunction = require("../src/-make-function");
 var makeObject = require("../src/-make-object");
 
 var observableSymbol = canSymbol.for("can.meta");
+var computedPropertyDefinitionSymbol = canSymbol.for("can.computedPropertyDefinitions");
 var observableStore = require("../src/-observable-store");
 var helpers = require("../src/-helpers");
 
@@ -80,6 +82,71 @@ QUnit.test("makeFunction basics", 3, function() {
 	});
 
 	person.first = "Vyacheslav";
+});
+
+QUnit.test("makeFunction basics, with property definitions", function() {
+	var observe = function(obj) {
+		if (canReflect.isPrimitive(obj)) {
+			return obj;
+		}
+		if (observableStore.proxies.has(obj)) {
+			return obj;
+		}
+		if (helpers.isBuiltInButNotArrayOrPlainObject(obj)) {
+			return obj;
+		}
+		var observable;
+		if (obj && typeof obj === "object") {
+			observable = makeObject.observable(obj, {
+				observe: observe
+			});
+		} else if (typeof obj === "function") {
+			observable = makeFunction.observable(obj, {
+				observe: observe
+			});
+		} else {
+			return obj;
+		}
+		observableStore.proxies.add(observable);
+		observableStore.proxiedObjects.set(obj, observable);
+		return observable;
+	};
+
+	var OriginalPerson = function(first, last) {
+		this.first = first;
+		this.last = last;
+		this.constructor.count++;
+	};
+
+	OriginalPerson.prototype.sayHi = function() {
+		return this.first + " " + this.last;
+	};
+
+	OriginalPerson[computedPropertyDefinitionSymbol] = Object.create(null);
+	OriginalPerson[computedPropertyDefinitionSymbol].countText = function(instance) {
+		return new Observation(function() {
+			return this.count === 1 ? "1 person" : (this.count + " people");
+		}, instance);
+	};
+
+	var Person = observe(OriginalPerson);
+	QUnit.equal(Person.prototype.constructor, Person, "Person is its own constructor");
+	Person.count = 0;
+
+	QUnit.equal(Person.countText, "0 people", "count is 0");
+
+	canReflect.onKeyValue(Person, "countText", function(newVal) {
+		QUnit.equal(newVal, "1 person", "static count");
+	});
+
+	var person = new Person("Christopher", "Baker");
+	QUnit.equal(Person.countText, "1 person", "count is 1");
+
+	canReflect.onKeyValue(person, "first", function(newVal) {
+		QUnit.equal(newVal, "Yetti", "first changed");
+	});
+
+	person.first = "Yetti";
 });
 
 

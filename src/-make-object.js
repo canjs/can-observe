@@ -8,7 +8,7 @@ var mapBindings = require("can-event-queue/map/map");
 var symbols = require("./-symbols");
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
-var addGetterKeyDependencies = require("./-add-get-key-dependencies");
+var computedHelpers = require("./-computed-helpers");
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var isSymbolLike = canReflect.isSymbolLike;
@@ -20,11 +20,9 @@ Object.getOwnPropertySymbols(mapBindings).forEach(function(symbol){
 	proxyKeys[symbol] = mapBindings[symbol];
 });
 
-// implement getKeyDependencies for computed getters
-addGetterKeyDependencies(proxyKeys);
+computedHelpers.addKeyDependencies(proxyKeys);
 
 var makeObject = {
-
 	// Returns a proxied version of the object.
 	// - `object` - An object to proxy.
 	// - `options` - Configurable behaviors.
@@ -40,6 +38,7 @@ var makeObject = {
 		var meta = {
 			target: object,
 			proxyKeys: options.proxyKeys !== undefined ? options.proxyKeys : Object.create(makeObject.proxyKeys()),
+			computedKeys: Object.create(null),
 			options: options,
 			// `preventSideEffects` is a counter used to "turn off" the proxy.  This is incremented when some
 			// function (like `Array.splice`) wants to handle event dispatching and/or calling
@@ -79,6 +78,12 @@ var makeObject = {
 			return target[key];
 		}
 
+		// If it has a defined property definiition
+		var computedValue = computedHelpers.get(receiver, key);
+		if(computedValue !== undefined ) {
+			return computedValue.value;
+		}
+
 		// Gets information about the key on `target` or on `target`'s prototype.
 		var keyInfo = makeObject.getKeyInfo(target, key, receiver, this);
 		var value = keyInfo.targetValue;
@@ -107,6 +112,12 @@ var makeObject = {
 		// set the key on the reciever.
 		if (receiver !== this.proxy) {
 			return makeObject.setKey(receiver, key, value, this);
+		}
+
+		// If it has a defined property definiition
+		var computedValue = computedHelpers.set(receiver, key, value);
+		if(computedValue === true ) {
+			return true;
 		}
 
 		// Gets the observable value to set.

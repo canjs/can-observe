@@ -8,6 +8,7 @@ var Observation = require("can-observation");
 var ObservationRecorder = require("can-observation-recorder");
 
 var observableSymbol = canSymbol.for("can.meta");
+var computedPropertyDefinitionSymbol = canSymbol.for("can.computedPropertyDefinitions");
 
 QUnit.module("can-observe Objects observability");
 
@@ -22,6 +23,39 @@ QUnit.test("basics with object", function() {
 	});
 
 	person.first = "Vyacheslav";
+});
+
+QUnit.test("basics with object and property definitions", function() {
+	QUnit.expect(6);
+	var count = 0;
+
+	var person = observe({});
+	person.first = "Christopher";
+	person.last = "Baker";
+
+	person[computedPropertyDefinitionSymbol] = Object.create(null);
+	person[computedPropertyDefinitionSymbol].fullName = function(instance) {
+		return new Observation(function() {
+			count++;
+			return this.first + " " + this.last;
+		}, instance);
+	};
+
+	var handler = function(newVal) {
+		QUnit.equal(newVal, "Yetti Baker", "handler newVal is correct");
+	};
+
+	canReflect.onKeyValue(person, "fullName", handler);
+	QUnit.equal(count, 1, "Observation getter was called (onKeyValue)");
+	person.first = "Yetti";
+	QUnit.equal(count, 2, "Observation getter was called (first changed)");
+
+	canReflect.offKeyValue(person, "fullName", handler);
+	person.first = "Bad Wolf";
+	QUnit.equal(count, 2, "Observation getter was not called again (first changed, but value not bound)");
+
+	QUnit.equal(person.fullName, "Bad Wolf Baker");
+	QUnit.equal(count, 3, "Observation getter was called again (explicit get)");
 });
 
 QUnit.test("basics with object and new Observation", function() {

@@ -7,6 +7,9 @@ var makeObserve = require("./src/-make-observe");
 var ObserveObject = require("./object/object");
 var ObserveArray = require("./array/array");
 
+var computedHelpers = require("./src/-computed-helpers");
+var decorators = require("./decorators/decorators");
+
 makeObserve.object = function(object) {
 	return makeObject.observable(object, makeObserve);
 };
@@ -20,3 +23,11 @@ makeObserve.observe.Object = ObserveObject;
 makeObserve.observe.Array = ObserveArray;
 
 module.exports = makeObserve.observe;
+
+module.exports.defineProperty = function(prototype, prop, makeObservable) {
+	computedHelpers.ensureDefinition(prototype)[prop] = makeObservable;
+};
+
+for (var key in decorators) {
+	module.exports[key] = decorators[key];
+}
