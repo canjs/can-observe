@@ -1,9 +1,10 @@
 var ObserveObject = require("./object");
-var observeHelpers = require("../helpers");
 var QUnit = require("steal-qunit");
 var ObservationRecorder = require("can-observation-recorder");
 var Observation = require("can-observation");
 var canReflect = require("can-reflect");
+
+var defineProperty = require("../can-observe").defineProperty;
 
 QUnit.module("can-observe/object");
 
@@ -102,7 +103,7 @@ QUnit.test("Object.extend basics", function(){
 if(classSupport) {
 	QUnit.test("class Object basics, with property definitions on prototype", function() {
 		function observeDecorator(target, key, descriptor) {
-			observeHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+			defineProperty(target, key, function(instance, property) {
 				return new Observation(descriptor.value || descriptor.get, instance);
 			});
 		}
@@ -174,7 +175,7 @@ if(classSupport) {
 
 	QUnit.test("class Object basics, with property definitions on extended prototype", function() {
 		function observeDecorator(target, key, descriptor) {
-			observeHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+			defineProperty(target, key, function(instance, property) {
 				return new Observation(descriptor.value || descriptor.get, instance);
 			});
 		}
@@ -250,7 +251,7 @@ if(classSupport) {
 
 QUnit.test("Object.extend basics, with property definitions on prototype", function() {
 	function observeDecorator(target, key, descriptor) {
-		observeHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+		defineProperty(target, key, function(instance, property) {
 			return new Observation(descriptor.value || descriptor.get, instance);
 		});
 	}
@@ -322,7 +323,7 @@ QUnit.test("Object.extend basics, with property definitions on prototype", funct
 
 QUnit.test("Object.extend basics, with property definitions on extended prototype", function() {
 	function observeDecorator(target, key, descriptor) {
-		observeHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+		defineProperty(target, key, function(instance, property) {
 			return new Observation(descriptor.value || descriptor.get, instance);
 		});
 	}

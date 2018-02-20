@@ -1,27 +1,19 @@
 var QUnit = require("steal-qunit");
-var ObserveObject = require("./object/object");
-var observeHelpers = require("./helpers");
 var Observation = require("can-observation");
-var canReflect = require("can-reflect");
+var defineProperty = require("./can-observe").defineProperty;
+
+var {
+	testDecoratorGetter,
+	testDecoratorMethod,
+	testDecorator
+} = require("./decorators-test-helpers");
 
 var decorators = require("./decorators");
-var asyncGetter = decorators.asyncGetter;
-var resolver = decorators.resolver;
 
-var classSupport = (function() {
-	try {
-		eval('"use strict"; class A{};');
-		return true;
-	} catch (e) {
-		return false;
-	}
-
-})();
-
-QUnit.module("can-observe/object");
+QUnit.module("can-observe/decorators");
 
 testDecorator("simple getter", function simpleDecorator(target, key, descriptor) {
-	observeHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+	defineProperty(target, key, function(instance, property) {
 		return new Observation(descriptor.value || descriptor.get, instance);
 	});
 }, "fullName", function () {
@@ -42,59 +34,65 @@ testDecorator("simple getter", function simpleDecorator(target, key, descriptor)
 	QUnit.equal(didRun, true, "on(fullName) was run");
 });
 
-testDecoratorMethod("asyncGetter", asyncGetter, "fullName", function (resolve) {
-	setTimeout(function() {
-		resolve(this.first + " " + this.last);
-	}.bind(this), 0);
+testDecoratorMethod("async", decorators.async, "fullName", function (resolve) {
+	if (!resolve) {
+		return "default";
+	}
+
+	var value = this.first + " " + this.last;
+	setTimeout(function() { resolve(value); }, 100);
 }, function(Person) {
 	var person = new Person({ first: "Christopher", last: "Baker" });
 
-	QUnit.equal(person.fullName, undefined, "has correct initial value");
+	QUnit.equal(person.fullName, "default", "has correct initial value");
 
-	var didRun = false;
-	person.on("fullName", function(){
-		if (didRun) {
-			QUnit.equal(person.fullName, "Yetti Baker", "has correct value after change");
-			QUnit.start();
-			return;
+	var runCount = 0;
+	person.on("fullName", function() {
+		if (runCount === 0) {
+			QUnit.equal(person.fullName, "Christopher Baker", "has correct value after timeout");
+			person.first = "Yetti";
 		}
 
-		didRun = true;
-		QUnit.equal(person.fullName, "Christopher Baker", "has correct value after timeout");
-		person.first = "Yetti";
+		if (runCount === 1) {
+			QUnit.equal(person.fullName, "Yetti Baker", "has correct value after change");
+			QUnit.start();
+		}
+
+		runCount++;
 	});
 
 	QUnit.stop();
 });
 
-testDecoratorGetter("asyncGetter", asyncGetter, "fullName", function () {
+testDecoratorGetter("async", decorators.async, "fullName", function () {
 	return new Promise(function(resolve) {
-		setTimeout(function() {
-			resolve(this.first + " " + this.last);
-		}.bind(this), 0);
+		var value = this.first + " " + this.last;
+		setTimeout(function() { resolve(value); }, 100);
 	}.bind(this));
 }, function(Person) {
 	var person = new Person({ first: "Christopher", last: "Baker" });
 
 	QUnit.equal(person.fullName, undefined, "has correct initial value");
 
-	var didRun = false;
-	person.on("fullName", function(){
-		if (didRun) {
-			QUnit.equal(person.fullName, "Yetti Baker", "has correct value after change");
-			QUnit.start();
-			return;
+	var runCount = 0;
+	person.on("fullName", function() {
+		if (runCount === 0) {
+			QUnit.equal(person.fullName, "Christopher Baker", "has correct value after timeout");
+			person.first = "Yetti";
 		}
 
-		didRun = true;
-		QUnit.equal(person.fullName, "Christopher Baker", "has correct value after timeout");
-		person.first = "Yetti";
+		if (runCount === 1) {
+			QUnit.equal(person.fullName, "Yetti Baker", "has correct value after change");
+			QUnit.start();
+		}
+
+		runCount++;
 	});
 
 	QUnit.stop();
 });
 
-testDecoratorMethod("resolver", resolver, "count", function (value) {
+testDecoratorMethod("resolver", decorators.resolver, "count", function (value) {
 	var count = 0;
 	value.resolve(count);
 
@@ -121,81 +119,6 @@ testDecoratorMethod("resolver", resolver, "count", function (value) {
 
 	QUnit.equal(didRun, true, "on(count) was run");
 });
-
-
-
-function testDecoratorGetter(decoratorName, decorator, propName, getter, tester) {
-	if(classSupport) {
-		QUnit.test(decoratorName + " decorator with class Object prototype", function() {
-			var ran = false;
-
-			class Type extends ObserveObject {
-				get [propName]() {
-					ran = true;
-					return getter.apply(this, arguments);
-				}
-			}
-			decorator(Type.prototype, propName, Object.getOwnPropertyDescriptor(Type.prototype, propName));
-
-			tester(Type);
-			QUnit.equal(ran, true, "getter ran");
-		});
-	}
-
-	QUnit.test(decoratorName + " decorator with Object.extend prototype", function() {
-		var ran = false;
-
-		var Type = ObserveObject.extend("Type", {}, {
-			get [propName]() {
-				ran = true;
-				return getter.apply(this, arguments);
-			}
-		});
-		decorator(Type.prototype, propName, Object.getOwnPropertyDescriptor(Type.prototype, propName));
-
-		tester(Type);
-		QUnit.equal(ran, true, "getter ran");
-	});
-}
-
-function testDecoratorMethod(decoratorName, decorator, propName, method, tester) {
-	if(classSupport) {
-		QUnit.test(decoratorName + " decorator with class Object prototype", function() {
-			var ran = false;
-
-			class Type extends ObserveObject {
-				[propName](resolve) {
-					ran = true;
-					return method.apply(this, arguments);
-				}
-			}
-			decorator(Type.prototype, propName, Object.getOwnPropertyDescriptor(Type.prototype, propName));
-
-			tester(Type);
-			QUnit.equal(ran, true, "method ran");
-		});
-	}
-
-	QUnit.test(decoratorName + " decorator with Object.extend prototype", function() {
-		var ran = false;
-
-		var Type = ObserveObject.extend("Type", {}, {
-			[propName](resolve) {
-				ran = true;
-				return method.apply(this, arguments);
-			},
-		});
-		decorator(Type.prototype, propName, Object.getOwnPropertyDescriptor(Type.prototype, propName));
-
-		tester(Type);
-		QUnit.equal(ran, true, "method ran");
-	});
-}
-
-function testDecorator(decoratorName, decorator, propName, method, tester) {
-	testDecoratorGetter.apply(null, arguments);
-	testDecoratorMethod.apply(null, arguments);
-}
 
 module.exports = {
 	testDecoratorGetter: testDecoratorGetter,

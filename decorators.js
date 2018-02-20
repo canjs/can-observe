@@ -1,34 +1,49 @@
+var canReflect = require("can-reflect");
 var AsyncObservable = require("can-simple-observable/async/async");
 var ResolverObservable = require("can-simple-observable/resolver/resolver");
-var observeObjectHelpers = require("./helpers");
-var addComputedPropertyDefinition = observeObjectHelpers.addComputedPropertyDefinition;
 
-function asyncGetter(config) {
+var computedHelpers = require("./src/-computed-helpers");
+function defineProperty(prototype, prop, makeObservable) {
+	computedHelpers.ensureDefinition(prototype)[prop] = makeObservable;
+}
+
+function asyncBase(config) {
 	return function(target, key, descriptor) {
 		if (descriptor.get !== undefined) {
 			var getter = descriptor.get;
 			//!steal-remove-start
 			if (getter.length !== 0) {
-				throw new Error("asyncGetter decorator: getters should take no arguments.");
+				throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": getters should take no arguments.");
 			}
 			//!steal-remove-end
 
-			return addComputedPropertyDefinition(target, key, function(instance, property) {
-				var observable = new AsyncObservable(function() {
-					var promise = getter.call(this);
-					if (promise !== undefined) {
-						if (promise !== null && typeof promise.then === "function") {
-							promise.then(observable.resolve);
-						}
-						//!steal-remove-start
-						else {
-							throw new Error("asyncGetter: getters must return undefined or a promise.");
-						}
-						//!steal-remove-end
+			return defineProperty(target, key, function(instance, property) {
+				function fn(lastSet, resolve) {
+					if (!resolve) {
+						return config.default;
 					}
-				}, instance, config.default);
 
-				return observable;
+					var promise = getter.call(this, true);
+					if (canReflect.isPromise(promise)) {
+						promise.then(resolve);
+						return config.default;
+					}
+					//!steal-remove-start
+					else if (promise !== undefined) {
+						throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": getters must return undefined or a promise.");
+					}
+					//!steal-remove-end
+				}
+
+				//!steal-remove-start
+				canReflect.assignSymbols(fn, {
+					"can.getName": function() {
+						return canReflect.getName(getter); + " getter";
+					},
+				});
+				//!steal-remove-end
+
+				return new AsyncObservable(fn, instance, config.default);
 			});
 		}
 
@@ -36,46 +51,43 @@ function asyncGetter(config) {
 			var method = descriptor.value;
 			//!steal-remove-start
 			if (method.length !== 1) {
-				throw new Error("asyncGetter decorator: methods should take 1 argument (resolve).");
+				throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (resolve).");
 			}
 			//!steal-remove-end
 
-			return addComputedPropertyDefinition(target, key, function(instance, property) {
-				var observable = new AsyncObservable(function() {
-					method.call(this, observable.resolve);
+			return defineProperty(target, key, function(instance, property) {
+				return new AsyncObservable(function(lastSet, resolve) {
+					return method.call(this, resolve);
 				}, instance, config.default);
-
-				return observable;
 			});
 		}
 
 		//!steal-remove-start
-		throw new Error("asyncGetter decorator: Unrecognized descriptor.");
+		throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
 		//!steal-remove-end
 	};
 }
 
-function resolver(config) {
+function resolverBase(config) {
 	return function(target, key, descriptor) {
 		if (descriptor.value !== undefined) {
 			var method = descriptor.value;
 			//!steal-remove-start
 			if (method.length !== 1) {
-				throw new Error("resolver decorator: methods should take 1 argument (value).");
+				throw new Error("resolver decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (value).");
 			}
 			//!steal-remove-end
 
-			return addComputedPropertyDefinition(target, key, function(instance, property) {
+			return defineProperty(target, key, function(instance, property) {
 				return new ResolverObservable(method, instance);
 			});
 		}
 
 		//!steal-remove-start
-		throw new Error("resolver decorator: Unrecognized descriptor.");
+		throw new Error("resolver decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
 		//!steal-remove-end
 	};
 }
-
 
 function optionalConfig(decorator) {
 	function wrapper(config) {
@@ -94,6 +106,6 @@ function optionalConfig(decorator) {
 }
 
 module.exports = {
-	asyncGetter: optionalConfig(asyncGetter),
-	resolver: optionalConfig(resolver),
+	async: optionalConfig(asyncBase),
+	resolver: optionalConfig(resolverBase),
 };

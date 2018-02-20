@@ -123,8 +123,8 @@ Component.extend( {
 
 ### Special behaviors
 
-`observe.Object` lacks many of the extended features of [can-define]. This means you often need
-to add this behavior manually.
+`observe.Object` lacks many of the extended features of [can-define]. This means you often need to
+add this behavior manually.
 
 When simple `getters` can be used, use [can-component/connectedCallback] to update properties based on other
 values. The following keeps `todosList` updated with changes in `todosPromise`:
@@ -172,54 +172,28 @@ class AppVM extends observe.Object {
 }
 ```
 
-## Observable Decorators
+## Observable decorators
 
 can-observe ships with two decorators meant to be used when extending can-observe.Object: asyncGetter and resolver.
 
-### @asyncGetter
+### @async
 
-The `@asyncGetter` decorator sets up the value to be connected to the result of an asynchronous call, such as an API request or a promise.
+The `@async` decorator sets up the value to be connected to the result of an asynchronous call, such as an API request or a promise.
 
 When attached to a method, it passes a `resolve` argument, which you call to set the value. When attached to a getter, it expects the return value to be a promise (specifically, a thenable) or undefined (for no changes);
 
 ```javascript
-var generators = require("can-observe/object/generators");
-var asyncGetter = generators.asyncGetter;
+var observe = require("can-observe");
 
-class Person extends ObserveObject {
-	@asyncGetter
+class Thing extends observe.Object {
+	@@observe.async
 	fullName(resolve) {
 		setTimeout(function() {
 			resolve(this.first + " " + this.last);
 		}.bind(this), 0);
 	}
 
-	@asyncGetter
-	get formalName() {
-		return new Promise((resolve) => {
-			setTimeout(function() {
-				resolve(this.last + ", " + this.first);
-			}.bind(this), 0);
-		});
-	}
-}
-```
-
-This decorator also supports an optional config argument with a `default` value, which will be the value while it is waiting for the resolution.
-
-```javascript
-var generators = require("can-observe/object/generators");
-var asyncGetter = generators.asyncGetter;
-
-class Person extends ObserveObject {
-	@asyncGetter({ defaut: "loading" })
-	fullName(resolve) {
-		setTimeout(() => {
-			resolve(this.first + " " + this.last);
-		}.bind(this), 0);
-	}
-
-	@asyncGetter({ defaut: "loading" })
+	@@observe.async
 	get formalName() {
 		return new Promise((resolve) => {
 			setTimeout(function() {
@@ -243,11 +217,10 @@ When attached to a method, it passes an argument with several properties:
 This example will return a value that counts how many times the `value` property was changed. The resolved value would be accessed as `thing.count` (as a getter).
 
 ```javascript
-var generators = require("can-observe/object/generators");
-var resolver = generators.resolver;
+var observe = require("can-observe");
 
-class Thing extends ObserveObject {
-	@resolver
+class Thing extends observe.Object {
+	@@observe.resolver
 	count({ resolve, listenTo }) {
 		var count = 0;
 		resolve(count);
@@ -259,7 +232,7 @@ class Thing extends ObserveObject {
 }
 ```
 
-## Extending can-observe.Object with Rich Property Behaviors
+## Extending can-observe.Object with rich property behaviors
 
 can-observe.Object recognizes a `can.computedPropertyDefinitions` property. Details of this can be found at [can-observe#Extendingcan-observewithRichPropertyBehaviors].
 

@@ -311,47 +311,48 @@ class WidgetViewModel {
 }
 ```
 
-## Extending can-observe with Rich Property Behaviors
+## Extending can-observe with rich property behaviors
 
-Like [can-define], we wanted can-observe to support a number of rich behaviors: async getters, type coercion, streams, etc. Further, rather than baking these behaviors into the library directly, we wanted to build a mechanism to extend can-observe with custom rich behaviors.
+Like async getters, type coercion, streams, etc from [can-define], can-observe supports a number of rich behaviors. However, rather than baking these behaviors into the library directly, can-observe provides mechanism to extend proxy-wrapped objects with custom rich behaviors.
 
-To that end, can-observe recognizes a `can.computedPropertyDefinitions` property; getting or setting a key on the proxy-wrapped object that matches a key in the `can.computedPropertyDefinitions` object will use this functionality. Specifically, the values in this object are functions which return an observation (typically with [can-observation]). The first time one of these properties is accessed, the function is run, and the observation is cached, to be used for all future use on _that instance_.
+To that end, can-observe recognizes a `can.computedPropertyDefinitions` property: an object who's values are functions which return a single-value observable; getting or setting a key on the proxy-wrapped object that matches a key in the `can.computedPropertyDefinitions` object will use those observations. The first time one of these properties is accessed, the function is run, and the observation is cached, to be used for all future use on _that instance_.
 
-### Defining Your Own
+### Defining your own rich property behaviors
 
-We have tried to make it as easy as possible to define your own extensions. To that end, there is a `addComputedPropertyDefinition` helper; it accepts the target object, the property name, and the observation generator function.
+Defining your own behaviors should be as easy as possible: There is an `defineProperty` helper which accepts the target object, the property name, and a function that returns a single-value observable (ie: it implements [can-symbol/symbols/getValue], [can-symbol/symbols/setValue], [can-symbol/symbols/onValue], and [can-symbol/symbols/offValue]). For more specifics on how one might create single-value observables, see [can-simple-observable].
 
-> _Note_: this `target` can be an instance (such as the output of `observe({})`) *or* a class (such as `class extends ObserveObject`). If target is a class, it will put this method on the prototype, so all instances get this new behavior.
+> _Note_: `target` can be an instance (such as the output of `observe({})`) *or* a class (such as `class extends ObserveObject`). If target is a class, it will put this method on the prototype, so all instances get this new behavior.
 
 ```javascript
-var observeHelpers = require("can-observe/helpers");
 var Observation = require("can-observation");
 
-observeHelpers.addComputedPropertyDefinition(target, "name", function(instance, property) {
-	return new Observation(function() {
-		return this.first + " " + this.last;
-	}, instance);
+observe.defineProperty(target, "name", function(instance, property) {
+	return canReflect.assignSymbols({}, {
+		"can.getValue": function() { /* ... */ },
+		"can.setValue": function(value) { /* ... */ },
+		"can.onValue": function(handler) { /* ... */ },
+		"can.offValue": function(handler) { /* ... */ },
+	});
 });
 ```
 
-### Using Decorators
+### Using decorators to define your own rich property behaviors
 
-One of the features provided by the latest-and-greatest (and bleeding edge) ECMA is decorators; in this case, they allow for a very concise way to insert computed properties into a class definition. In addition to being able to create your own, we have also provided a few [built-in decorators](https://canjs.github.io/next/doc/can-observe.Object.html#ObservableDecorators).
+One of the features provided by the latest-and-greatest (and bleeding edge) ECMA is [decorators](https://github.com/tc39/proposal-decorators); in this case, they allow for a very concise way to insert computed properties into a class definition. In addition to being able to create your own, we have also provided a few [built-in decorators can-observe.Object#Observabledecorators].
 
 ```javascript
-var observeHelpers = require("can-observe/helpers");
 var Observation = require("can-observation");
 
 // generally, this function would come from a different file
 function decorate(target, key, descriptor) {
 	var method = descriptor.value;
-	observeHelpers.addComputedPropertyDefinition(target, key, function(instance, property) {
+	observe.defineProperty(target, key, function(instance, property) {
 		return new Observation(method, instance);
 	};
 }
 
 class Person extends ObserveObject {
-	@decorate
+	@@decorate
 	fullName() {
 		return this.first + " " + this.last;
 	}
@@ -433,19 +434,18 @@ behavior. The primary exception is that they support "computed" getters.  This b
 
 <iframe width="560" height="315" src="https://www.youtube.com/embed/otTT5_zat0I" frameborder="0" gesture="media" allow="encrypted-media" allowfullscreen></iframe>
 
-### The `can.computedPropertyDefinitions` Symbol
+### The `can.computedPropertyDefinitions` symbol
 
-Proxy-wrapped objects created by can-observe recognize an internal value, stored under the `can.computedPropertyDefinitions` symbol. When using can-observe class constructors, this object will inherit much like other properties and methods.
+Proxy-wrapped objects created by can-observe recognize an internal value, stored under the `can.computedPropertyDefinitions` symbol. When using can-observe class constructors, it will inherit much like other properties and methods.
 
 The actual value is an object, and its values are functions which return instances of [can-observation]. if you access a key on your object that matches a key in this object, the function will be called with the instance and the name of the property, and its return value will be cached (each instance of your object will only get one instance of the observation), and the observation's value will be the return value of your getter. Future changes to this observation will trigger updates as if you had changed the value directly.
 
-If you wish to expand this behavior yourself, we have provided a few helpers to assist. Firstly, there is `ensureComputedPropertyDefinitions`. This helper makes sure that your proxy-wrapped object or prototype has the correct initial value for the `can.computedPropertyDefinitions` symbol, with inheritance, etc. You should rarely need this helper however as it is called automatically by the `addComputedPropertyDefinition` helper. This helper should be called with your target object (either a proxy-wrapped object or the prototype of proxy-wrapped class), the key where the new functionality will be added, and the function which returns an observation.
+If you wish to expand this behavior yourself, we have provided a few helpers to assist. Firstly, there is `ensureComputedPropertyDefinitions`. This helper makes sure that your proxy-wrapped object or prototype has the correct initial value for the `can.computedPropertyDefinitions` symbol, with inheritance, etc. You should rarely need this helper however as it is called automatically by the `defineProperty` helper. This helper should be called with your target object (either a proxy-wrapped object or the prototype of proxy-wrapped class), the key where the new functionality will be added, and the function which returns an observation.
 
 ```javascript
-var observeHelpers = require("can-observe/helpers");
 var Observation = require("can-observation");
 
-observeHelpers.addComputedPropertyDefinition(target, "name", function(instance, property) {
+observe.defineProperty(target, "name", function(instance, property) {
 	return new Observation(function() {
 		return this.first + " " + this.last;
 	}, instance);
