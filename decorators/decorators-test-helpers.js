@@ -1,4 +1,4 @@
-var ObserveObject = require("./object/object");
+var ObserveObject = require("../object/object");
 
 var classSupport = (function() {
 	try {

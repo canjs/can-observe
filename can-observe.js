@@ -8,7 +8,7 @@ var ObserveObject = require("./object/object");
 var ObserveArray = require("./array/array");
 
 var computedHelpers = require("./src/-computed-helpers");
-var decorators = require("./decorators");
+var decorators = require("./decorators/decorators");
 
 makeObserve.object = function(object) {
 	return makeObject.observable(object, makeObserve);

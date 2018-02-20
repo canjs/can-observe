@@ -2,7 +2,7 @@ var canReflect = require("can-reflect");
 var AsyncObservable = require("can-simple-observable/async/async");
 var ResolverObservable = require("can-simple-observable/resolver/resolver");
 
-var computedHelpers = require("./src/-computed-helpers");
+var computedHelpers = require("../src/-computed-helpers");
 function defineProperty(prototype, prop, makeObservable) {
 	computedHelpers.ensureDefinition(prototype)[prop] = makeObservable;
 }

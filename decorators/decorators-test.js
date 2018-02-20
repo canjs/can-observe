@@ -1,6 +1,6 @@
 var QUnit = require("steal-qunit");
 var Observation = require("can-observation");
-var defineProperty = require("./can-observe").defineProperty;
+var defineProperty = require("../can-observe").defineProperty;
 
 var {
 	testDecoratorGetter,
@@ -119,9 +119,3 @@ testDecoratorMethod("resolver", decorators.resolver, "count", function (value) {
 
 	QUnit.equal(didRun, true, "on(count) was run");
 });
-
-module.exports = {
-	testDecoratorGetter: testDecoratorGetter,
-	testDecoratorMethod: testDecoratorMethod,
-	testDecorator: testDecorator,
-};
