@@ -7,6 +7,7 @@ var makeObject = require("../src/-make-object");
 var observableStore = require("../src/-observable-store");
 var definitionsSymbol = canSymbol.for("can.typeDefinitions");
 var getterHelpers = require("../src/-getter-helpers");
+var defineLazyValue = require("can-define-lazy-value");
 
 var computedDefinitionsSymbol = canSymbol.for("can.computedDefinitions");
 
@@ -19,7 +20,9 @@ getterHelpers.addMemoizedGetterBindings(proxyKeys);
 var ObserveObject = function(props) {
     var prototype = Object.getPrototypeOf(this);
 
-    // If the prototype hasn't been setup to build observations on getters, do that now.
+    // We need to touch the computed property now ... to make sure it's properly setup.
+    var computed = prototype[canSymbol.for("can.computed")];
+
     if(prototype[computedDefinitionsSymbol] === undefined) {
         prototype[computedDefinitionsSymbol] = getterHelpers.setupComputedProperties(prototype);
     }
@@ -52,6 +55,24 @@ var ObserveObject = function(props) {
     observableStore.proxies.add(observable);
     return observable;
 };
+
+// this[can.computed] //-> compiled "compute" compilers
+// this[can.computed].fullName
+defineLazyValue(ObserveObject.prototype,canSymbol.for("can.computed"), function(){
+    var computed = {};
+    Object.getOwnPropertyNames(this).forEach(function(prop){
+        var descriptor = Object.getOwnPropertyDescriptor(this,prop);
+
+        if(descriptor.get !== undefined) {
+            defineLazyValue(computed,prop, function(){
+                debugger;
+                return; //computeObj(this, prop, new Observe())
+            })
+        }
+
+    });
+    return computed;
+});
 
 // Adds event mixins
 eventMixin(ObserveObject.prototype);

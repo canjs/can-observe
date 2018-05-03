@@ -32,6 +32,7 @@
   },
   "homepage": "https://github.com/canjs/can-observe",
   "dependencies": {
+    "can-define-lazy-value": "^1.0.1",
     "can-event-queue": "<2.0.0",
     "can-key-tree": "<2.0.0",
     "can-namespace": "^1.0.0",

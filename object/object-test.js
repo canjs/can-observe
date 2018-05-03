@@ -16,6 +16,33 @@ var classSupport = (function() {
 })();
 
 if(classSupport) {
+
+	QUnit.test("decorator basics", function(){
+		class Todo extends ObserveObject {
+			constructor(props){
+                super(props);
+                this.complete = false;
+            }
+		}
+		function observationDecorator(target, key, descriptor){
+
+			{
+				get: function(){
+					// lazily create observation and read it
+				},
+				set: function(){
+					// lazily create observation and set it
+				}
+			}
+
+			return {
+				value: function() {
+					return new Observation(descriptor.get, this);
+				}
+			}
+		}
+	})
+
     QUnit.test("class Object basics", function(){
         class Todo extends ObserveObject {
             constructor(props){
@@ -27,6 +54,9 @@ if(classSupport) {
             }
         }
         var todo = new Todo({name: "Justin"});
+
+		debugger;
+		todo.capsName
 
         QUnit.equal(todo.complete, false, "default complete");
 

@@ -9,6 +9,8 @@ var symbols = require("./-symbols");
 var observableStore = require("./-observable-store");
 var helpers = require("./-helpers");
 var addGetterKeyDependencies = require("./-add-get-key-dependencies");
+var computeHelpers = require("./-compute-helpers");
+var canSymbol = require("can-symbol");
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var isSymbolLike = canReflect.isSymbolLike;
@@ -19,9 +21,18 @@ var proxyKeys = Object.create(null);
 Object.getOwnPropertySymbols(mapBindings).forEach(function(symbol){
 	proxyKeys[symbol] = mapBindings[symbol];
 });
+/*
+canReflect.assignSymbols(proxyKeys,{
+	"can.onKeyValue": function(){
+
+	}
+})*/
 
 // implement getKeyDependencies for computed getters
 addGetterKeyDependencies(proxyKeys);
+
+
+
 
 var makeObject = {
 
@@ -73,6 +84,11 @@ var makeObject = {
 		if (proxyKey !== undefined) {
 			return proxyKey;
 		}
+		debugger;
+		var computed = target[canSymbol.for("can.computed")]
+		if(computed && computed[key]) {
+			return canReflect.getValue( computed[key].compute );
+		}
 
 		// Symbols are not observable and their values are not made observable.
 		if (isSymbolLike(key)) {
@@ -108,7 +124,11 @@ var makeObject = {
 		if (receiver !== this.proxy) {
 			return makeObject.setKey(receiver, key, value, this);
 		}
-
+		/*debugger;
+		var computed = target[canSymbol.for("can.computed")]
+		if(computed && computed[key]) {
+			return canReflect.setValue( computed[key].compute, value );
+		}*/
 		// Gets the observable value to set.
 		value = makeObject.getValueToSet(key, value, this);
 
