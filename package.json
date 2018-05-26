@@ -45,7 +45,7 @@
     "docco": "^0.7.0",
     "can-observation": "^4.0.0",
     "can-reflect-tests": "0.2.0",
-    "can-simple-map": "^4.0.0",
+    "can-simple-map": "4.0.1",
     "can-simple-observable": "^2.0.0",
     "can-util": "^3.2.2",
     "detect-cyclic-packages": "^1.1.0",
