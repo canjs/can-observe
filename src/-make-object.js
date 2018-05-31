@@ -49,13 +49,19 @@ var makeObject = {
 		meta.proxyKeys[symbols.metaSymbol] = meta;
 
 		// We `bind` so the `meta` is immediately available as `this`.
-		meta.proxy = new Proxy(object, {
+		var traps = {
 			get: makeObject.get.bind(meta),
 			set: makeObject.set.bind(meta),
 			ownKeys: makeObject.ownKeys.bind(meta),
 			deleteProperty: makeObject.deleteProperty.bind(meta),
 			meta: meta
-		});
+		};
+
+		if(options.getPrototypeOf) {
+			traps.getPrototypeOf = options.getPrototypeOf;
+		}
+
+		meta.proxy = new Proxy(object, traps);
 		mapBindings.addHandlers(meta.proxy, meta);
 		return meta.proxy;
 	},

@@ -62,6 +62,15 @@ var makeFunction = {
 
 		// Change prototype and its constructor
 		if (meta.target.prototype && meta.target.prototype.constructor === meta.target) {
+			var newPrototype = makeObject.observable(meta.target.prototype, {
+				getPrototypeOf: function(){
+					return meta.target.prototype;
+				}
+			});
+
+			observableStore.proxiedObjects.set(meta.target.prototype, newPrototype);
+			observableStore.proxies.add(newPrototype);
+
 			var prototype = meta.proxy.prototype;
 			prototype.constructor = meta.proxy;
 		}

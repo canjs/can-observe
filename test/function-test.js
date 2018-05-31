@@ -192,19 +192,15 @@ QUnit.test("basics with constructor functions", 3, function() {
 
 QUnit.test("Constructor functions that use instanceof", function() {
 	var Parent = function(){
-		if(!(this instanceof Parent)) {
-			throw new Error("Fails instanceof check");
-		}
+		var isParent = (this instanceof Parent);
+		QUnit.ok(isParent, "this is a Parent");
+
+		var isChild = (this instanceof Child);
+		QUnit.ok(isChild, "this is a Child");
 	};
 
 	var Child = observe(Parent);
-
-	try {
-		new Child();
-		QUnit.ok(true, "Able to construct the child");
-	} catch(e) {
-		QUnit.ok(false, "fails instanceof check");
-	}
+	new Child();
 });
 
 require("can-reflect-tests/observables/map-like/type/type")("simple map-like constructor", function() {
