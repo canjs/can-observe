@@ -71,6 +71,7 @@ var makeFunction = {
 	// `construct` is called when the `new` operator is used.
 	// It needs to return an observable instance.
 	construct: function(target, argumentsList, newTarget) {
+		//debugger;
 
 		var instanceTarget, key;
 		if (this.isClass) {
