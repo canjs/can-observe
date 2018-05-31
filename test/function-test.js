@@ -191,6 +191,7 @@ QUnit.test("basics with constructor functions", 3, function() {
 });
 
 QUnit.test("Constructor functions that use instanceof", function() {
+	var Child;
 	var Parent = function(){
 		var isParent = (this instanceof Parent);
 		QUnit.ok(isParent, "this is a Parent");
@@ -199,7 +200,7 @@ QUnit.test("Constructor functions that use instanceof", function() {
 		QUnit.ok(isChild, "this is a Child");
 	};
 
-	var Child = observe(Parent);
+	Child = observe(Parent);
 	new Child();
 });
 
