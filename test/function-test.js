@@ -200,8 +200,12 @@ QUnit.test("Constructor functions that use instanceof", function() {
 		QUnit.ok(isChild, "this is a Child");
 	};
 
+	Parent.prototype.fn = function() { return "works"; };
+
 	Child = observe(Parent);
-	new Child();
+	var child = new Child();
+
+	QUnit.equal(child.fn(), "works", "Able to walk up the prototype");
 });
 
 require("can-reflect-tests/observables/map-like/type/type")("simple map-like constructor", function() {

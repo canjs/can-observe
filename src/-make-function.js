@@ -3,6 +3,7 @@
 // created by it observable.
 var canReflect = require("can-reflect");
 var makeObject = require("./-make-object");
+var makeObserve = require("./-make-observe");
 var symbols = require("./-symbols");
 var observableStore = require("./-observable-store");
 var mapBindings = require("can-event-queue/map/map");
@@ -65,7 +66,8 @@ var makeFunction = {
 			var newPrototype = makeObject.observable(meta.target.prototype, {
 				getPrototypeOf: function(){
 					return meta.target.prototype;
-				}
+				},
+				observe: makeObserve.observe
 			});
 
 			observableStore.proxiedObjects.set(meta.target.prototype, newPrototype);
@@ -80,8 +82,6 @@ var makeFunction = {
 	// `construct` is called when the `new` operator is used.
 	// It needs to return an observable instance.
 	construct: function(target, argumentsList, newTarget) {
-		//debugger;
-
 		var instanceTarget, key;
 		if (this.isClass) {
 			// If the `target` a class, we can't call the function without new. We
