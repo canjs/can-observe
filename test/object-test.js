@@ -158,6 +158,15 @@ QUnit.skip("can.* symbols should not appear on object", function() {
 
 });
 
+QUnit.test("Symbols can be retrieved with getOwnPropertyDescriptor", function() {
+	var o = observe({});
+
+	Object.getOwnPropertySymbols(o).forEach(function(sym){
+		var desc = Object.getOwnPropertyDescriptor(o, sym);
+		QUnit.ok(!!desc, "There is a descriptor");
+	});
+});
+
 QUnit.test("don't wrap observable value, maps or lists", function(){
 	var simpleObservable = new SimpleObservable(1),
 		simpleMap = new SimpleMap();
