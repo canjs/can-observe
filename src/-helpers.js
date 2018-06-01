@@ -78,7 +78,7 @@ var helpers = {
 
 			return Type;
 		};
-	}/*,
+	},
 	assignNonEnumerable: function(obj, key, value){
 		return Object.defineProperty(obj,key,{
 		    enumerable: false,
@@ -86,7 +86,7 @@ var helpers = {
 		    configurable: true,
 		    value: value
 		});
-	}*/
+	}
 };
 
 
