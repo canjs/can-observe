@@ -17,7 +17,7 @@ var isSymbolLike = canReflect.isSymbolLike;
 // Copy the symbols from the map bindings mixin.
 var proxyKeys = Object.create(null);
 Object.getOwnPropertySymbols(mapBindings).forEach(function(symbol){
-	proxyKeys[symbol] = mapBindings[symbol];
+	helpers.assignNonEnumerable(proxyKeys, symbol, mapBindings[symbol]);
 });
 
 computedHelpers.addKeyDependencies(proxyKeys);
@@ -46,7 +46,7 @@ var makeObject = {
 			preventSideEffects: 0
 		};
 
-		meta.proxyKeys[symbols.metaSymbol] = meta;
+		helpers.assignNonEnumerable(meta.proxyKeys, symbols.metaSymbol, meta);
 
 		// We `bind` so the `meta` is immediately available as `this`.
 		var traps = {
@@ -54,6 +54,7 @@ var makeObject = {
 			set: makeObject.set.bind(meta),
 			ownKeys: makeObject.ownKeys.bind(meta),
 			deleteProperty: makeObject.deleteProperty.bind(meta),
+			getOwnPropertyDescriptor: makeObject.getOwnPropertyDescriptor.bind(meta),
 			meta: meta
 		};
 
@@ -197,6 +198,15 @@ var makeObject = {
 		return Object.getOwnPropertyNames(this.target)
 			.concat(Object.getOwnPropertySymbols(this.target))
 			.concat(Object.getOwnPropertySymbols(this.proxyKeys));
+	},
+	getOwnPropertyDescriptor: function(target, key) {
+		var desc = Object.getOwnPropertyDescriptor(target, key);
+
+		if(!desc && (key in this.proxyKeys)) {
+			return Object.getOwnPropertyDescriptor(this.proxyKeys, key);
+		}
+
+		return desc;
 	},
 	// Returns a `keyInfo` object with useful information about the key
 	// and its value.  This function is _heavily_ optimized.
