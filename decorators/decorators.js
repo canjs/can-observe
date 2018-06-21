@@ -1,3 +1,5 @@
+"use strict";
+
 var canReflect = require("can-reflect");
 var AsyncObservable = require("can-simple-observable/async/async");
 var ResolverObservable = require("can-simple-observable/resolver/resolver");
@@ -99,7 +101,9 @@ function optionalConfig(decorator) {
 	}
 
 	//!steal-remove-start
-	wrapper.name = decorator.name;
+	Object.defineProperty(wrapper, "name", {
+		value: canReflect.getName(decorator.name)
+	});
 	//!steal-remove-end
 
 	return wrapper;
