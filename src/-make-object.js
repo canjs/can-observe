@@ -138,21 +138,24 @@ var makeObject = {
 			var reasonLog = [canReflect.getName(meta.proxy)+" set", key,"to", value];
 			//!steal-remove-end
 
-			// Fire event handlers for this key change.
-			mapBindings.dispatch.call( meta.proxy, {
+			var dispatchArgs = {
 				type: key,
-				//!steal-remove-start
-				/* jshint laxcomma: true */
-				reasonLog: reasonLog,
-				/* jshint laxcomma: false */
-				//!steal-remove-end
 				patches: [{
 					key: key,
 					type: hadOwn ? "set" : "add",
 					value: value
 				}],
 				keyChanged: !hadOwn ? key : undefined
-			},[value, old]);
+			};
+
+			//!steal-remove-start
+			if(process.env.NODE_ENV !== 'production') {
+				dispatchArgs.reasonLog = reasonLog;
+			}				
+			//!steal-remove-end
+
+			// Fire event handlers for this key change.
+			mapBindings.dispatch.call( meta.proxy, dispatchArgs,[value, old]);
 
 		});
 
@@ -169,20 +172,22 @@ var makeObject = {
 			//!steal-remove-start
 			var reasonLog = [canReflect.getName(this.proxy)+" deleted", key];
 			//!steal-remove-end
-
-			mapBindings.dispatch.call( this.proxy, {
+			// wrapping in process.env.NODE_ENV !== 'production' causes out of scope error
+			var dispatchArgs = {
 				type: key,
-				//!steal-remove-start
-				/* jshint laxcomma: true */
-				reasonLog: reasonLog,
-				/* jshint laxcomma: false */
-				//!steal-remove-end
 				patches: [{
 					key: key,
 					type: "delete"
 				}],
 				keyChanged: key
-			},[undefined, old]);
+			};
+			//!steal-remove-start
+			if(process.env.NODE_ENV !== 'production') {
+				dispatchArgs.reasonLog = reasonLog;
+			}
+			//!steal-remove-end
+
+			mapBindings.dispatch.call( this.proxy, dispatchArgs,[undefined, old]);
 
 		}
 		return deleteSuccessful;

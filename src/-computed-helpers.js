@@ -97,8 +97,10 @@ var computedHelpers = module.exports = {
 		}
 
 		//!steal-remove-start
-		if (computedObj.observation[canSymbol.for("can.setValue")] === undefined) {
-			throw new Error("Cannot set \"" + key + "\" on " + canReflect.getName(instance));
+		if(process.env.NODE_ENV !== 'production') {
+			if (computedObj.observation[canSymbol.for("can.setValue")] === undefined) {
+				throw new Error("Cannot set \"" + key + "\" on " + canReflect.getName(instance));
+			}
 		}
 		//!steal-remove-end
 
