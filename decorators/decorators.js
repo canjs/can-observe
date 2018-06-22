@@ -14,8 +14,10 @@ function asyncBase(config) {
 		if (descriptor.get !== undefined) {
 			var getter = descriptor.get;
 			//!steal-remove-start
-			if (getter.length !== 0) {
-				throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": getters should take no arguments.");
+			if(process.env.NODE_ENV !== 'production') {
+				if (getter.length !== 0) {
+					throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": getters should take no arguments.");
+				}
 			}
 			//!steal-remove-end
 
@@ -32,17 +34,21 @@ function asyncBase(config) {
 					}
 					//!steal-remove-start
 					else if (promise !== undefined) {
-						throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": getters must return undefined or a promise.");
+						if(process.env.NODE_ENV !== 'production') {
+							throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": getters must return undefined or a promise.");
+						}
 					}
 					//!steal-remove-end
 				}
 
 				//!steal-remove-start
-				canReflect.assignSymbols(fn, {
-					"can.getName": function() {
-						return canReflect.getName(getter); + " getter";
-					},
-				});
+				if(process.env.NODE_ENV !== 'production') {
+					canReflect.assignSymbols(fn, {
+						"can.getName": function() {
+							return canReflect.getName(getter); + " getter";
+						},
+					});
+				}
 				//!steal-remove-end
 
 				return new AsyncObservable(fn, instance, config.default);
@@ -52,8 +58,10 @@ function asyncBase(config) {
 		if (descriptor.value !== undefined) {
 			var method = descriptor.value;
 			//!steal-remove-start
-			if (method.length !== 1) {
-				throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (resolve).");
+			if(process.env.NODE_ENV !== 'production') {
+				if (method.length !== 1) {
+					throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (resolve).");
+				}
 			}
 			//!steal-remove-end
 
@@ -65,7 +73,9 @@ function asyncBase(config) {
 		}
 
 		//!steal-remove-start
-		throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
+		if(process.env.NODE_ENV !== 'production') {
+			throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
+		}
 		//!steal-remove-end
 	};
 }
@@ -75,8 +85,10 @@ function resolverBase(config) {
 		if (descriptor.value !== undefined) {
 			var method = descriptor.value;
 			//!steal-remove-start
-			if (method.length !== 1) {
-				throw new Error("resolver decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (value).");
+			if(process.env.NODE_ENV !== 'production') {
+				if (method.length !== 1) {
+					throw new Error("resolver decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (value).");
+				}
 			}
 			//!steal-remove-end
 
@@ -86,7 +98,9 @@ function resolverBase(config) {
 		}
 
 		//!steal-remove-start
-		throw new Error("resolver decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
+		if(process.env.NODE_ENV !== 'production') {
+			throw new Error("resolver decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
+		}
 		//!steal-remove-end
 	};
 }
@@ -101,9 +115,11 @@ function optionalConfig(decorator) {
 	}
 
 	//!steal-remove-start
-	Object.defineProperty(wrapper, "name", {
-		value: canReflect.getName(decorator.name)
-	});
+	if(process.env.NODE_ENV !== 'production') {
+		Object.defineProperty(wrapper, "name", {
+			value: canReflect.getName(decorator.name)
+		});
+	}
 	//!steal-remove-end
 
 	return wrapper;

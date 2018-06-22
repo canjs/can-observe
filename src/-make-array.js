@@ -124,23 +124,29 @@ canReflect.eachKey(mutateMethods, function(makePatches, prop){
 			//!steal-remove-start
 			var reasonLog = [canReflect.getName(meta.proxy)+"."+prop+" called with", arguments];
 			//!steal-remove-end
-
-			mapBindings.dispatch.call( meta.proxy, {
+			var dispatchArgs = {
 				type: "length",
-				//!steal-remove-start
-				reasonLog: reasonLog,
-				//!steal-remove-end
 				patches: patches
-			}, [meta.target.length, oldLength]);
+			};
+
+			//!steal-remove-start
+			if(process.env.NODE_ENV !== 'production') {
+				dispatchArgs.reasonLog = reasonLog;
+			}
+			//!steal-remove-end
+
+			mapBindings.dispatch.call( meta.proxy, dispatchArgs , [meta.target.length, oldLength]);
 		}
 
 		meta.preventSideEffects--;
 		return ret;
 	};
 	//!steal-remove-start
-	Object.defineProperty(mutateMethod, "name", {
-		value: prop
-	});
+	if(process.env.NODE_ENV !== 'production') {
+		Object.defineProperty(mutateMethod, "name", {
+			value: prop
+		});
+	}
 	//!steal-remove-end
 
 	// Store the proxied method so it will be used instead of the
@@ -170,9 +176,11 @@ Object.getOwnPropertyNames(Array.prototype).forEach(function(prop) {
 			return meta.options.observe(ret);
 		};
 		//!steal-remove-start
-		Object.defineProperty(arrayMethod, "name", {
-			value: prop
-		});
+		if(process.env.NODE_ENV !== 'production') {
+			Object.defineProperty(arrayMethod, "name", {
+				value: prop
+			});
+		}
 		//!steal-remove-end
 		observableStore.proxiedObjects.set(protoFn, arrayMethod);
 		observableStore.proxies.add(arrayMethod);
@@ -284,16 +292,19 @@ var makeArray = {
 			var reasonLog = [canReflect.getName(meta.proxy)+" set", key,"to", value];
 			//!steal-remove-end
 
-			mapBindings.dispatch.call( meta.proxy, {
+			var dispatchArgs = {
 				type: key,
-				//!steal-remove-start
-				/* jshint laxcomma: true */
-				reasonLog: reasonLog,
-				/* jshint laxcomma: false */
-				//!steal-remove-end
 				patches: patches,
 				keyChanged: !hadOwn ? key : undefined
-			},[value, old]);
+			};
+
+			//!steal-remove-start
+			if(process.env.NODE_ENV !== 'production') {
+				dispatchArgs.reasonLog = reasonLog;
+			}
+			//!steal-remove-end
+
+			mapBindings.dispatch.call( meta.proxy, dispatchArgs, [value, old]);
 
 		});
 

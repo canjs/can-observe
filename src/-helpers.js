@@ -71,9 +71,11 @@ var helpers = {
 			Type.prototype.constructor = Type;
 
 			//!steal-remove-start
-			Object.defineProperty(Type, "name", {
-				value: name
-			});
+			if(process.env.NODE_ENV !== 'production') {
+				Object.defineProperty(Type, "name", {
+					value: name
+				});
+			}
 			//!steal-remove-end
 
 			return Type;
