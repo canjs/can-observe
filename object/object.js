@@ -1,3 +1,4 @@
+"use strict";
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
 var makeObserve = require("../src/-make-observe");

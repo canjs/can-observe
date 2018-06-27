@@ -1,3 +1,4 @@
+"use strict";
 var canReflect = require("can-reflect");
 var observables = require("./-observable-store");
 var helpers = require("./-helpers");

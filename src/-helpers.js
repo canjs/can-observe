@@ -1,4 +1,5 @@
 
+"use strict";
 var canSymbol = require("can-symbol");
 var metaSymbol = canSymbol.for("can.meta");
 var classTest = /^\s*class\s+/;

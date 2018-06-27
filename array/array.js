@@ -1,3 +1,4 @@
+"use strict";
 // ## can-observe/array/array
 //
 var canSymbol = require("can-symbol");

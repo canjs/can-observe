@@ -1,3 +1,4 @@
+"use strict";
 var Observation = require("can-observation");
 var ObservationRecorder = require("can-observation-recorder");
 var mapBindings = require("can-event-queue/map/map");

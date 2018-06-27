@@ -1,3 +1,4 @@
+"use strict";
 // # -make-array.js
 // This module's `.observable` method proxies an Array to make it observable.
 // The other exports are not used elsewhere.

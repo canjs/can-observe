@@ -1,3 +1,4 @@
+"use strict";
 // # can-observe.js
 // Assembles the final observe export.
 var makeObject = require("./src/-make-object");

@@ -1,3 +1,4 @@
+"use strict";
 // # -make-object.js
 // This module's `.observable` method proxies an object to make it observable.
 // The other exports are used by other make-TYPE modules.
@@ -263,9 +264,8 @@ var makeObject = {
 			!keyInfo.isAccessor &&
 			(
 				// (the read is on the proxy OR
-				(keyInfo.targetHasOwnKey ) ||
-				// it's not on the proto chain and we are not sealed).
-				(!keyInfo.protoHasKey && !Object.isSealed(meta.target))
+				(// it's not on the proto chain and we are not sealed).
+                keyInfo.targetHasOwnKey || !keyInfo.protoHasKey && !Object.isSealed(meta.target))
 			);
 	},
 	// `setKey` sets a value on an object. Use `Object.defineProperty`

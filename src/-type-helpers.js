@@ -1,3 +1,4 @@
+"use strict";
 var queues = require("can-queues");
 var canReflect = require("can-reflect");
 var canSymbol = require("can-symbol");
@@ -33,11 +34,10 @@ var helpers = module.exports = {
 	shouldRecordObservationOnAllKeysExceptFunctionsOnProto: function(keyInfo, meta){
 		return meta.preventSideEffects === 0 && !keyInfo.isAccessor && (
 			// it's on us
-			(keyInfo.targetHasOwnKey ) ||
+			(// it's on our proto, but not a function
+            (keyInfo.targetHasOwnKey ) ||
 			// it's "missing", and we are not sealed
-			(!keyInfo.protoHasKey && !Object.isSealed(meta.target)) ||
-			// it's on our proto, but not a function
-			(keyInfo.protoHasKey && (typeof targetValue !== "function"))
+			(!keyInfo.protoHasKey && !Object.isSealed(meta.target)) || keyInfo.protoHasKey && (typeof targetValue !== "function"))
 		);
 	},
 };

@@ -1,3 +1,4 @@
+"use strict";
 // # -make-function.js
 // This module's `.observable` method proxies an function to make it an any instances
 // created by it observable.

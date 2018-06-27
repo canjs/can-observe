@@ -1,3 +1,4 @@
+"use strict";
 module.exports = {
 	observable: function(fn, options) {
 		return function() {

@@ -1,3 +1,4 @@
+"use strict";
 var canSymbol = require("can-symbol");
 
 module.exports = {
