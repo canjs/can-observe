@@ -34,7 +34,7 @@ testDecorator("simple getter", function simpleDecorator(target, key, descriptor)
 	QUnit.equal(didRun, true, "on(fullName) was run");
 });
 
-testDecoratorMethod("async", decorators.async, "fullName", function (resolve) {
+testDecoratorMethod("getAsync", decorators.getAsync, "fullName", function (resolve) {
 	if (!resolve) {
 		return "default";
 	}
@@ -64,7 +64,7 @@ testDecoratorMethod("async", decorators.async, "fullName", function (resolve) {
 	QUnit.stop();
 });
 
-testDecoratorGetter("async", decorators.async, "fullName", function () {
+testDecoratorGetter("getAsync", decorators.getAsync, "fullName", function () {
 	return new Promise(function(resolve) {
 		var value = this.first + " " + this.last;
 		setTimeout(function() { resolve(value); }, 100);
@@ -92,7 +92,7 @@ testDecoratorGetter("async", decorators.async, "fullName", function () {
 	QUnit.stop();
 });
 
-testDecoratorMethod("resolver", decorators.resolver, "count", function (value) {
+testDecoratorMethod("resolvedBy", decorators.resolvedBy, "count", function (value) {
 	var count = 0;
 	value.resolve(count);
 

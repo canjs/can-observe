@@ -1,11 +1,11 @@
-@property {function} can-observe.async async
+@property {function} can-observe.getAsync getAsync
 @parent can-observe/decorators
 
 @description Create observable key-value instances or types.
 
-@signature `@observe.async`
+@signature `@observe.getAsync`
 
-The `@async` decorator sets up the value to be connected to the result of an asynchronous call, such as an API request or a promise.
+The `@getAsync` decorator sets up the value to be connected to the result of an getAsynchronous call, such as an API request or a promise.
 
 When attached to a method, it passes a `resolve` argument, which you call to set the value. When attached to a getter, it expects the return value to be a promise (specifically, a thenable) or undefined (for no changes);
 
@@ -13,14 +13,14 @@ When attached to a method, it passes a `resolve` argument, which you call to set
 import observe from "can-observe";
 
 class Thing extends observe.Object {
-	@@observe.async
+	@@observe.getAsync
 	fullName( resolve ) {
 		setTimeout( function() {
 			resolve( this.first + " " + this.last );
 		}.bind( this ), 0 );
 	}
 
-	@@observe.async
+	@@observe.getAsync
 	get formalName() {
 		return new Promise( ( resolve ) => {
 			setTimeout( function() {

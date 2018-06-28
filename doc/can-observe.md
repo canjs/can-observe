@@ -314,7 +314,7 @@ class WidgetViewModel {
 
 ## Extending can-observe with rich property behaviors
 
-Like [can-define.types.get#get_lastSetValue_resolve_value__ async getters], [can-define.types type coercion], [can-define-stream streams], etc from [can-define], can-observe supports a number of rich behaviors. However, rather than baking these behaviors into the library directly, can-observe provides mechanism to extend proxy-wrapped objects with custom rich behaviors.
+Like [can-define.types.get#get_lastSetValue_resolve_value__ getAsync getters], [can-define.types type coercion], [can-define-stream streams], etc from [can-define], can-observe supports a number of rich behaviors. However, rather than baking these behaviors into the library directly, can-observe provides mechanism to extend proxy-wrapped objects with custom rich behaviors.
 
 To that end, can-observe recognizes a `can.computedPropertyDefinitions` property: an object whose values are functions which return a single-value observable; getting or setting a key on the proxy-wrapped object that matches a key in the `can.computedPropertyDefinitions` object will use those observations. The first time one of these properties is accessed, the function is run, and the observation is cached, to be used for all future use on _that instance_.
 

@@ -30,7 +30,7 @@ observe.defineProperty( target, "name", function( instance, property ) {
 
 ## Using decorators with `defineProperty`
 
-One of the features provided by the latest-and-greatest (and bleeding edge) ECMA is [decorators](https://github.com/tc39/proposal-decorators); in this case, they allow for a very concise way to insert computed properties into a class definition. In addition to being able to create your own, we have also provided a few built-in decorators ([can-observe/decorators/async] and [can-observe/decorators/resolver]).
+One of the features provided by the latest-and-greatest (and bleeding edge) ECMA is [decorators](https://github.com/tc39/proposal-decorators); in this case, they allow for a very concise way to insert computed properties into a class definition. In addition to being able to create your own, we have also provided a few built-in decorators ([can-observe/decorators/getAsync] and [can-observe/decorators/resolvedBy]).
 
 ```js
 import Observation from "can-observation";

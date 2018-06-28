@@ -1,6 +1,7 @@
 "use strict";
 
 var canReflect = require("can-reflect");
+var canDev = require('can-log/dev/dev');
 var AsyncObservable = require("can-simple-observable/async/async");
 var ResolverObservable = require("can-simple-observable/resolver/resolver");
 
@@ -9,14 +10,14 @@ function defineProperty(prototype, prop, makeObservable) {
 	computedHelpers.ensureDefinition(prototype)[prop] = makeObservable;
 }
 
-function asyncBase(config) {
+function getAsyncBase(config) {
 	return function(target, key, descriptor) {
 		if (descriptor.get !== undefined) {
 			var getter = descriptor.get;
 			//!steal-remove-start
 			if(process.env.NODE_ENV !== 'production') {
 				if (getter.length !== 0) {
-					throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": getters should take no arguments.");
+					throw new Error("getAsync decorated " + key + " on " + canReflect.getName(target) + ": getters should take no arguments.");
 				}
 			}
 			//!steal-remove-end
@@ -35,7 +36,7 @@ function asyncBase(config) {
 					//!steal-remove-start
 					else if (promise !== undefined) {
 						if(process.env.NODE_ENV !== 'production') {
-							throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": getters must return undefined or a promise.");
+							throw new Error("getAsync decorated " + key + " on " + canReflect.getName(target) + ": getters must return undefined or a promise.");
 						}
 					}
 					//!steal-remove-end
@@ -45,7 +46,7 @@ function asyncBase(config) {
 				if(process.env.NODE_ENV !== 'production') {
 					canReflect.assignSymbols(fn, {
 						"can.getName": function() {
-							return canReflect.getName(getter); + " getter";
+							return canReflect.getName(getter) + " getter";
 						},
 					});
 				}
@@ -60,7 +61,7 @@ function asyncBase(config) {
 			//!steal-remove-start
 			if(process.env.NODE_ENV !== 'production') {
 				if (method.length !== 1) {
-					throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (resolve).");
+					throw new Error("getAsync decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (resolve).");
 				}
 			}
 			//!steal-remove-end
@@ -74,20 +75,20 @@ function asyncBase(config) {
 
 		//!steal-remove-start
 		if(process.env.NODE_ENV !== 'production') {
-			throw new Error("async decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
+			throw new Error("getAsync decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
 		}
 		//!steal-remove-end
 	};
 }
 
-function resolverBase(config) {
+function resolvedByBase(config) {
 	return function(target, key, descriptor) {
 		if (descriptor.value !== undefined) {
 			var method = descriptor.value;
 			//!steal-remove-start
 			if(process.env.NODE_ENV !== 'production') {
 				if (method.length !== 1) {
-					throw new Error("resolver decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (value).");
+					throw new Error("resolvedBy decorated " + key + " on " + canReflect.getName(target) + ": methods should take 1 argument (value).");
 				}
 			}
 			//!steal-remove-end
@@ -99,7 +100,7 @@ function resolverBase(config) {
 
 		//!steal-remove-start
 		if(process.env.NODE_ENV !== 'production') {
-			throw new Error("resolver decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
+			throw new Error("resolvedBy decorated " + key + " on " + canReflect.getName(target) + ": Unrecognized descriptor.");
 		}
 		//!steal-remove-end
 	};
@@ -125,7 +126,31 @@ function optionalConfig(decorator) {
 	return wrapper;
 }
 
+var hasWarnedAsync = false;
+var hasWarnedResolver = false;
+
 module.exports = {
-	async: optionalConfig(asyncBase),
-	resolver: optionalConfig(resolverBase),
+	getAsync: optionalConfig(getAsyncBase),
+	resolvedBy: optionalConfig(resolvedByBase),
+
+	async: optionalConfig(function() {
+		//!steal-remove-start
+		if (!hasWarnedAsync) {
+			canDev.warn('can-observe/decorators/async is deprecated; use can-observe/decorators/getAsync');
+			hasWarnedAsync = true;
+		}
+		//!steal-remove-end
+
+		return getAsyncBase.apply(this, arguments);
+	}),
+	resolver: optionalConfig(function() {
+		//!steal-remove-start
+		if (!hasWarnedResolver) {
+			canDev.warn('can-observe/decorators/resolver is deprecated; use can-observe/decorators/resolvedBy');
+			hasWarnedResolver = true;
+		}
+		//!steal-remove-end
+
+		return resolvedByBase.apply(this, arguments);
+	}),
 };

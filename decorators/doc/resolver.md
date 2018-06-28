@@ -1,11 +1,11 @@
-@property {function} can-observe.resolver resolver
+@property {function} can-observe.resolvedBy resolvedBy
 @parent can-observe/decorators
 
 @description Create observable key-value instances or types.
 
-@signature `@observe.resolver`
+@signature `@observe.resolvedBy`
 
-The `@resolver` decorator provides a powerful and generic interface for providing custom functionality without having to deal with the underlying observation. The resolved value is accessed on the instance as a getter.
+The `@resolvedBy` decorator provides a powerful and generic interface for providing custom functionality without having to deal with the underlying observation. The resolved value is accessed on the instance as a getter.
 
 When attached to a method, it passes an argument with several properties:
 * *resolve* - Update the value to be the passed argument.
@@ -19,7 +19,7 @@ This example will return a value that counts how many times the `value` property
 import observe from "can-observe";
 
 class Thing extends observe.Object {
-	@@observe.resolver
+	@@observe.resolvedBy
 	count( { resolve, listenTo } ) {
 		let count = 0;
 		resolve( count );
