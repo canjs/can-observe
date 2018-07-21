@@ -11,6 +11,10 @@ function defineProperty(prototype, prop, makeObservable) {
 
 function asyncBase(config) {
 	return function(target, key, descriptor) {
+		if (!descriptor) {
+			descriptor = Object.getOwnPropertyDescriptor(target, key);
+		}
+
 		if (descriptor.get !== undefined) {
 			var getter = descriptor.get;
 			//!steal-remove-start
@@ -82,6 +86,10 @@ function asyncBase(config) {
 
 function resolverBase(config) {
 	return function(target, key, descriptor) {
+		if (!descriptor) {
+			descriptor = Object.getOwnPropertyDescriptor(target, key);
+		}
+
 		if (descriptor.value !== undefined) {
 			var method = descriptor.value;
 			//!steal-remove-start
@@ -107,11 +115,11 @@ function resolverBase(config) {
 
 function optionalConfig(decorator) {
 	function wrapper(config) {
-		if (arguments.length === 3) {
-			return decorator({}).apply(null, arguments);
+		if (arguments.length === 1) {
+			return decorator(config);
 		}
 
-		return decorator(config);
+		return decorator({}).apply(null, arguments);
 	}
 
 	//!steal-remove-start

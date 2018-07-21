@@ -13,6 +13,10 @@ var decorators = require("./decorators");
 QUnit.module("can-observe/decorators");
 
 testDecorator("simple getter", function simpleDecorator(target, key, descriptor) {
+	if (!descriptor) {
+		descriptor = Object.getOwnPropertyDescriptor(target, key);
+	}
+
 	defineProperty(target, key, function(instance, property) {
 		return new Observation(descriptor.value || descriptor.get, instance);
 	});
