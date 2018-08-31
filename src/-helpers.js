@@ -8,7 +8,13 @@ var helpers = {
 	assignEverything: function(d, s) {
 		var symbols = "getOwnPropertySymbols" in Object ? Object.getOwnPropertySymbols(s) : [];
 		Object.getOwnPropertyNames(s).concat(symbols).forEach(function(key) {
-			Object.defineProperty(d,key, Object.getOwnPropertyDescriptor(s,key));
+			// IE11 refuses to assign over top of non-configurable properties, regardless of value identity
+			var existing = Object.getOwnPropertyDescriptor(d, key);
+			if (!existing || existing.configurable) {
+				var descriptor = Object.getOwnPropertyDescriptor(s, key);
+				descriptor.configurable = true;
+				Object.defineProperty(d,key, descriptor);
+			}
 		});
 		return d;
 	},
