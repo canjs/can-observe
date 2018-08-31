@@ -6,7 +6,8 @@ var classTest = /^\s*class\s+/;
 
 var helpers = {
 	assignEverything: function(d, s) {
-		Object.getOwnPropertyNames(s).concat(Object.getOwnPropertySymbols(s)).forEach(function(key) {
+		var symbols = "getOwnPropertySymbols" in Object ? Object.getOwnPropertySymbols(s) : [];
+		Object.getOwnPropertyNames(s).concat(symbols).forEach(function(key) {
 			Object.defineProperty(d,key, Object.getOwnPropertyDescriptor(s,key));
 		});
 		return d;

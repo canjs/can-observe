@@ -17,9 +17,11 @@ var isSymbolLike = canReflect.isSymbolLike;
 // These are the "overwrites" for the proxy.
 // Copy the symbols from the map bindings mixin.
 var proxyKeys = Object.create(null);
-Object.getOwnPropertySymbols(mapBindings).forEach(function(symbol){
-	helpers.assignNonEnumerable(proxyKeys, symbol, mapBindings[symbol]);
-});
+if ("getOwnPropertySymbols" in Object) {
+	Object.getOwnPropertySymbols(mapBindings).forEach(function(symbol){
+		helpers.assignNonEnumerable(proxyKeys, symbol, mapBindings[symbol]);
+	});
+}
 
 computedHelpers.addKeyDependencies(proxyKeys);
 
