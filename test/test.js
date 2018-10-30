@@ -1,3 +1,11 @@
+if (typeof WeakSet === "undefined") {
+	require("weakset/weakset");
+}
+
+if (typeof Proxy === "undefined") {
+	require("proxy-polyfill/src/proxy");
+}
+
 require("./object-test");
 require("./object-observability-test");
 require("./object-getter-setter-test");
