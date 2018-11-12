@@ -50,7 +50,7 @@
     "can-util": "^3.2.2",
     "detect-cyclic-packages": "^1.1.0",
     "jshint": "^2.9.1",
-    "steal": "^1.0.0",
+    "steal": "^2.1.8",
     "steal-qunit": "^1.0.0",
     "steal-tools": "^1.9.1",
     "testee": "^0.8.1"
