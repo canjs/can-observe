@@ -141,8 +141,8 @@ superWoman.name.first = "Lana";
 
 If you wish to observe changes in an observable made with `observe` for yourself, either:
 
- - Use [can-reflect]:
-   ```js
+- Use [can-reflect]:
+```js
 import canReflect from "can-reflect";
 
 canReflect.onKeyValue( superWoman, "age", function( newVal ) {
@@ -151,9 +151,8 @@ canReflect.onKeyValue( superWoman, "age", function( newVal ) {
 
 superWoman.age = 34;
 ```
- - Use [can-observe.Object] or [can-observe.Array] that include methods for
-   binding directly on the object:
-   ```js
+- Use [can-observe.Object] or [can-observe.Array] that include methods for binding directly on the object:
+```js
 const superWoman = new observe.Object( {
 	name: { first: "Luma", last: "Lynai" },
 	age: 33
@@ -165,9 +164,7 @@ superWoman.on( "age", function( newVal ) {
 superWoman.age = 34;
 ```
 
-Using `observe` directly isn't extremely common in larger CanJS apps that use
-[can-observe.Object] or [can-observe.Array] to create special types. However, it can be useful for simple
-apps, where a well-defined type is not needed.
+Using `observe` directly isn't extremely common in larger CanJS apps that use [can-observe.Object] or [can-observe.Array] to create special types. However, it can be useful for simple apps, where a well-defined type is not needed.
 
 For example, the following creates a simple counter application:
 
@@ -268,10 +265,9 @@ canReflect.onKeyValue( sponge, "calories", function( newVal ) {
 sponge.eat();
 ```
 
-> NOTE: `observe` does not change the function passed into it.  If instances of the
-> function passed to `observe` are created, they will not be observable.
->
-> ```js
+> NOTE: `observe` does not change the function passed into it.  If instances of the function passed to `observe` are created, they will not be observable.
+
+```js
 class Animal {
 	constructor( name ) {
 		this.name = name;
