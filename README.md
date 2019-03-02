@@ -5,8 +5,6 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/canjs/can-observe/blob/master/LICENSE)
 [![npm version](https://badge.fury.io/js/can-observe.svg)](https://www.npmjs.com/package/can-observe)
 [![Travis build status](https://travis-ci.org/canjs/can-observe.svg?branch=master)](https://travis-ci.org/canjs/can-observe)
-[![AppVeyor build status](https://ci.appveyor.com/api/projects/status/github/canjs/can-observe?branch=master&svg=true)](https://ci.appveyor.com/project/matthewp/can-observe)
-[![Coverage status](https://coveralls.io/repos/github/canjs/can-observe/badge.svg?branch=master)](https://coveralls.io/github/canjs/can-observe?branch=master)
 [![Greenkeeper badge](https://badges.greenkeeper.io/canjs/can-observe.svg)](https://greenkeeper.io/)
 
 Create plain observable objects. These objects can be observed by computes, or other map types like can-define.
