@@ -108,7 +108,7 @@ function resolverBase(config) {
 function optionalConfig(decorator) {
 	function wrapper(config) {
 		if (arguments.length === 1) {
-			return decorator(config);
+			return optionalConfig(decorator(config));
 		}
 
 		return decorator({}).apply(null, arguments);
@@ -126,12 +126,21 @@ function optionalConfig(decorator) {
 }
 
 function optionalPrototype(decorator) {
-	function wrapper(target, key, descriptor) {
-		if (arguments.length === 2) {
-			return decorator(target.prototype, key, Object.getOwnPropertyDescriptor(target.prototype, key));
+	function wrapper() {
+		if (arguments.length === 1) {
+			const config = arguments[0];
+			return optionalPrototype(decorator(config));
 		}
 
-		return decorator(target, key, descriptor);
+		if (arguments.length === 2) {
+			const target = arguments[0].prototype;
+			const key = arguments[1];
+			const descriptor = Object.getOwnPropertyDescriptor(target, key);
+
+			return decorator(target, key, descriptor);
+		}
+
+		return decorator.apply(null, arguments);
 	}
 
 	//!steal-remove-start
