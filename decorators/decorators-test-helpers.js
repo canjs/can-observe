@@ -27,7 +27,7 @@ function testDecoratorGetter(decoratorName, decorator, propName, getter, tester)
 			QUnit.equal(ran, true, "getter ran");
 		});
 
-		QUnit.test(decoratorName + " getter decorator with class Object prototype (without decorator)", function() {
+		QUnit.test(decoratorName + " getter decorator with class Object (without decorator)", function() {
 			var ran = false;
 
 			class TesterType extends ObserveObject {
@@ -36,7 +36,7 @@ function testDecoratorGetter(decoratorName, decorator, propName, getter, tester)
 					return getter.apply(this, arguments);
 				}
 			}
-			decorator(TesterType.prototype, propName);
+			decorator(TesterType, propName);
 
 			tester(TesterType);
 			QUnit.equal(ran, true, "getter ran");
@@ -58,7 +58,7 @@ function testDecoratorGetter(decoratorName, decorator, propName, getter, tester)
 		QUnit.equal(ran, true, "getter ran");
 	});
 
-	QUnit.test(decoratorName + " getter decorator with Object.extend prototype (without decorator)", function() {
+	QUnit.test(decoratorName + " getter decorator with Object.extend (without decorator)", function() {
 		var ran = false;
 
 		var TesterType = ObserveObject.extend("TesterType", {}, {
@@ -67,7 +67,7 @@ function testDecoratorGetter(decoratorName, decorator, propName, getter, tester)
 				return getter.apply(this, arguments);
 			}
 		});
-		decorator(TesterType.prototype, propName);
+		decorator(TesterType, propName);
 
 		tester(TesterType);
 		QUnit.equal(ran, true, "getter ran");
@@ -91,7 +91,7 @@ function testDecoratorMethod(decoratorName, decorator, propName, method, tester)
 			QUnit.equal(ran, true, "method ran");
 		});
 
-		QUnit.test(decoratorName + " method decorator with class Object prototype (without decorator)", function() {
+		QUnit.test(decoratorName + " method decorator with class Object (without decorator)", function() {
 			var ran = false;
 
 			class TesterType extends ObserveObject {
@@ -100,7 +100,7 @@ function testDecoratorMethod(decoratorName, decorator, propName, method, tester)
 					return method.apply(this, arguments);
 				}
 			}
-			decorator(TesterType.prototype, propName);
+			decorator(TesterType, propName);
 
 			tester(TesterType);
 			QUnit.equal(ran, true, "method ran");
@@ -122,7 +122,7 @@ function testDecoratorMethod(decoratorName, decorator, propName, method, tester)
 		QUnit.equal(ran, true, "method ran");
 	});
 
-	QUnit.test(decoratorName + " method decorator with Object.extend prototype (without decorator)", function() {
+	QUnit.test(decoratorName + " method decorator with Object.extend (without decorator)", function() {
 		var ran = false;
 
 		var TesterType = ObserveObject.extend("TesterType", {}, {
@@ -131,7 +131,7 @@ function testDecoratorMethod(decoratorName, decorator, propName, method, tester)
 				return method.apply(this, arguments);
 			},
 		});
-		decorator(TesterType.prototype, propName);
+		decorator(TesterType, propName);
 
 		tester(TesterType);
 		QUnit.equal(ran, true, "method ran");

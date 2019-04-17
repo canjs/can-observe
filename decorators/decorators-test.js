@@ -14,6 +14,7 @@ QUnit.module("can-observe/decorators");
 
 testDecorator("simple getter", function simpleDecorator(target, key, descriptor) {
 	if (!descriptor) {
+		target = target.prototype;
 		descriptor = Object.getOwnPropertyDescriptor(target, key);
 	}
 
