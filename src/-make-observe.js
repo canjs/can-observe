@@ -15,13 +15,15 @@ var makeObserve = {
 		if (observables.proxies.has(value)) {
 			return value;
 		}
-		if (helpers.isBuiltInButNotArrayOrPlainObject(value)) {
+		if (helpers.isBuiltInButNotArrayOrPlainObjectOrElement(value)) {
 			return value;
 		}
 		if (typeof value === "function") {
 			observable = makeObserve.function(value);
 		} else if (helpers.inheritsFromArray(value)) {
 			observable = makeObserve.array(value);
+		} else if (value instanceof Element) {
+			observable = makeObserve.prototype(value);
 		} else {
 			observable = makeObserve.object(value);
 		}

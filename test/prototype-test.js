@@ -1,5 +1,6 @@
 var QUnit = require("steal-qunit");
 
+var observe = require("../can-observe");
 var makePrototype = require("../src/-make-prototype");
 
 var canReflect = require("can-reflect");
@@ -180,5 +181,28 @@ if(classSupport) {
 		fixture.appendChild(el);
 
 		assert.equal(el.innerHTML, "Hello World");
+	});
+
+	QUnit.test("main observe function uses makePrototype for Element instances", function(assert) {
+		function El() {
+			return Reflect.construct(HTMLElement, [], this.constructor);
+		}
+		El.prototype = observe(Object.create(HTMLElement.prototype));
+		class MyElement extends El {}
+		customElements.define("my-main-observe-el", MyElement); // jshint ignore:line
+
+		var el = new MyElement();
+
+		var sets = 0;
+		canReflect.onKeyValue(el, "fullName", function(value) {
+			if (++sets === 1) {
+				QUnit.equal(value, "Kevin");
+			} else {
+				QUnit.equal(value, "Connor");
+			}
+		});
+
+		el.fullName = "Kevin";
+		el.fullName = "Connor";
 	});
 }
