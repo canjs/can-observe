@@ -38,7 +38,7 @@ var classSupport = (function() {
 })();
 
 if(classSupport) {
-	QUnit.test("makePrototype basics with class", function(assert){
+	QUnit.test("makePrototype basics with class", function(assert) {
 		function El() {
 			return Reflect.construct(HTMLElement, [], this.constructor);
 		}
@@ -64,7 +64,26 @@ if(classSupport) {
 		el.fullName = "Connor";
 	});
 
-	QUnit.test("makePrototype class with getters", function(assert){
+	QUnit.test("makePrototype can create two instances of a class with different metadata", function(assert) {
+		function El() {
+			return Reflect.construct(HTMLElement, [], this.constructor);
+		}
+		El.prototype = makePrototype.observable(Object.create(HTMLElement.prototype), {
+			observe: makePrototype.observable
+		});
+
+		class MyElement extends El {}
+		customElements.define("my-two-instaance-observable-el", MyElement); // jshint ignore:line
+
+		var el1 = new MyElement();
+		var el2 = new MyElement();
+
+		el1.fullName = "Kevin";
+		QUnit.equal(el1.fullName, "Kevin", "el1.fullName is set");
+		QUnit.equal(el2.fullName, undefined, "el2.fullName is not set");
+	});
+
+	QUnit.test("makePrototype class with getters", function(assert) {
 		function El() {
 			return Reflect.construct(HTMLElement, [], this.constructor);
 		}
@@ -89,7 +108,7 @@ if(classSupport) {
 		assert.equal(el.fullName, "Kevin!", "el.fullName correct");
 	});
 
-	QUnit.test("makePrototype class with getters and setters", function(assert){
+	QUnit.test("makePrototype class with getters and setters", function(assert) {
 		function El() {
 			return Reflect.construct(HTMLElement, [], this.constructor);
 		}
@@ -124,7 +143,7 @@ if(classSupport) {
 		assert.equal(el.fullName, "Marty!", "el.fullName correct");
 	});
 
-	QUnit.skip("makePrototype class with getter or setter that shadows a property on the prototype", function(assert){
+	QUnit.skip("makePrototype class with getter or setter that shadows a property on the prototype", function(assert) {
 		function El() {
 			return Reflect.construct(HTMLElement, [], this.constructor);
 		}
@@ -159,7 +178,7 @@ if(classSupport) {
 		assert.equal(el.name, "Marty!", "el.name correct");
 	});
 
-	QUnit.test("makePrototype class can use DOM properties", function(assert){
+	QUnit.test("makePrototype class can use DOM properties", function(assert) {
 		function El() {
 			return Reflect.construct(HTMLElement, [], this.constructor);
 		}
