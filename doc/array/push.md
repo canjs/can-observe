@@ -22,25 +22,6 @@
 
 @body
 
-## Use
-
-If you wish to listen to changes on the array:
-
-```js
-import { observe, Reflect } from "can/everything";
-
-const birds = ['Buzzard', 'Sparrowhawk'];
-const list = observe(['Eagle']);
-
-Reflect.onPatches(list, function (data) {
-	console.log(data[0].insert) //-> ['Buzzard', 'Sparrowhawk']
-})
-
-list.push(...birds);
-console.log(list); // ['Buzzard', 'Sparrowhawk', 'Eagle']
-```
-@codepen
-
 ## Events
 
 `push` causes _length_ events to be fired.
