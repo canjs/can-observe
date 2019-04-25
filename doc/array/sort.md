@@ -1,10 +1,10 @@
 @property {function} can-observe/sort sort
 @parent can-observe/array
 
-@description Add elements to the end of an observe array.
+@description Sort the elements in an array.
 @signature `list.sort([compareFunction])`
 
-  `sort` sorts the elements in place and returns the newly sorted array. The API is the same as the native JavaScript `Array.prototype.sort` API.
+  `sort` sorts the elements in place and returns the sorted array. The API is the same as the native [sort](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort) API.
 
   ```js
   import { observe } from "can/everything";
@@ -27,7 +27,7 @@
 
   @param {function(a, b)} compareFunction Specifies a function that defines the sort order.
 
-  @return {can-observe.Array} The ordered Array
+  @return {can-observe.Array} The ordered array
 
 @body
 

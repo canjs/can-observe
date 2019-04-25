@@ -1,10 +1,10 @@
 @property {function} can-observe/shift shift
 @parent can-observe/array
 
-@description Remove an element from the front of an observe array.
+@description Removes the first element from an array.
 @signature `list.shift()`
 
-  `shift` removes an element from the front of an observe array.
+  `shift` removes an element from the front of an array.
 
   ```js
   import { observe } from "can/everything";

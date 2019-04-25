@@ -16,11 +16,11 @@
   ```
   @codepen
 
-  @param {Number} Where to start removing or inserting elements
+  @param {Number} index Where to start removing or inserting elements
 
-  @param {Number} The number of elements to remove, if _howMany_ is not provided `splice` will remove all elements from the `index` to the end of the array.
+  @param {Number} howMany The number of elements to remove, if _howMany_ is not provided `splice` will remove all elements from the `index` to the end of the array.
 
-  @param {*} elements Items to insert into the array
+  @param {*} newItems Items to insert into the array
 
   @return {Array} The elements removed by the `splice`.
 

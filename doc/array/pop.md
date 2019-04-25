@@ -4,7 +4,7 @@
 @description Remove an element from the end of an observe array.
 @signature `list.pop()`
 
-  `pop` removes an element from then end of an observe array.
+  `pop` removes the last element from the array.
 
   ```js
   import { observe } from "can/everything";

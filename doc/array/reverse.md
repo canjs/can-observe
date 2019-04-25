@@ -4,7 +4,7 @@
 @description Reverses the order of the observe array.
 @signature `list.reverse()`
 
-  `reverse` Reverses the order of the observe array in place.
+  `reverse` reverses the order of the array in place.
 
   ```js
   import { observe } from "can/everything";
@@ -16,7 +16,7 @@
   ```
   @codepen
 
-  @return {can-observe.Array} The observe array with reverse ordered elements
+  @return {can-observe.Array} The array with reverse ordered elements
 
 @body
 
