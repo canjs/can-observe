@@ -10,7 +10,7 @@ var isSymbolLike = canReflect.isSymbolLike;
 var proxyMetaSymbol = canSymbol.for("can.proxyMeta");
 
 function getMetadata(instance, options) {
-	if (proxyMetaSymbol in instance) {
+	if (instance.hasOwnProperty(proxyMetaSymbol)) {
 		return instance[proxyMetaSymbol];
 	}
 
