@@ -1,4 +1,5 @@
 "use strict";
+var getGlobal = require("can-globals/global/global");
 var canSymbol = require("can-symbol");
 var metaSymbol = canSymbol.for("can.meta");
 var classTest = /^\s*class\s+/;
@@ -11,7 +12,7 @@ var helpers = {
 		return d;
 	},
 	isBuiltInButNotArrayOrPlainObjectOrElement: function(obj) {
-		if (obj instanceof Element) {
+		if (obj instanceof getGlobal().Element) {
 			return false;
 		}
 		return helpers.isBuiltInButNotArrayOrPlainObject(obj);

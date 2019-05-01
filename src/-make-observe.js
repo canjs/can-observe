@@ -1,4 +1,5 @@
 "use strict";
+var getGlobal = require("can-globals/global/global");
 var canReflect = require("can-reflect");
 var observables = require("./-observable-store");
 var helpers = require("./-helpers");
@@ -22,7 +23,7 @@ var makeObserve = {
 			observable = makeObserve.function(value);
 		} else if (helpers.inheritsFromArray(value)) {
 			observable = makeObserve.array(value);
-		} else if (value instanceof Element) {
+		} else if (value instanceof getGlobal().Element) {
 			observable = makeObserve.prototype(value);
 		} else {
 			observable = makeObserve.object(value);
