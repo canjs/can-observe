@@ -118,7 +118,7 @@ var makeObject = {
 	set: function(target, key, value, receiver) {
 		// If the receiver is not this observable (the observable might be on the proto chain),
 		// set the key on the reciever.
-		if (receiver !== this.proxy) {
+		if (receiver !== this.proxy && this.options.proxiedPrototype !== true) {
 			return makeObject.setKey(receiver, key, value, this);
 		}
 
@@ -136,7 +136,7 @@ var makeObject = {
 		makeObject.setValueAndOnChange(key, value, this, function(key, value, meta, hadOwn, old) {
 
 			//!steal-remove-start
-			var reasonLog = [canReflect.getName(meta.proxy)+" set", key,"to", value];
+			var reasonLog = [canReflect.getName(meta.proxy) + " set", key, "to", value];
 			//!steal-remove-end
 
 			var dispatchArgs = {
@@ -156,7 +156,7 @@ var makeObject = {
 			//!steal-remove-end
 
 			// Fire event handlers for this key change.
-			mapBindings.dispatch.call( meta.proxy, dispatchArgs,[value, old]);
+			mapBindings.dispatch.call(meta.proxy, dispatchArgs, [value, old]);
 
 		});
 
@@ -198,7 +198,7 @@ var makeObject = {
 	// as well as from the target, so operators like `in` and
 	// functions like `hasOwnProperty` can be used to determine
 	// that the Proxy is observable.
-	ownKeys: function(target, key) {
+	ownKeys: function(target) {
 		ObservationRecorder.add(this.proxy, symbols.keysSymbol);
 
 		return Object.getOwnPropertyNames(this.target)

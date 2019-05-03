@@ -1,4 +1,5 @@
 require("./object-test");
+require("./prototype-test");
 require("./object-observability-test");
 require("./object-getter-setter-test");
 require("./array-test");

@@ -1,5 +1,5 @@
-
 "use strict";
+var getGlobal = require("can-globals/global/global");
 var canSymbol = require("can-symbol");
 var metaSymbol = canSymbol.for("can.meta");
 var classTest = /^\s*class\s+/;
@@ -7,9 +7,15 @@ var classTest = /^\s*class\s+/;
 var helpers = {
 	assignEverything: function(d, s) {
 		Object.getOwnPropertyNames(s).concat(Object.getOwnPropertySymbols(s)).forEach(function(key) {
-			Object.defineProperty(d,key, Object.getOwnPropertyDescriptor(s,key));
+			Object.defineProperty(d, key, Object.getOwnPropertyDescriptor(s, key));
 		});
 		return d;
+	},
+	isBuiltInButNotArrayOrPlainObjectOrElement: function(obj) {
+		if (obj instanceof getGlobal().Element) {
+			return false;
+		}
+		return helpers.isBuiltInButNotArrayOrPlainObject(obj);
 	},
 	isBuiltInButNotArrayOrPlainObject: function(obj) {
 		if (Array.isArray(obj)) {
@@ -49,9 +55,9 @@ var helpers = {
 			return false;
 		}
 	})(),
-	makeSimpleExtender: function(BaseType){
-		return function extend(name, staticProps, prototypeProps){
-		    var Type = function(){
+	makeSimpleExtender: function(BaseType) {
+		return function extend(name, staticProps, prototypeProps) {
+		    var Type = function() {
 		        var source = this;
 				var instance = BaseType.apply(this, arguments);
 		        if(source.init) {
@@ -82,8 +88,8 @@ var helpers = {
 			return Type;
 		};
 	},
-	assignNonEnumerable: function(obj, key, value){
-		return Object.defineProperty(obj,key,{
+	assignNonEnumerable: function(obj, key, value) {
+		return Object.defineProperty(obj, key, {
 		    enumerable: false,
 		    writable: true,
 		    configurable: true,
