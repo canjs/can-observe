@@ -86,7 +86,7 @@ var makeObject = {
 			return target[key];
 		}
 
-		// If it has a defined property definiition
+		// If it has a defined property definition
 		var computedValue = computedHelpers.get(receiver, key);
 		if(computedValue !== undefined ) {
 			return computedValue.value;
@@ -152,7 +152,7 @@ var makeObject = {
 			//!steal-remove-start
 			if(process.env.NODE_ENV !== 'production') {
 				dispatchArgs.reasonLog = reasonLog;
-			}				
+			}
 			//!steal-remove-end
 
 			// Fire event handlers for this key change.

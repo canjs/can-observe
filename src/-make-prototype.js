@@ -22,10 +22,16 @@ function getMetadata(instance, options) {
 	// when the receiver is the prototype of meta.instance
 	options.proxiedPrototype = true;
 
+	/*
+	var parentMeta = Object.getPrototypeOf(instance)[proxyMetaSymbol];
+	var target = parentMeta ? Object.create(parentMeta.target) : {};
+	*/
+
 	var meta = {
 		// store keys on a side-object instead of directly on the instance
 		// so that gets and sets will always hit the prototype
-		target: makeObject.observable({}, options),
+		//target: makeObject.observable({}, options),
+		target: {},
 		proxyKeys: options.proxyKeys !== undefined ? options.proxyKeys : Object.create(makeObject.proxyKeys()),
 		computedKeys: Object.create(null),
 		options: options,

@@ -4,6 +4,7 @@ var observe = require("../can-observe");
 var makePrototype = require("../src/-make-prototype");
 
 var canReflect = require("can-reflect");
+var Observation  = require("can-observation");
 
 QUnit.module("can-observe prototype");
 
@@ -32,10 +33,45 @@ QUnit.test("values can be set directly on a proxied prototype", function(assert)
 	Obj.prototype = makePrototype.observable({}, {
 		observe: makePrototype.observable
 	});
-	Obj.prototype.key = "value";
-	var o = new Obj();
+	//Obj.prototype.key = "value";
+
+	throw new Error("Break up this test into 2");
+
+	function Child() {}
+	Child.prototype = Object.create(Obj.prototype);
+	// Breaks here
+	Child.prototype.key = "value";
+
+	var o = new Child();
 
 	assert.equal(o.key, "value");
+});
+
+QUnit.test("Values can be read in an observation", function(assert) {
+
+	function Obj() {
+		this.isInstance = true;
+	}
+	Obj.prototype = makePrototype.observable({}, {
+		observe: makePrototype.observable
+	});
+
+	var o = new Obj();
+	var obs = new Observation(function(){
+		return o.age;
+	});
+
+	var lastValue;
+	function onChange(n) {
+		lastValue = n;
+	}
+	canReflect.onValue(obs, onChange);
+	o.age = 5;
+	assert.equal(lastValue, 5, "Value changed");
+
+	o.age = 2;
+	assert.equal(lastValue, 2, "Value changed");
+	canReflect.offValue(obs, onChange);
 });
 
 QUnit.test("makePrototype basics with class", function(assert) {
