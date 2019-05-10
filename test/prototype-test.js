@@ -17,9 +17,9 @@ QUnit.test("makePrototype basics", function(assert) {
 	var sets = 0;
 	canReflect.onKeyValue(o, "fullName", function(value) {
 		if (++sets === 1) {
-			QUnit.equal(value, "Kevin");
+			assert.equal(value, "Kevin");
 		} else {
-			QUnit.equal(value, "Connor");
+			assert.equal(value, "Connor");
 		}
 	});
 
@@ -43,9 +43,9 @@ QUnit.test("makePrototype basics with class", function(assert) {
 	var sets = 0;
 	canReflect.onKeyValue(el, "fullName", function(value) {
 		if (++sets === 1) {
-			QUnit.equal(value, "Kevin");
+			assert.equal(value, "Kevin");
 		} else {
-			QUnit.equal(value, "Connor");
+			assert.equal(value, "Connor");
 		}
 	});
 
@@ -68,8 +68,8 @@ QUnit.test("makePrototype can create two instances of a class with different met
 	var el2 = new MyElement();
 
 	el1.fullName = "Kevin";
-	QUnit.equal(el1.fullName, "Kevin", "el1.fullName is set");
-	QUnit.equal(el2.fullName, undefined, "el2.fullName is not set");
+	assert.equal(el1.fullName, "Kevin", "el1.fullName is set");
+	assert.equal(el2.fullName, undefined, "el2.fullName is not set");
 });
 
 QUnit.test("makePrototype class with getters", function(assert) {
@@ -204,9 +204,9 @@ QUnit.test("main observe function uses makePrototype for Element instances", fun
 	var sets = 0;
 	canReflect.onKeyValue(el, "fullName", function(value) {
 		if (++sets === 1) {
-			QUnit.equal(value, "Kevin");
+			assert.equal(value, "Kevin");
 		} else {
-			QUnit.equal(value, "Connor");
+			assert.equal(value, "Connor");
 		}
 	});
 
