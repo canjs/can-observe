@@ -29,7 +29,8 @@ QUnit.test("isBuiltInButNotArrayOrPlainObject", function(assert) {
 	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject(new RegExp()), true, "new RegExp");
 });
 
-QUnit.test("makeFunction basics", 3, function(assert) {
+QUnit.test("makeFunction basics", function(assert) {
+	assert.expect(3);
 	var OriginalPerson = function(first, last) {
 		this.first = first;
 		this.last = last;
@@ -161,7 +162,8 @@ QUnit.test("custom, non-array functions return proxied objects as well", functio
 });
 
 
-QUnit.test("basics with constructor functions", 3, function(assert) {
+QUnit.test("basics with constructor functions", function(assert) {
+	assert.expect(3);
 	var OriginalPerson = function(first, last) {
 		this.first = first;
 		this.last = last;

@@ -396,7 +396,8 @@ QUnit.test("Object.extend basics, with property definitions on extended prototyp
 	assert.equal(onFormalName, true, "superhero.on(formalName) was run");
 });
 
-QUnit.test("default values are observable", 3, function(assert) {
+QUnit.test("default values are observable", function(assert) {
+	assert.expect(3);
 	var Type = ObserveObject.extend("Type",{},{
 		someValue: 3
 	});

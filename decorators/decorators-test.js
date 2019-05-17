@@ -20,6 +20,7 @@ testDecorator("simple getter", function simpleDecorator(target, key, descriptor)
 	return this.first + " " + this.last;
 }, function(Person) {
 	var person = new Person({ first: "Christopher", last: "Baker" });
+	var assert = this;
 
 	assert.equal(person.fullName, "Christopher Baker", "has correct inital value");
 
@@ -43,6 +44,7 @@ testDecoratorMethod("async", decorators.async, "fullName", function (resolve) {
 	setTimeout(function() { resolve(value); }, 100);
 }, function(Person) {
 	var person = new Person({ first: "Christopher", last: "Baker" });
+	var assert = this;
 
 	assert.equal(person.fullName, "default", "has correct initial value");
 
@@ -71,6 +73,7 @@ testDecoratorGetter("async", decorators.async, "fullName", function () {
 	}.bind(this));
 }, function(Person) {
 	var person = new Person({ first: "Christopher", last: "Baker" });
+	var assert = this;
 
 	assert.equal(person.fullName, undefined, "has correct initial value");
 
@@ -101,6 +104,7 @@ testDecoratorMethod("resolver", decorators.resolver, "count", function (value) {
 	});
 }, function(Type) {
 	var person = new Type({ value: "initial" });
+	var assert = this;
 
 	var count = 0;
 	var didRun = false;

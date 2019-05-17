@@ -1,5 +1,4 @@
 var QUnit = require("steal-qunit");
-var assert = QUnit.assert;
 var observe = require("can-observe");
 var queues = require("can-queues");
 var canReflect = require("can-reflect");
@@ -26,7 +25,7 @@ QUnit.test("basics with object", function(assert) {
 });
 
 QUnit.test("basics with object and property definitions", function(assert) {
-	QUnit.expect(6);
+	assert.expect(6);
 	var count = 0;
 
 	var person = observe({});

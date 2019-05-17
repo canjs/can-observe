@@ -12,7 +12,7 @@ var classSupport = (function() {
 
 function testDecoratorGetter(decoratorName, decorator, propName, getter, tester) {
 	if(classSupport) {
-		QUnit.test(decoratorName + " getter decorator with class Object prototype", function() {
+		QUnit.test(decoratorName + " getter decorator with class Object prototype", function(assert) {
 			var ran = false;
 
 			class TesterType extends ObserveObject {
@@ -23,12 +23,12 @@ function testDecoratorGetter(decoratorName, decorator, propName, getter, tester)
 			}
 			decorator(TesterType.prototype, propName, Object.getOwnPropertyDescriptor(TesterType.prototype, propName));
 
-			tester(TesterType);
-			QUnit.equal(ran, true, "getter ran");
+			tester.call(assert, TesterType);
+			assert.equal(ran, true, "getter ran");
 		});
 	}
 
-	QUnit.test(decoratorName + " getter decorator with Object.extend prototype", function() {
+	QUnit.test(decoratorName + " getter decorator with Object.extend prototype", function(assert) {
 		var ran = false;
 
 		var TesterType = ObserveObject.extend("TesterType", {}, {
@@ -39,14 +39,14 @@ function testDecoratorGetter(decoratorName, decorator, propName, getter, tester)
 		});
 		decorator(TesterType.prototype, propName, Object.getOwnPropertyDescriptor(TesterType.prototype, propName));
 
-		tester(TesterType);
-		QUnit.equal(ran, true, "getter ran");
+		tester.call(assert, TesterType);
+		assert.equal(ran, true, "getter ran");
 	});
 }
 
 function testDecoratorMethod(decoratorName, decorator, propName, method, tester) {
 	if(classSupport) {
-		QUnit.test(decoratorName + " method decorator with class Object prototype", function() {
+		QUnit.test(decoratorName + " method decorator with class Object prototype", function(assert) {
 			var ran = false;
 
 			class TesterType extends ObserveObject {
@@ -57,12 +57,12 @@ function testDecoratorMethod(decoratorName, decorator, propName, method, tester)
 			}
 			decorator(TesterType.prototype, propName, Object.getOwnPropertyDescriptor(TesterType.prototype, propName));
 
-			tester(TesterType);
-			QUnit.equal(ran, true, "method ran");
+			tester.call(assert, TesterType);
+			assert.equal(ran, true, "method ran");
 		});
 	}
 
-	QUnit.test(decoratorName + " method decorator with Object.extend prototype", function() {
+	QUnit.test(decoratorName + " method decorator with Object.extend prototype", function(assert) {
 		var ran = false;
 
 		var TesterType = ObserveObject.extend("TesterType", {}, {
@@ -73,8 +73,8 @@ function testDecoratorMethod(decoratorName, decorator, propName, method, tester)
 		});
 		decorator(TesterType.prototype, propName, Object.getOwnPropertyDescriptor(TesterType.prototype, propName));
 
-		tester(TesterType);
-		QUnit.equal(ran, true, "method ran");
+		tester.call(assert, TesterType);
+		assert.equal(ran, true, "method ran");
 	});
 }
 

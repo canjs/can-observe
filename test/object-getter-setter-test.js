@@ -25,7 +25,7 @@ QUnit.test("don't observe getters", function(assert) {
 	assert.ok(record.keyDependencies.get(o).has("c"), "c is the key");
 });
 
-QUnit.skip("getters can be bound within observes", function() {
+QUnit.skip("getters can be bound within observes", function(assert) {
 	assert.expect(5);
 	var count = 0;
 	var o = observe({
@@ -51,7 +51,7 @@ QUnit.skip("getters can be bound within observes", function() {
 	o.c = "f";
 });
 
-QUnit.skip("getters can be bound across observes", function() {
+QUnit.skip("getters can be bound across observes", function(assert) {
 	assert.expect(5);
 	var count = 0;
 	var b = observe({
@@ -79,7 +79,7 @@ QUnit.skip("getters can be bound across observes", function() {
 	b.c = "f";
 });
 
-QUnit.skip("getter/setters within observes", function() {
+QUnit.skip("getter/setters within observes", function(assert) {
 	assert.expect(7);
 	var getCount = 0,
 		setCount = 0;
@@ -110,7 +110,7 @@ QUnit.skip("getter/setters within observes", function() {
 	o.b = "f"; // set #2
 });
 
-QUnit.skip("getters on prototype are treated as observable value", function(){
+QUnit.skip("getters on prototype are treated as observable value", function(assert){
     var fullNameInstanceCalls = [];
     var proto = observe({
         get fullName(){

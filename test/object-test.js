@@ -141,7 +141,7 @@ QUnit.test("Should convert nested objects to observables (set case) #21", functi
 
 
 
-QUnit.skip("can.* symbols should not appear on object", function() {
+QUnit.skip("can.* symbols should not appear on object", function(assert) {
 	var a = {};
 	var o = observe(a);
 
