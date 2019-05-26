@@ -16,17 +16,17 @@ var classSupport = (function() {
 })();
 
 if(classSupport) {
-    QUnit.test("observe.Array basics", function(){
+    QUnit.test("observe.Array basics", function(assert) {
         class TodoList extends ObserveArray {
         }
         var todos = new TodoList(["a","b","c"]);
 
-        QUnit.equal(todos.length, 3, "3 items");
+        assert.equal(todos.length, 3, "3 items");
 
 
 
 		todos.on("length", function(ev, newVal){
-			QUnit.equal(newVal, 4, "length is 4");
+			assert.equal(newVal, 4, "length is 4");
 		});
 
 		todos.push("4");
@@ -52,17 +52,17 @@ if(classSupport) {
 
 }
 
-QUnit.test("observe.Array.extend basics", function(){
+QUnit.test("observe.Array.extend basics", function(assert) {
     var TodoList = ObserveArray.extend("TodoList",{},{});
 
     var todos = new TodoList(["a","b","c"]);
 
-    QUnit.equal(todos.length, 3, "3 items");
+    assert.equal(todos.length, 3, "3 items");
 
 
 
     todos.on("length", function(ev, newVal){
-        QUnit.equal(newVal, 4, "length is 4");
+        assert.equal(newVal, 4, "length is 4");
     });
 
     todos.push("4");
@@ -87,7 +87,7 @@ require("can-reflect-tests/observables/list-like/instance/serialize")("observe.A
 });
 
 
-QUnit.test("getters work", function(){
+QUnit.test("getters work", function(assert) {
 	var actions = [];
 	var People = ObserveArray.extend("People",{},{
 		get over21() {
@@ -104,12 +104,12 @@ QUnit.test("getters work", function(){
 		actions.push("over21Callback "+people.length);
 	});
 
-	QUnit.equal(people.over21.length, 2, "got the right number");
+	assert.equal(people.over21.length, 2, "got the right number");
 
 
 	people[0].age = 20;
 
-	QUnit.deepEqual(actions,[
+	assert.deepEqual(actions,[
 		"filter",
 		"filter",
 		"over21Callback 1"

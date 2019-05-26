@@ -8,7 +8,7 @@ QUnit.module("can-observe Objects getter and setter behavior");
 
 
 // This is here until the skipped tests after it can be completed
-QUnit.test("don't observe getters", function(){
+QUnit.test("don't observe getters", function(assert) {
 	var o = observe({
 		get b() {
 			return this.c;
@@ -18,19 +18,19 @@ QUnit.test("don't observe getters", function(){
 	ObservationRecorder.start();
 	var res = o.b;
 	var record = ObservationRecorder.stop();
-	QUnit.equal(res,"d", "got the right value");
+	assert.equal(res,"d", "got the right value");
 
-	QUnit.equal( record.keyDependencies.size, 1, "one object");
-	QUnit.equal(record.keyDependencies.get(o).size,1, "one key");
-	QUnit.ok(record.keyDependencies.get(o).has("c"), "c is the key");
+	assert.equal( record.keyDependencies.size, 1, "one object");
+	assert.equal(record.keyDependencies.get(o).size,1, "one key");
+	assert.ok(record.keyDependencies.get(o).has("c"), "c is the key");
 });
 
-QUnit.skip("getters can be bound within observes", function() {
-	expect(5);
+QUnit.skip("getters can be bound within observes", function(assert) {
+	assert.expect(5);
 	var count = 0;
 	var o = observe({
 		get b() {
-			QUnit.ok(count <= 4, "hit the getter " + (++count) + " of 4");
+			assert.ok(count <= 4, "hit the getter " + (++count) + " of 4");
 			return this.c;
 		},
 		c: "d"
@@ -38,7 +38,7 @@ QUnit.skip("getters can be bound within observes", function() {
 
 	var fn;
 	canReflect.onKeyValue(o, "b", fn = function() {
-		QUnit.ok(true, "Hit the updater");
+		assert.ok(true, "Hit the updater");
 	}); // Also reads b's getter, #1
 
 	var d = o.b; // #2
@@ -51,22 +51,22 @@ QUnit.skip("getters can be bound within observes", function() {
 	o.c = "f";
 });
 
-QUnit.skip("getters can be bound across observes", function() {
-	expect(5);
+QUnit.skip("getters can be bound across observes", function(assert) {
+	assert.expect(5);
 	var count = 0;
 	var b = observe({
 		c: "d"
 	});
 	var o = observe({
 		get b() {
-			QUnit.ok(count <= 4, "hit the getter " + (++count) + " of 4");
+			assert.ok(count <= 4, "hit the getter " + (++count) + " of 4");
 			return b.c;
 		}
 	});
 
 	var fn;
 	canReflect.onKeyValue(o, "b", fn = function() {
-		QUnit.ok(true, "Hit the updater");
+		assert.ok(true, "Hit the updater");
 	}); // Also reads b's getter, #1
 
 	var d = o.b; // #2
@@ -79,17 +79,17 @@ QUnit.skip("getters can be bound across observes", function() {
 	b.c = "f";
 });
 
-QUnit.skip("getter/setters within observes", function() {
-	expect(7);
+QUnit.skip("getter/setters within observes", function(assert) {
+	assert.expect(7);
 	var getCount = 0,
 		setCount = 0;
 	var o = observe({
 		get b() {
-			QUnit.ok(getCount <= 4, "hit the getter " + (++getCount) + " of 4");
+			assert.ok(getCount <= 4, "hit the getter " + (++getCount) + " of 4");
 			return this.c;
 		},
 		set b(val) {
-			QUnit.ok(setCount <= 2, "Setter was called " + (++setCount) + " of 2"); //x2
+			assert.ok(setCount <= 2, "Setter was called " + (++setCount) + " of 2"); //x2
 			this.c = val;
 		},
 		c: "d"
@@ -97,7 +97,7 @@ QUnit.skip("getter/setters within observes", function() {
 
 	var fn;
 	canReflect.onKeyValue(o, "b", fn = function() {
-		QUnit.ok(true, "Hit the updater");
+		assert.ok(true, "Hit the updater");
 	}); // Also reads b's getter, #1
 
 	var d = o.b; // #2
@@ -110,7 +110,7 @@ QUnit.skip("getter/setters within observes", function() {
 	o.b = "f"; // set #2
 });
 
-QUnit.skip("getters on prototype are treated as observable value", function(){
+QUnit.skip("getters on prototype are treated as observable value", function(assert){
     var fullNameInstanceCalls = [];
     var proto = observe({
         get fullName(){
@@ -129,12 +129,12 @@ QUnit.skip("getters on prototype are treated as observable value", function(){
     var fullName = instance.fullName;
     var record = ObservationRecorder.stop();
 
-    QUnit.equal(fullName, "Justin Meyer", "got the right value");
+    assert.equal(fullName, "Justin Meyer", "got the right value");
 
-    QUnit.equal( record.keyDependencies.size, 1, "one object");
-    QUnit.equal(record.keyDependencies.get(instance).size,1, "bind on instance");
-    QUnit.ok(record.keyDependencies.get(instance).has("fullName"), "fullName is the key");
+    assert.equal( record.keyDependencies.size, 1, "one object");
+    assert.equal(record.keyDependencies.get(instance).size,1, "bind on instance");
+    assert.ok(record.keyDependencies.get(instance).has("fullName"), "fullName is the key");
 
     fullName = instance.fullName;
-    QUnit.deepEqual(fullNameInstanceCalls,[instance], "called to bind with the right this only once");
+    assert.deepEqual(fullNameInstanceCalls,[instance], "called to bind with the right this only once");
 });

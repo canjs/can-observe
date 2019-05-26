@@ -15,21 +15,22 @@ var helpers = require("../src/-helpers");
 QUnit.module("can-observe with Functions");
 
 
-QUnit.test("isBuiltInButNotArrayOrPlainObject", function() {
+QUnit.test("isBuiltInButNotArrayOrPlainObject", function(assert) {
 	// Testing type constructors
-	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Function), true, "Function");
-	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Object), true, "Object");
-	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(Date), true, "Date");
+	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject(Function), true, "Function");
+	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject(Object), true, "Object");
+	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject(Date), true, "Date");
 
-	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(function() {}), false, "function instance");
+	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject(function() {}), false, "function instance");
 
-	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject({}), false, "new Object");
-	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject([]), false, "new Array");
-	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(new Date()), true, "new Date");
-	QUnit.equal(helpers.isBuiltInButNotArrayOrPlainObject(new RegExp()), true, "new RegExp");
+	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject({}), false, "new Object");
+	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject([]), false, "new Array");
+	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject(new Date()), true, "new Date");
+	assert.equal(helpers.isBuiltInButNotArrayOrPlainObject(new RegExp()), true, "new RegExp");
 });
 
-QUnit.test("makeFunction basics", 3, function() {
+QUnit.test("makeFunction basics", function(assert) {
+	assert.expect(3);
 	var OriginalPerson = function(first, last) {
 		this.first = first;
 		this.last = last;
@@ -65,26 +66,26 @@ QUnit.test("makeFunction basics", 3, function() {
 		return observable;
 	};
 	var Person = observe(OriginalPerson);
-	QUnit.equal(Person.prototype.constructor, Person, "Person is its own constructor");
+	assert.equal(Person.prototype.constructor, Person, "Person is its own constructor");
 	Person.count = 0;
 
 
 
 	canReflect.onKeyValue(Person, "count", function(newVal) {
-		QUnit.equal(newVal, 1, "static count");
+		assert.equal(newVal, 1, "static count");
 	});
 
 	var person = new Person("Justin", "Meyer");
 
 
 	canReflect.onKeyValue(person, "first", function(newVal) {
-		QUnit.equal(newVal, "Vyacheslav", "first changed");
+		assert.equal(newVal, "Vyacheslav", "first changed");
 	});
 
 	person.first = "Vyacheslav";
 });
 
-QUnit.test("makeFunction basics, with property definitions", function() {
+QUnit.test("makeFunction basics, with property definitions", function(assert) {
 	var observe = function(obj) {
 		if (canReflect.isPrimitive(obj)) {
 			return obj;
@@ -130,38 +131,39 @@ QUnit.test("makeFunction basics, with property definitions", function() {
 	};
 
 	var Person = observe(OriginalPerson);
-	QUnit.equal(Person.prototype.constructor, Person, "Person is its own constructor");
+	assert.equal(Person.prototype.constructor, Person, "Person is its own constructor");
 	Person.count = 0;
 
-	QUnit.equal(Person.countText, "0 people", "count is 0");
+	assert.equal(Person.countText, "0 people", "count is 0");
 
 	canReflect.onKeyValue(Person, "countText", function(newVal) {
-		QUnit.equal(newVal, "1 person", "static count");
+		assert.equal(newVal, "1 person", "static count");
 	});
 
 	var person = new Person("Christopher", "Baker");
-	QUnit.equal(Person.countText, "1 person", "count is 1");
+	assert.equal(Person.countText, "1 person", "count is 1");
 
 	canReflect.onKeyValue(person, "first", function(newVal) {
-		QUnit.equal(newVal, "Yetti", "first changed");
+		assert.equal(newVal, "Yetti", "first changed");
 	});
 
 	person.first = "Yetti";
 });
 
 
-QUnit.test("custom, non-array functions return proxied objects as well", function() {
+QUnit.test("custom, non-array functions return proxied objects as well", function(assert) {
 	var p = observe({
 		foo: function() {
 			return {};
 		}
 	});
 
-	QUnit.ok(p.foo()[observableSymbol], "Proxied function returns proxy");
+	assert.ok(p.foo()[observableSymbol], "Proxied function returns proxy");
 });
 
 
-QUnit.test("basics with constructor functions", 3, function() {
+QUnit.test("basics with constructor functions", function(assert) {
+	assert.expect(3);
 	var OriginalPerson = function(first, last) {
 		this.first = first;
 		this.last = last;
@@ -171,33 +173,33 @@ QUnit.test("basics with constructor functions", 3, function() {
 		return this.first + this.last;
 	};
 	var Person = observe(OriginalPerson);
-	QUnit.equal(Person.prototype.constructor, Person, "Person is its own constructor");
+	assert.equal(Person.prototype.constructor, Person, "Person is its own constructor");
 	Person.count = 0;
 
 
 
 	canReflect.onKeyValue(Person, "count", function(newVal) {
-		QUnit.equal(newVal, 1, "static count");
+		assert.equal(newVal, 1, "static count");
 	});
 
 	var person = new Person("Justin", "Meyer");
 
 
 	canReflect.onKeyValue(person, "first", function(newVal) {
-		QUnit.equal(newVal, "Vyacheslav", "first changed");
+		assert.equal(newVal, "Vyacheslav", "first changed");
 	});
 
 	person.first = "Vyacheslav";
 });
 
-QUnit.test("Constructor functions that use instanceof", function() {
+QUnit.test("Constructor functions that use instanceof", function(assert) {
 	var Child;
 	var Parent = function(){
 		var isParent = (this instanceof Parent);
-		QUnit.ok(isParent, "this is a Parent");
+		assert.ok(isParent, "this is a Parent");
 
 		var isChild = (this instanceof Child);
-		QUnit.ok(isChild, "this is a Child");
+		assert.ok(isChild, "this is a Child");
 	};
 
 	Parent.prototype.fn = function() { return "works"; };
@@ -205,7 +207,7 @@ QUnit.test("Constructor functions that use instanceof", function() {
 	Child = observe(Parent);
 	var child = new Child();
 
-	QUnit.equal(child.fn(), "works", "Able to walk up the prototype");
+	assert.equal(child.fn(), "works", "Able to walk up the prototype");
 });
 
 require("can-reflect-tests/observables/map-like/type/type")("simple map-like constructor", function() {
@@ -216,7 +218,7 @@ require("can-reflect-tests/observables/map-like/type/type")("simple map-like con
 
 
 
-QUnit.test(".constructor of array subclass is itself", function() {
+QUnit.test(".constructor of array subclass is itself", function(assert) {
 	var MyArray = function(values) {
 		this.push.apply(this, arguments);
 	};
@@ -224,10 +226,10 @@ QUnit.test(".constructor of array subclass is itself", function() {
 	MyArray.prototype.constructor = MyArray;
 	var ArrayType = observe(MyArray);
 
-	QUnit.equal(ArrayType.prototype.constructor, ArrayType, "type");
+	assert.equal(ArrayType.prototype.constructor, ArrayType, "type");
 
 	var arr = new MyArray();
-	QUnit.equal(arr.constructor, ArrayType, "instance");
+	assert.equal(arr.constructor, ArrayType, "instance");
 });
 
 
@@ -250,7 +252,7 @@ if (classSupport) {
 			return observe(MyArray);
 		});
 
-	QUnit.test("calling methods (that have no prototypes)", function(){
+	QUnit.test("calling methods (that have no prototypes)", function(assert) {
 		class AddBase {
 			constructor() {
 				this.count = 0;
@@ -262,7 +264,7 @@ if (classSupport) {
 		var Add = observe(AddBase);
 		var add = new Add();
 		add.add();
-		QUnit.equal(add.count,1, "count set");
+		assert.equal(add.count,1, "count set");
 	});
 }
 

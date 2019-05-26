@@ -45,14 +45,14 @@
   "devDependencies": {
     "docco": "^0.7.0",
     "can-observation": "^4.0.0",
-    "can-reflect-tests": "^0.2.1",
+    "can-reflect-tests": "^0.3.0",
     "can-simple-map": "^4.0.0",
     "can-simple-observable": "^2.0.0",
     "can-util": "^3.2.2",
     "detect-cyclic-packages": "^1.1.0",
     "jshint": "^2.9.1",
     "steal": "^1.0.0",
-    "steal-qunit": "^1.0.0",
+    "steal-qunit": "^2.0.0",
     "steal-tools": "^1.9.1",
     "testee": "^0.9.1"
   }
