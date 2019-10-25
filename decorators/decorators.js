@@ -45,7 +45,7 @@ function asyncBase(config) {
 				if(process.env.NODE_ENV !== 'production') {
 					canReflect.assignSymbols(fn, {
 						"can.getName": function() {
-							return canReflect.getName(getter); + " getter";
+							return canReflect.getName(getter) + ": getter";
 						},
 					});
 				}
